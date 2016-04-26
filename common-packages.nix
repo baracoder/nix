@@ -25,9 +25,7 @@
     roxterm
     slack
     spotify
-    springLobby
     sshfsFuse
-    steam
     synergy
     vim
     wget

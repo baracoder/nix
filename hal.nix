@@ -10,6 +10,11 @@
     { name = "storage"; device = "/dev/bcache0"; }
   ];
 
+  environment.systemPackages = with pkgs; [
+    springLobby
+    steam
+  ];
+
   networking.hostName = "hal";
   networking.firewall.enable = false;
 
