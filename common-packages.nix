@@ -16,9 +16,11 @@
     gcc
     gitAndTools.gitFull
     gnumake
+    htop
     i3
     i3lock
     i3status
+    iotop
     lightdm
     lightdm_gtk_greeter
     mumble
