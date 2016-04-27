@@ -45,6 +45,7 @@
   };
 
   services = {
+    avahi.enable = true;
     openssh.enable = true;
     printing.enable = true;
     xserver.enable = true;
