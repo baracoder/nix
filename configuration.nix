@@ -45,13 +45,20 @@
   };
 
   services = {
-    avahi.enable = true;
+    avahi = {
+      enable = true;
+      nssmdns = true;
+    };
     openssh.enable = true;
     printing.enable = true;
     xserver.enable = true;
     xserver.layout = "us";
     xserver.xkbOptions = "eurosign:e";
-    xserver.displayManager.lightdm.enable = true;
+    xserver.displayManager.slim = {
+      enable = true;
+      autoLogin = true;
+      defaultUser = "bara";
+    };
   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
