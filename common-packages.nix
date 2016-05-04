@@ -4,7 +4,10 @@
 
   nixpkgs.config.allowUnfree = true;
 
+
+
   environment.systemPackages = with pkgs; [
+    espeak
     avahi
     bcache-tools
     chromium
@@ -23,7 +26,13 @@
     iotop
     lightdm
     lightdm_gtk_greeter
-    mumble
+    (speechd.override {
+        withEspeak = true;
+    })
+    (mumble.override {
+        pulseSupport = true;
+        speechdSupport = true;
+    })
     neovim
     networkmanagerapplet
     numlockx
