@@ -19,6 +19,7 @@
     gcc
     gitAndTools.gitFull
     gnumake
+    hdparm
     htop
     i3
     i3lock
