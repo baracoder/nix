@@ -14,6 +14,7 @@
     curl
     dmenu
     docker
+    darktable
     evince
     firefox
     gcc
@@ -21,6 +22,7 @@
     gnumake
     hdparm
     htop
+    lm_sensors
     i3
     i3lock
     i3status
