@@ -14,6 +14,7 @@
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
     qtcreator
+    steam
   ];
   virtualisation.docker.enable = true;
   system.stateVersion = "16.03";
