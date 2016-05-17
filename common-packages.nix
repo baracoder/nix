@@ -1,12 +1,17 @@
 { config, pkgs, ... }:
 
-{
+let
+  unstable = (import (fetchTarball https://nixos.org/releases/nixos/unstable/nixos-16.09pre83100.25e3c09/nixexprs.tar.xz) {}).pkgs;
+
+in {
 
   nixpkgs.config.allowUnfree = true;
 
 
 
   environment.systemPackages = with pkgs; [
+    polkit_gnome
+    dunst
     espeak
     avahi
     bcache-tools
@@ -29,10 +34,13 @@
     iotop
     lightdm
     lightdm_gtk_greeter
-    (speechd.override {
+    (unstable.nmap.override {
+        graphicalSupport = true;
+    })
+    (unstable.speechd.override {
         withEspeak = true;
     })
-    (mumble.override {
+    (unstable.mumble.override {
         pulseSupport = true;
         speechdSupport = true;
     })
@@ -45,7 +53,7 @@
     python
     roxterm
     slack
-    spotify
+    unstable.spotify
     sshfsFuse
     synergy
     vim
@@ -54,6 +62,6 @@
     xorg.xmodmap
     xss-lock
     zsh
-  ];
+  ] ++ builtins.filter stdenv.lib.isDerivation (builtins.attrValues gnome3);
 
 }
