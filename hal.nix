@@ -21,6 +21,6 @@
   services.xserver.videoDrivers = [ "nvidia" ];
   system.stateVersion = "16.03";
 
-  powerManagement.powerUpCommands="/var/run/current-system/sw/sbin/hdparm -y /dev/sdc";
+  powerManagement.powerUpCommands=''/var/run/current-system/sw/sbin/hdparm -S 100 /dev/sdc'';
 
 }
