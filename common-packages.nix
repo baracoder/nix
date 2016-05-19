@@ -48,6 +48,7 @@ in
         speechdSupport = true;
     })
     neovim
+    gpicview
     networkmanagerapplet
     numlockx
     pamixer
