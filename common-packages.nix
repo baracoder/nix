@@ -1,15 +1,18 @@
 { config, pkgs, ... }:
 
 let
-  unstable = (import (fetchTarball https://nixos.org/releases/nixos/unstable/nixos-16.09pre83100.25e3c09/nixexprs.tar.xz) {}).pkgs;
-
-in {
+  unstable = (import (fetchTarball https://nixos.org/releases/nixos/unstable/nixos-16.09pre83796.d541e0d/nixexprs.tar.xz) {
+  config.allowUnfree = true;
+}).pkgs;
+in
+ {
 
   nixpkgs.config.allowUnfree = true;
 
 
 
   environment.systemPackages = with pkgs; [
+    remmina
     polkit_gnome
     dunst
     espeak
@@ -55,6 +58,7 @@ in {
     slack
     unstable.spotify
     sshfsFuse
+    unstable.steam
     synergy
     vim
     wget
