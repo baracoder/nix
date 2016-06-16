@@ -11,8 +11,6 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    springLobby
-    steam
   ];
 
   networking.hostName = "hal";
