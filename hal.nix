@@ -1,10 +1,10 @@
 { config, pkgs, ... }:
 
 {
+  boot.loader.gummiboot.enable = true;
+  boot.loader.gummiboot.timeout = null;
+  boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.loader.grub.enable = true;
-  boot.loader.grub.version = 2;
-  boot.loader.grub.device = "/dev/sda";
   boot.initrd.extraKernelModules = [ "bcache" ];
   boot.initrd.luks.devices = [
     { name = "storage"; device = "/dev/bcache0"; }
@@ -20,7 +20,5 @@
 
   services.xserver.videoDrivers = [ "nvidia" ];
   system.stateVersion = "16.03";
-
-  powerManagement.powerUpCommands=''/var/run/current-system/sw/sbin/hdparm -S 100 /dev/sdc'';
 
 }
