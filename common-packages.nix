@@ -19,6 +19,10 @@ in
     meld
     vlc
     remmina
+    mtools
+    dosfstools
+    ntfs3g
+    unstable.remmina
     polkit_gnome
     dunst
     espeak
@@ -43,6 +47,7 @@ in
     iotop
     lightdm
     lightdm_gtk_greeter
+    unstable.springLobby
     (unstable.nmap.override {
         graphicalSupport = true;
     })
@@ -54,6 +59,7 @@ in
         speechdSupport = true;
     })
     neovim
+    gpicview
     networkmanagerapplet
     numlockx
     pamixer
