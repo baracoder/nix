@@ -12,6 +12,12 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    autojump
+    renameutils
+    bc
+    seafile-client
+    meld
+    vlc
     remmina
     polkit_gnome
     dunst
