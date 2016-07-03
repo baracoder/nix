@@ -13,6 +13,13 @@ in
 
   environment.systemPackages = with pkgs; [
     unstable.oraclejre8
+    autojump
+    renameutils
+    bc
+    seafile-client
+    meld
+    vlc
+    remmina
     mtools
     dosfstools
     ntfs3g
