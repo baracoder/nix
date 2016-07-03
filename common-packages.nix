@@ -12,6 +12,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    unstable.oraclejre8
     mtools
     dosfstools
     ntfs3g
@@ -64,7 +65,7 @@ in
     unstable.spotify
     sshfsFuse
     unstable.steam
-    synergy
+    unstable.synergy
     vim
     wget
     wine

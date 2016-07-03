@@ -10,8 +10,14 @@
     { name = "storage"; device = "/dev/bcache0"; }
   ];
 
-  environment.systemPackages = with pkgs; [
-  ];
+  #environment.systemPackages = with pkgs; [
+  #];
+
+
+    services.printing = {
+      enable = true;
+      drivers = [ pkgs.hplip ];
+    };
 
   networking.hostName = "hal";
   networking.firewall.enable = false;
