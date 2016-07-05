@@ -12,6 +12,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    unstable.dart
     gimp
     imagemagick
     unstable.oraclejre8
