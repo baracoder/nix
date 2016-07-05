@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  unstable = (import (fetchTarball https://nixos.org/releases/nixos/unstable/nixos-16.09pre83796.d541e0d/nixexprs.tar.xz) {
+  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz) {
   config.allowUnfree = true;
 }).pkgs;
 in
@@ -72,7 +72,7 @@ in
     python
     roxterm
     slack
-    unstable.spotify
+    #unstable.spotify
     sshfsFuse
     unstable.steam
     unstable.synergy
