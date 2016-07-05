@@ -12,6 +12,8 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    gimp
+    imagemagick
     autojump
     renameutils
     bc
