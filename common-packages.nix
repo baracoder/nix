@@ -14,6 +14,7 @@ in
   environment.systemPackages = with pkgs; [
     gimp
     imagemagick
+    unstable.oraclejre8
     autojump
     renameutils
     bc
@@ -73,7 +74,7 @@ in
     unstable.spotify
     sshfsFuse
     unstable.steam
-    synergy
+    unstable.synergy
     vim
     wget
     wine
