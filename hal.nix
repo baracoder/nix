@@ -13,6 +13,10 @@
   #environment.systemPackages = with pkgs; [
   #];
 
+  virtualisation.docker = {
+    enable = true;
+    storageDriver = "btrfs";
+  };
 
     services.printing = {
       enable = true;
