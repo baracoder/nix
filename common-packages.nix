@@ -1,13 +1,19 @@
 { config, pkgs, ... }:
 
 let
-  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz) {
+  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz?123) {
   config.allowUnfree = true;
 }).pkgs;
 in
  {
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    chromium = {
+     enablePepperFlash = true; # Chromium's non-NSAPI alternative to Adobe Flash
+     enablePepperPDF = true;
+    };
+  };
 
 
 
@@ -72,7 +78,7 @@ in
     python
     roxterm
     slack
-    #unstable.spotify
+    spotify
     sshfsFuse
     unstable.steam
     unstable.synergy
