@@ -9,6 +9,11 @@ in
 
   nixpkgs.config.allowUnfree = true;
 
+  nixpkgs.config.chromium = {
+    enablePepperFlash = true; # Chromium's non-NSAPI alternative to Adobe Flash
+    enablePepperPDF = true;
+  };
+
 
 
   environment.systemPackages = with pkgs; [
@@ -82,6 +87,7 @@ in
     xorg.xmodmap
     xss-lock
     zsh
+    gtk_engines
   ] ++ builtins.filter stdenv.lib.isDerivation (builtins.attrValues gnome3);
 
 }
