@@ -50,14 +50,24 @@
       nssmdns = true;
     };
     openssh.enable = true;
+    udisks2.enable = true;
+    gnome3.gvfs.enable = true;
     printing.enable = true;
-    xserver.enable = true;
-    xserver.layout = "us";
-    xserver.xkbOptions = "eurosign:e";
-    xserver.displayManager.slim = {
+    xserver = {
       enable = true;
-      autoLogin = true;
-      defaultUser = "bara";
+      layout = "us";
+      xkbOptions = "eurosign:e";
+      windowManager.default = "i3";
+      desktopManager.default = "none";
+      displayManager.lightdm = {
+        enable = true;
+        autoLogin = {
+          enable = true;
+          user = "bara";
+        };
+      };
+      windowManager.i3.enable = true;
+      desktopManager.gnome3.enable = true;
     };
   };
 
@@ -66,40 +76,43 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "video" "wheel" "adm" "audio" "docker" ];
+    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
   users.extraGroups.bara.gid = 1000;
 
 
-environment.systemPackages = with pkgs; [
-  pkgs.steamcontroller-udev-rules
-];
+  environment.systemPackages = with pkgs; [
+    pkgs.steamcontroller-udev-rules
+  ];
 
-# steam controller udev rule
-nixpkgs.config.packageOverrides = pkgs: {
-  steamcontroller-udev-rules = pkgs.writeTextFile {
-    name = "steamcontroller-udev-rules";
-    text = ''
-      # This rule is needed for basic functionality of the controller in
-      # Steam and keyboard/mouse emulation
-      SUBSYSTEM=="usb", ATTRS{idVendor}=="28de", MODE="0666"
-
-      # This rule is necessary for gamepad emulation; make sure you
-      # replace 'pgriffais' with the username of the user that runs Steam
-      KERNEL=="uinput", MODE="0660", GROUP="wheel", OPTIONS+="static_node=uinput"
-      # systemd option not yet tested
-      #KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", TAG+="udev-acl"
-
-      # HTC Vive HID Sensor naming and permissioning
-      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0bb4", ATTRS{idProduct}=="2c87", MODE="0666"
-    '';
-    destination = "/etc/udev/rules.d/99-steamcontroller.rules";
+  # steam controller udev rule
+  nixpkgs.config.packageOverrides = pkgs: {
+    steamcontroller-udev-rules = pkgs.writeTextFile {
+      name = "steamcontroller-udev-rules";
+      text = ''
+        # This rule is needed for basic functionality of the controller in
+        # Steam and keyboard/mouse emulation
+        SUBSYSTEM=="usb", ATTRS{idVendor}=="28de", MODE="0666"
+  
+        # This rule is necessary for gamepad emulation; make sure you
+        # replace 'pgriffais' with the username of the user that runs Steam
+        KERNEL=="uinput", MODE="0660", GROUP="wheel", OPTIONS+="static_node=uinput"
+        # systemd option not yet tested
+        #KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", TAG+="udev-acl"
+  
+        # HTC Vive HID Sensor naming and permissioning
+        KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0bb4", ATTRS{idProduct}=="2c87", MODE="0666"
+      '';
+      destination = "/etc/udev/rules.d/99-steamcontroller.rules";
+    };
   };
-};
 
-services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
+  services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
+
+  # ram verdoppler
+  zramSwap.enable = true;
 
 
 }
