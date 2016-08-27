@@ -10,6 +10,7 @@ in {
 
 
   environment.systemPackages = with pkgs; [
+    google-chrome
     polkit_gnome
     dunst
     espeak
