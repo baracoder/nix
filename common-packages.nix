@@ -1,16 +1,38 @@
 { config, pkgs, ... }:
 
 let
-  unstable = (import (fetchTarball https://nixos.org/releases/nixos/unstable/nixos-16.09pre83100.25e3c09/nixexprs.tar.xz) {}).pkgs;
-
-in {
+  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz) {
+  config.allowUnfree = true;
+}).pkgs;
+in
+ {
 
   nixpkgs.config.allowUnfree = true;
+
+  nixpkgs.config.chromium = {
+    enablePepperFlash = true; # Chromium's non-NSAPI alternative to Adobe Flash
+    enablePepperPDF = true;
+  };
 
 
 
   environment.systemPackages = with pkgs; [
     google-chrome
+    unstable.dart
+    gimp
+    imagemagick
+    unstable.oraclejre8
+    autojump
+    renameutils
+    bc
+    seafile-client
+    meld
+    vlc
+    remmina
+    mtools
+    dosfstools
+    ntfs3g
+    unstable.remmina
     polkit_gnome
     dunst
     espeak
@@ -35,6 +57,7 @@ in {
     iotop
     lightdm
     lightdm_gtk_greeter
+    unstable.springLobby
     (unstable.nmap.override {
         graphicalSupport = true;
     })
@@ -46,6 +69,7 @@ in {
         speechdSupport = true;
     })
     neovim
+    gpicview
     networkmanagerapplet
     numlockx
     pamixer
@@ -54,15 +78,17 @@ in {
     python
     roxterm
     slack
-    unstable.spotify
+    #unstable.spotify
     sshfsFuse
-    synergy
+    unstable.steam
+    unstable.synergy
     vim
     wget
     wine
     xorg.xmodmap
     xss-lock
     zsh
+    gtk_engines
   ] ++ builtins.filter stdenv.lib.isDerivation (builtins.attrValues gnome3);
 
 }
