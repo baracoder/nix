@@ -9,13 +9,16 @@
     { name = "gentoo-root"; device = "/dev/sda2";  allowDiscards = true; }
   ];
   hardware.trackpoint.emulateWheel = true;
-  networking.hostName = "hex"; # Define your hostname.
+  networking.hostName = "hex";
   networking.networkmanager.enable = true;
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
     qtcreator
     steam
   ];
+  # power management
+  services.tlp.enable = true;
+
   virtualisation.docker.enable = true;
   system.stateVersion = "16.03";
 }
