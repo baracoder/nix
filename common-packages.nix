@@ -23,6 +23,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    google-chrome
     unstable.dart
     unstable.vscode
     gimp
