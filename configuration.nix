@@ -61,10 +61,10 @@
       desktopManager.default = "none";
       displayManager.lightdm = {
         enable = true;
-        autoLogin = {
-          enable = true;
-          user = "bara";
-        };
+        #autoLogin = {
+        #  enable = true;
+        #  user = "bara";
+        #};
       };
       windowManager.i3.enable = true;
       desktopManager.gnome3.enable = true;
