@@ -19,6 +19,8 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    mitscheme
+    emacs
     google-chrome
     unstable.dart
     unstable.vscode
