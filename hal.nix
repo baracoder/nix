@@ -1,21 +1,32 @@
 { config, pkgs, ... }:
 
 {
-  boot.loader.gummiboot.enable = true;
-  boot.loader.gummiboot.timeout = null;
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.initrd.extraKernelModules = [ "bcache" ];
-  boot.initrd.luks.devices = [
-    { name = "storage"; device = "/dev/bcache0"; }
-  ];
+  boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
+  fileSystems."/".options= ["defaults" "discard" ];
 
-  #environment.systemPackages = with pkgs; [
+  #swapDevices = [
+  #{
+  #  device = "/dev/disk/by-partlabel/cryptswap";
+  #  label = "cryptswap";
+  #  randomEncryption = true;
+  #}
   #];
+  systemd.units."dev-sdc2.swap".enable = false;
+  systemd.generators.systemd-gpt-auto-generator = "/dev/null";
+
+  powerManagement = {
+    enable = true;
+    powerUpCommands = "for i in /dev/sd*; do ${pkgs.hdparm}/sbin/hdparm -S 12 $i; done";
+    resumeCommands = "for i in /dev/sd*; do ${pkgs.hdparm}/sbin/hdparm -S 12 $i; done";
+  };
+
 
   virtualisation.docker = {
     enable = true;
-    storageDriver = "btrfs";
   };
 
     services.printing = {

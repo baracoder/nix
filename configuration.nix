@@ -60,6 +60,11 @@
       windowManager.default = "i3";
       desktopManager.default = "none";
       displayManager.lightdm = {
+        extraSeatDefaults = ''
+greeter-show-manual-login=true
+autologin-user=bara
+autologin-user-timeout=3
+        '';
         enable = true;
         #autoLogin = {
         #  enable = true;
