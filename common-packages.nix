@@ -20,7 +20,6 @@ in
 
   environment.systemPackages = with pkgs; [
     unstable.owncloudclient
-    mitscheme
     emacs
     google-chrome
     unstable.dart
