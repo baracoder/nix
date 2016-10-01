@@ -34,6 +34,10 @@
       drivers = [ pkgs.hplip ];
     };
 
+  services.logind.extraConfig = ''
+  HandlePowerKey=suspend
+  '';
+
   networking.hostName = "hal";
   networking.firewall.enable = false;
 
