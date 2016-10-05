@@ -20,6 +20,7 @@ in
 
   environment.systemPackages = with pkgs; [
     unstable.owncloudclient
+    unstable.pass
     mitscheme
     emacs
     google-chrome
