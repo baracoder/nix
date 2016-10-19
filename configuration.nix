@@ -42,6 +42,9 @@
     enable = true;
     support32Bit = true;
     package = pkgs.pulseaudioFull;
+    extraConfig= ''
+    flat-volumes = no
+    '';
   };
 
   services = {
