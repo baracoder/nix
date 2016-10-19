@@ -20,6 +20,11 @@ in
 
   environment.systemPackages = with pkgs; [
     unstable.owncloudclient
+<<<<<<< HEAD
+    unstable.pass
+    mitscheme
+=======
+>>>>>>> origin/master
     emacs
     google-chrome
     unstable.dart
