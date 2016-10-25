@@ -19,16 +19,15 @@ in
 
 
   environment.systemPackages = with pkgs; [
-    unstable.owncloudclient
-    unstable.pass
+    owncloudclient
+    pass
     unstable.google-musicmanager
     emacs
     google-chrome
-    unstable.dart
     unstable.vscode
     gimp
     imagemagick
-    unstable.oraclejre8
+    oraclejre8
     autojump
     renameutils
     bc
@@ -64,7 +63,7 @@ in
     iotop
     lightdm
     lightdm_gtk_greeter
-    unstable.springLobby
+    springLobby
     (unstable.nmap.override {
         graphicalSupport = true;
     })
@@ -87,8 +86,8 @@ in
     slack
     spotify
     sshfsFuse
-    unstable.steam
-    unstable.synergy
+    steam
+    synergy
     vim
     wget
     wine
