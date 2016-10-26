@@ -19,15 +19,15 @@ in
 
 
   environment.systemPackages = with pkgs; [
-    stack
     owncloudclient
     pass
+    unstable.google-musicmanager
     emacs
     google-chrome
     unstable.vscode
     gimp
     imagemagick
-    unstable.oraclejre8
+    oraclejre8
     autojump
     renameutils
     bc
@@ -63,7 +63,7 @@ in
     iotop
     lightdm
     lightdm_gtk_greeter
-    unstable.springLobby
+    springLobby
     (unstable.nmap.override {
         graphicalSupport = true;
     })

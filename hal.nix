@@ -5,6 +5,9 @@
   boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
 
+
+  hardware.bluetooth.enable = true;
+
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   fileSystems."/".options= ["defaults" "discard" ];
 
