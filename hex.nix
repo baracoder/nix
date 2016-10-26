@@ -5,8 +5,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.initrd.luks.devices = [
-    { name = "nixos-root"; device = "/dev/sda4";  allowDiscards = true; }
-    { name = "gentoo-root"; device = "/dev/sda2";  allowDiscards = true; }
+    { name = "nixos-root"; device = "/dev/sda2";  allowDiscards = true; }
   ];
   hardware.trackpoint.emulateWheel = true;
   networking.hostName = "hex";
@@ -20,5 +19,6 @@
   services.tlp.enable = true;
 
   virtualisation.docker.enable = true;
+  virtualisation.virtualbox.host.enable = true;
   system.stateVersion = "16.03";
 }
