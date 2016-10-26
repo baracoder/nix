@@ -81,7 +81,7 @@ autologin-user-timeout=3
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" ];
+    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
