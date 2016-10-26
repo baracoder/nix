@@ -19,15 +19,11 @@ in
 
 
   environment.systemPackages = with pkgs; [
-    unstable.owncloudclient
-<<<<<<< HEAD
-    unstable.pass
-    mitscheme
-=======
->>>>>>> origin/master
+    stack
+    owncloudclient
+    pass
     emacs
     google-chrome
-    unstable.dart
     unstable.vscode
     gimp
     imagemagick
@@ -90,8 +86,8 @@ in
     slack
     spotify
     sshfsFuse
-    unstable.steam
-    unstable.synergy
+    steam
+    synergy
     vim
     wget
     wine
