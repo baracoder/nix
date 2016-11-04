@@ -19,6 +19,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    source-code-pro
     owncloudclient
     pass
     unstable.google-musicmanager
@@ -34,7 +35,6 @@ in
     seafile-client
     meld
     vlc
-    remmina
     mtools
     dosfstools
     ntfs3g
