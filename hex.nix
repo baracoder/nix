@@ -1,7 +1,8 @@
 { config, pkgs, ... }:
 
 {
-  boot.loader.gummiboot.enable = true;
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.initrd.luks.devices = [
@@ -20,5 +21,5 @@
 
   virtualisation.docker.enable = true;
   virtualisation.virtualbox.host.enable = true;
-  system.stateVersion = "16.03";
+  system.stateVersion = "16.09";
 }
