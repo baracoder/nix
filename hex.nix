@@ -1,12 +1,12 @@
 { config, pkgs, ... }:
 
 {
-  boot.loader.gummiboot.enable = true;
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.initrd.luks.devices = [
-    { name = "nixos-root"; device = "/dev/sda4";  allowDiscards = true; }
-    { name = "gentoo-root"; device = "/dev/sda2";  allowDiscards = true; }
+    { name = "nixos-root"; device = "/dev/sda2";  allowDiscards = true; }
   ];
   hardware.trackpoint.emulateWheel = true;
   networking.hostName = "hex";
@@ -20,5 +20,6 @@
   services.tlp.enable = true;
 
   virtualisation.docker.enable = true;
-  system.stateVersion = "16.03";
+  virtualisation.virtualbox.host.enable = true;
+  system.stateVersion = "16.09";
 }

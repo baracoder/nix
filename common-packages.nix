@@ -19,6 +19,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    source-code-pro
     owncloudclient
     pass
     rofi
@@ -35,7 +36,6 @@ in
     seafile-client
     meld
     vlc
-    remmina
     mtools
     dosfstools
     ntfs3g
