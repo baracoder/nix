@@ -21,6 +21,7 @@ in
   environment.systemPackages = with pkgs; [
     owncloudclient
     pass
+    rofi
     unstable.google-musicmanager
     emacs
     google-chrome
