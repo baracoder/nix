@@ -120,5 +120,8 @@ autologin-user-timeout=3
   # ram verdoppler
   zramSwap.enable = true;
 
+  environment.etc."qemu/bridge.conf".text = ''
+    allow bridge0
+  '';
 
 }
