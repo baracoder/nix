@@ -50,6 +50,7 @@
       nssmdns = true;
     };
     openssh.enable = true;
+    openssh.forwardX11 = true;
     udisks2.enable = true;
     gnome3.gvfs.enable = true;
     printing.enable = true;
