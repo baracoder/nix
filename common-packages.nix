@@ -15,10 +15,10 @@ in
     };
   };
 
-
-
-
   environment.systemPackages = with pkgs; [
+    xsettingsd
+    lightlocker
+    gnome3.gnome_session
     source-code-pro
     owncloudclient
     pass
@@ -96,6 +96,6 @@ in
     xss-lock
     zsh
     gtk_engines
-  ] ++ builtins.filter stdenv.lib.isDerivation (builtins.attrValues gnome3);
+  ] ;
 
 }
