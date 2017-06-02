@@ -67,13 +67,11 @@ in
     (unstable.nmap.override {
         graphicalSupport = true;
     })
-    (unstable.speechd.override {
-        withEspeak = true;
-    })
-    (unstable.mumble.override {
-        pulseSupport = true;
-        speechdSupport = true;
-    })
+    unstable.speechd
+    mumble
+    aspell
+    aspellDicts.de
+    aspellDicts.en
     neovim
     gpicview
     networkmanagerapplet
