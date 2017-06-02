@@ -50,6 +50,7 @@
       nssmdns = true;
     };
     openssh.enable = true;
+    openssh.forwardX11 = true;
     udisks2.enable = true;
     gnome3.gvfs.enable = true;
     printing.enable = true;
@@ -114,5 +115,8 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   # ram verdoppler
   zramSwap.enable = true;
 
+  environment.etc."qemu/bridge.conf".text = ''
+    allow bridge0
+  '';
 
 }

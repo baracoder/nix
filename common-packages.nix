@@ -64,7 +64,7 @@ in
     lightdm
     lightdm_gtk_greeter
     springLobby
-    (unstable.nmap.override {
+    (nmap.override {
         graphicalSupport = true;
     })
     unstable.speechd
