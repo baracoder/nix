@@ -29,7 +29,6 @@ in
     unstable.vscode
     gimp
     imagemagick
-    oraclejre8
     autojump
     renameutils
     bc
