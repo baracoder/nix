@@ -83,7 +83,7 @@ in
     roxterm
     slack
     sshfsFuse
-    steam
+    unstable.steam
     synergy
     vim
     wget
