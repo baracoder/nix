@@ -84,7 +84,6 @@ in
     python
     roxterm
     slack
-    spotify
     sshfsFuse
     steam
     synergy
