@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 {
-  boot.loader.gummiboot.enable = true;
+  boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "reason";
