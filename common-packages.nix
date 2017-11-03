@@ -91,7 +91,18 @@ in
     xorg.xmodmap
     xss-lock
     zsh
+    # use version with seccomp fix
+    (proot.overrideAttrs (oldAttrs: {
+      src = fetchFromGitHub {
+        repo = "proot";
+        owner = "jorge-lip";
+        rev = "25e8461cbe56a3f035df145d9d762b65aa3eedb7";
+        sha256 = "1y4rlx0pzdg4xsjzrw0n5m6nwfmiiz87wq9vrm6cy8r89zambs7i";
+      };
+      version = "5.1.0.20171102";
+    }))
     gtk_engines
-  ] ;
+    xpra
+  ];
 
 }
