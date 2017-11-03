@@ -15,6 +15,8 @@
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
 
+  hardware.enableKSM = true;
+
 
   i18n = {
     consoleFont = "Lat2-Terminus16";
@@ -77,7 +79,7 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" ];
+    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "libvirtd" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
@@ -118,7 +120,7 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   };
 
   # ram verdoppler
-  zramSwap.enable = true;
+  zramSwap.enable = false;
 
   environment.etc."qemu/bridge.conf".text = ''
     allow bridge0
