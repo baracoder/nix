@@ -36,7 +36,7 @@
   };
   virtualisation.libvirtd.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
-  system.stateVersion = "17.03";
+  system.stateVersion = "17.09";
   powerManagement.powerUpCommands="/var/run/current-system/sw/sbin/hdparm -S 120 /dev/sd[a-z]";
 
 
