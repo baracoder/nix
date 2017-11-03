@@ -45,6 +45,10 @@
   networking.firewall.enable = false;
 
   services.xserver.videoDrivers = [ "nvidia" ];
-  system.stateVersion = "16.03";
+  system.stateVersion = "17.03";
+
+  services.wakeonlan.interfaces = [
+    { interface = "enp4s0"; method = "magicpacket"; }
+  ];
 
 }

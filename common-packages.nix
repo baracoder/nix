@@ -15,10 +15,10 @@ in
     };
   };
 
-
-
-
   environment.systemPackages = with pkgs; [
+    xsettingsd
+    lightlocker
+    gnome3.gnome_session
     source-code-pro
     owncloudclient
     pass
@@ -67,13 +67,11 @@ in
     (nmap.override {
         graphicalSupport = true;
     })
-    (unstable.speechd.override {
-        withEspeak = true;
-    })
-    (unstable.mumble.override {
-        pulseSupport = true;
-        speechdSupport = true;
-    })
+    unstable.speechd
+    mumble
+    aspell
+    aspellDicts.de
+    aspellDicts.en
     neovim
     gpicview
     networkmanagerapplet
@@ -84,9 +82,8 @@ in
     python
     roxterm
     slack
-    spotify
     sshfsFuse
-    steam
+    unstable.steam
     synergy
     vim
     wget
@@ -95,6 +92,6 @@ in
     xss-lock
     zsh
     gtk_engines
-  ] ++ builtins.filter stdenv.lib.isDerivation (builtins.attrValues gnome3);
+  ] ;
 
 }

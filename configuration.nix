@@ -59,13 +59,8 @@
       layout = "us";
       xkbOptions = "eurosign:e";
       windowManager.default = "i3";
-      desktopManager.default = "none";
+      desktopManager.default = "gnome3";
       displayManager.lightdm = {
-        extraSeatDefaults = ''
-greeter-show-manual-login=true
-autologin-user=bara
-autologin-user-timeout=3
-        '';
         enable = true;
         #autoLogin = {
         #  enable = true;
@@ -101,8 +96,8 @@ autologin-user-timeout=3
 # This rule is needed for basic functionality of the controller in Steam and keyboard/mouse emulation
 SUBSYSTEM=="usb", ATTRS{idVendor}=="28de", MODE="0666"
 #
-# # This rule is necessary for gamepad emulation; make sure you replace 'pgriffais' with a group that the user that runs Steam belongs to
-KERNEL=="uinput", MODE="0660", GROUP="pgriffais", OPTIONS+="static_node=uinput"
+# # This rule is necessary for gamepad emulation; make sure you replace 'users' with a group that the user that runs Steam belongs to
+KERNEL=="uinput", MODE="0660", GROUP="users", OPTIONS+="static_node=uinput"
 #
 # # Valve HID devices over USB hidraw
 KERNEL=="hidraw*", ATTRS{idVendor}=="28de", MODE="0666"
@@ -116,6 +111,11 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   };
 
   services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
+  services.emacs = {
+    defaultEditor = true;
+    enable = true;
+    install = true;
+  };
 
   # ram verdoppler
   zramSwap.enable = true;
