@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz?123) {
+  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz) {
   config.allowUnfree = true;
 }).pkgs;
 in
@@ -55,7 +55,7 @@ in
     i3status
     iotop
     lightdm
-    springLobby
+    lightdm_gtk_greeter
     (nmap.override {
         graphicalSupport = true;
     })
@@ -82,8 +82,18 @@ in
     xorg.xmodmap
     xss-lock
     zsh
+    # use version with seccomp fix
+    (proot.overrideAttrs (oldAttrs: {
+      src = fetchFromGitHub {
+        repo = "proot";
+        owner = "jorge-lip";
+        rev = "25e8461cbe56a3f035df145d9d762b65aa3eedb7";
+        sha256 = "1y4rlx0pzdg4xsjzrw0n5m6nwfmiiz87wq9vrm6cy8r89zambs7i";
+      };
+      version = "5.1.0.20171102";
+    }))
     gtk_engines
-    texlive.combined.scheme-full
-  ] ;
+    xpra
+  ];
 
 }

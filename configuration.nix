@@ -15,6 +15,8 @@
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
 
+  hardware.enableKSM = true;
+
 
   i18n = {
     consoleFont = "Lat2-Terminus16";
@@ -76,7 +78,7 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" ];
+    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
@@ -110,9 +112,14 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   };
 
   services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
+  services.emacs = {
+    defaultEditor = true;
+    enable = true;
+    install = true;
+  };
 
   # ram verdoppler
-  zramSwap.enable = true;
+  zramSwap.enable = false;
 
   programs.adb.enable = true;
 
