@@ -63,7 +63,6 @@ in
     iotop
     lightdm
     lightdm_gtk_greeter
-    springLobby
     (nmap.override {
         graphicalSupport = true;
     })
