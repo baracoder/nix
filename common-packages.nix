@@ -50,7 +50,7 @@ in
     docker
     darktable
     evince
-    firefox
+    firefox-esr
     gcc
     gitAndTools.gitFull
     gnumake
