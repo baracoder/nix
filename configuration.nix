@@ -54,7 +54,6 @@
     openssh.enable = true;
     openssh.forwardX11 = true;
     udisks2.enable = true;
-    gnome3.gvfs.enable = true;
     printing.enable = true;
     xserver = {
       enable = true;
@@ -64,10 +63,10 @@
       desktopManager.default = "gnome3";
       displayManager.lightdm = {
         enable = true;
-        #autoLogin = {
-        #  enable = true;
-        #  user = "bara";
-        #};
+      #  autoLogin = {
+      #    enable = true;
+      #    user = "bara";
+      #  };
       };
       windowManager.i3.enable = true;
       desktopManager.gnome3.enable = true;
@@ -79,7 +78,7 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "libvirtd" ];
+    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
@@ -122,8 +121,10 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   # ram verdoppler
   zramSwap.enable = false;
 
-  environment.etc."qemu/bridge.conf".text = ''
-    allow bridge0
-  '';
+  programs.adb.enable = true;
+
+  #environment.etc."qemu/bridge.conf".text = ''
+  #  allow bridge0
+  #'';
 
 }

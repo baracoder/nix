@@ -10,23 +10,20 @@ in
   nixpkgs.config = {
     allowUnfree = true;
     chromium = {
-     enablePepperFlash = true; # Chromium's non-NSAPI alternative to Adobe Flash
      enablePepperPDF = true;
     };
   };
 
   environment.systemPackages = with pkgs; [
+    unstable.sway
     xsettingsd
     lightlocker
-    gnome3.gnome_session
     source-code-pro
     owncloudclient
     pass
     rofi
-    unstable.google-musicmanager
     emacs
     google-chrome
-    unstable.vscode
     gimp
     imagemagick
     autojump
@@ -38,12 +35,9 @@ in
     mtools
     dosfstools
     ntfs3g
-    unstable.remmina
-    polkit_gnome
     dunst
     espeak
     avahi
-    bcache-tools
     chromium
     curl
     dmenu
@@ -66,12 +60,11 @@ in
     (nmap.override {
         graphicalSupport = true;
     })
-    unstable.speechd
+    speechd
     mumble
     aspell
     aspellDicts.de
     aspellDicts.en
-    neovim
     gpicview
     networkmanagerapplet
     numlockx
@@ -82,7 +75,7 @@ in
     roxterm
     slack
     sshfsFuse
-    unstable.steam
+    steam
     synergy
     vim
     wget
