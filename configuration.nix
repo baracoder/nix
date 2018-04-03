@@ -33,6 +33,7 @@
     enableGhostscriptFonts = true;
     fonts = with pkgs; [
       terminus_font
+      terminus_font_ttf
       corefonts
       inconsolata
       ubuntu_font_family
