@@ -79,7 +79,7 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
+    extraGroups = [ "lightdm" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
