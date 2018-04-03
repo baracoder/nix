@@ -32,7 +32,6 @@
   virtualisation.docker = {
     enable = true;
     storageDriver = "overlay";
-    extraOptions = "-H tcp://192.168.0.32:2375";
   };
   virtualisation.libvirtd.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
