@@ -127,5 +127,8 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   #environment.etc."qemu/bridge.conf".text = ''
   #  allow bridge0
   #'';
-
+  boot.kernelParams = [
+    "spectre_v2=off"
+    "nopti"
+  ];
 }
