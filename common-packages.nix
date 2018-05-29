@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  unstable = (import (fetchTarball https://nixos.org/channels/nixos-unstable/nixexprs.tar.xz) {
+  unstable = (import <nixos-unstable> {
   config.allowUnfree = true;
 }).pkgs;
 in
@@ -92,6 +92,13 @@ in
         sha256 = "1y4rlx0pzdg4xsjzrw0n5m6nwfmiiz87wq9vrm6cy8r89zambs7i";
       };
       version = "5.1.0.20171102";
+    }))
+    (smartgithg.overrideAttrs (oldAttrs: rec {
+      version = "17_1_6";
+      src = fetchurl {
+        url = "https://www.syntevo.com/downloads/smartgit/archive/smartgit-linux-${version}.tar.gz";
+        sha256 = "14p2yzky1nszqd4yg258065h8y6cca3xgq90xrqy0w57isjxlak2";
+      };
     }))
     gtk_engines
     xpra
