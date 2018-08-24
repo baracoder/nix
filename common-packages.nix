@@ -76,8 +76,27 @@ in
     sshfsFuse
     steam
     synergy
-    vim
     wget
+    (vim_configurable.customize {
+      name = "vim";
+      vimrcConfig.customRC = ''
+      syntax enable
+      set smartindent
+      set smartcase
+      set cursorline
+      set visualbell
+      set hlsearch
+      set incsearch
+      set ruler
+      set backspace=indent,eol,start
+      '';
+      vimrcConfig.vam.knownPlugins = pkgs.vimPlugins;
+      vimrcConfig.vam.pluginDictionaries = [
+        { names = [
+          "vim-nix"
+        ];}
+      ];
+    })
     wine
     xorg.xmodmap
     xss-lock
