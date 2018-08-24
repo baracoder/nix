@@ -3,7 +3,10 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, pkgs, ... }:
-
+let
+  baseconfig = { allowUnfree = true; };
+  unstable = import <nixos-unstable> { config = baseconfig; };
+in
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -92,6 +95,7 @@
 
   # steam controller udev rule
   nixpkgs.config.packageOverrides = pkgs: {
+    teamviewer = unstable.teamviewer;
     steamcontroller-udev-rules = pkgs.writeTextFile {
       name = "steamcontroller-udev-rules";
       text = ''
