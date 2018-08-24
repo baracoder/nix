@@ -38,7 +38,6 @@ in
     dunst
     espeak
     avahi
-    chromium
     curl
     dmenu
     docker
