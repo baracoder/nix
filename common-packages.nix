@@ -9,12 +9,10 @@ in
 
   nixpkgs.config = {
     allowUnfree = true;
-    chromium = {
-     enablePepperPDF = true;
-    };
   };
 
   environment.systemPackages = with pkgs; [
+    cifs-utils
     unstable.sway
     xsettingsd
     lightlocker
