@@ -133,6 +133,7 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   zramSwap.enable = false;
 
   programs.adb.enable = true;
+  programs.bash.enableCompletion = true;
 
   #environment.etc."qemu/bridge.conf".text = ''
   #  allow bridge0
