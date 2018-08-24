@@ -65,13 +65,7 @@ in
       xkbOptions = "eurosign:e";
       windowManager.default = "i3";
       desktopManager.default = "gnome3";
-      displayManager.lightdm = {
-        enable = true;
-      #  autoLogin = {
-      #    enable = true;
-      #    user = "bara";
-      #  };
-      };
+      displayManager.gdm.enable = true;
       windowManager.i3.enable = true;
       desktopManager.gnome3.enable = true;
     };
@@ -82,7 +76,7 @@ in
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "lightdm" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
+    extraGroups = [ "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
@@ -90,7 +84,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
-    pkgs.steamcontroller-udev-rules
+    steamcontroller-udev-rules
   ];
 
   # steam controller udev rule
@@ -114,6 +108,18 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
       '';
       destination = "/etc/udev/rules.d/99-steamcontroller.rules";
     };
+  };
+
+  services.gnome3 = {
+    chrome-gnome-shell.enable = true;
+    gnome-disks.enable = true;
+    gnome-keyring.enable = true;
+    gnome-online-accounts.enable = true;
+    gnome-online-miners.enable = true;
+    gnome-terminal-server.enable = true;
+    gvfs.enable = true;
+    seahorse.enable = true;
+    sushi.enable = true;
   };
 
   services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
