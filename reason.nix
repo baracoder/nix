@@ -31,10 +31,33 @@
   ];
   virtualisation.docker = {
     enable = true;
-    storageDriver = "overlay";
+    storageDriver = "btrfs";
+    autoPrune.enable = true;
   };
-  virtualisation.libvirtd.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   system.stateVersion = "17.09";
   powerManagement.powerUpCommands="/var/run/current-system/sw/sbin/hdparm -S 120 /dev/sd[a-z]";
+  services.teamviewer.enable = true;
+
+  # btrfs stuff
+  systemd.services.btrfs-cleanup = {
+    script = ''
+      ${pkgs.duperemove}/bin/duperemove -hrd /home
+      ${pkgs.duperemove}/bin/duperemove -hrd /nix
+      ${pkgs.btrfsProgs}/bin/btrfs filesystem defragment -czstd -r /home
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+    };
+  };
+  systemd.timers.btrfs-cleanup = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "weekly";
+    };
+  };
+  services.btrfs.autoScrub = {
+    enable = true;
+    fileSystems = [ "/" ];
+  };
 }
