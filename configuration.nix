@@ -32,11 +32,15 @@ in
 
 
   fonts = {
+    enableDefaultFonts = true;
     enableFontDir = true;
     enableGhostscriptFonts = true;
+    fontconfig = {
+      enable = true;
+      allowBitmaps = true;
+    };
     fonts = with pkgs; [
       terminus_font
-      terminus_font_ttf
       corefonts
       inconsolata
       ubuntu_font_family

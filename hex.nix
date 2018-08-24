@@ -20,8 +20,8 @@
   services.tlp.enable = true;
 
   virtualisation.docker.enable = true;
-  virtualisation.virtualbox.host.enable = true;
-  system.stateVersion = "16.09";
+  #virtualisation.virtualbox.host.enable = true;
+  system.stateVersion = "18.03";
 
 
   services.udev.extraRules = ''
