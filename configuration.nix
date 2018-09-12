@@ -128,7 +128,6 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
   services.emacs = {
     defaultEditor = true;
-    enable = true;
     install = true;
   };
 
