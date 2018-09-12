@@ -109,13 +109,7 @@ in
       };
       version = "5.1.0.20171102";
     }))
-    (smartgithg.overrideAttrs (oldAttrs: rec {
-      version = "17_1_6";
-      src = fetchurl {
-        url = "https://www.syntevo.com/downloads/smartgit/archive/smartgit-linux-${version}.tar.gz";
-        sha256 = "14p2yzky1nszqd4yg258065h8y6cca3xgq90xrqy0w57isjxlak2";
-      };
-    }))
+    smartgithg
     gtk_engines
     xpra
   ];
