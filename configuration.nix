@@ -67,11 +67,10 @@ in
     xserver = {
       enable = true;
       layout = "us";
-      xkbOptions = "eurosign:e";
-      windowManager.default = "i3";
-      desktopManager.default = "gnome3";
+      xkbVariant = "altgr-intl"; # no dead keys
+      xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
+      exportConfiguration = true;
       displayManager.gdm.enable = true;
-      windowManager.i3.enable = true;
       desktopManager.gnome3.enable = true;
     };
   };
@@ -131,7 +130,6 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   services.teamviewer.enable = true;
   services.emacs = {
     defaultEditor = true;
-    enable = true;
     install = true;
   };
 
