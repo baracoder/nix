@@ -14,6 +14,7 @@ in
   environment.systemPackages = with pkgs; [
     cifs-utils
     unstable.sway
+    unstable.jetbrains.rider
     xsettingsd
     lightlocker
     source-code-pro
@@ -21,7 +22,8 @@ in
     pass
     rofi
     emacs
-    google-chrome
+    teamviewer
+    unstable.google-chrome
     gimp
     imagemagick
     autojump
@@ -52,8 +54,6 @@ in
     i3lock
     i3status
     iotop
-    lightdm
-    lightdm_gtk_greeter
     (nmap.override {
         graphicalSupport = true;
     })

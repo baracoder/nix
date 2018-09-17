@@ -8,6 +8,10 @@
   boot.initrd.luks.devices = [
     { name = "nixos-root"; device = "/dev/sda2";  allowDiscards = true; }
   ];
+  boot.kernelParams = [
+    "nopti"
+  ];
+
   hardware.trackpoint.emulateWheel = true;
   networking.hostName = "hex";
   networking.networkmanager.enable = true;

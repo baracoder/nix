@@ -41,6 +41,7 @@ in
     };
     fonts = with pkgs; [
       terminus_font
+      terminus_font_ttf
       corefonts
       inconsolata
       ubuntu_font_family
@@ -127,6 +128,7 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   };
 
   services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
+  services.teamviewer.enable = true;
   services.emacs = {
     defaultEditor = true;
     enable = true;
