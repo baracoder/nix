@@ -12,7 +12,6 @@ in
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./host.nix
-      ./common-packages.nix
     ];
 
   hardware.opengl.driSupport = true;
