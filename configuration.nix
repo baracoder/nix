@@ -4,10 +4,11 @@
 
 { config, pkgs, ... }:
 let
-  baseconfig = { allowUnfree = true; };
-  unstable = import <nixos-unstable> { config = baseconfig; };
+  unstable = import <nixos-unstable> { config.allowUnfree = true; };
 in
 {
+  nixpkgs.config.allowUnfree = true;
+
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
@@ -124,7 +125,7 @@ in
     lightdm_gtk_greeter
     lightlocker
     lm_sensors
-    master.pkgs.steam
+    unstable.steam
     meld
     mtools
     mumble
