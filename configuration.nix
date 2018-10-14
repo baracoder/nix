@@ -56,6 +56,7 @@ in
   };
 
   services = {
+    flatpak.enable = true;
     avahi = {
       enable = true;
       nssmdns = true;
@@ -80,7 +81,7 @@ in
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
+    extraGroups = [ "dialout" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
     createHome = true;
     shell = "/run/current-system/sw/bin/zsh";
   };
@@ -88,11 +89,118 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    aspell
+    aspellDicts.de
+    aspellDicts.en
+    autojump
+    avahi
+    bc
+    cifs-utils
+    curl
+    darktable
+    dmenu
+    docker
+    dosfstools
+    dunst
+    emacs
+    espeak
+    evince
+    firefox
+    gcc
+    gimp
+    gitAndTools.gitFull
+    gnomeExtensions.system-monitor
+    gnumake
+    google-chrome
+    gpicview
+    gtk_engines
+    hdparm
+    htop
+    i3
+    i3lock
+    i3status
+    imagemagick
+    iotop
+    lightdm
+    lightdm_gtk_greeter
+    lightlocker
+    lm_sensors
+    master.pkgs.steam
+    meld
+    mtools
+    mumble
+    networkmanagerapplet
+    ntfs3g
+    numlockx
+    owncloudclient
+    pamixer
+    pass
+    pavucontrol
+    pcmanfm
+    python
+    renameutils
+    rofi
+    roxterm
+    seafile-client
+    slack
+    smartgithg
+    source-code-pro
+    speechd
+    sshfsFuse
     steamcontroller-udev-rules
+    synergy
+    teamviewer
+    unstable.google-chrome
+    unstable.jetbrains.rider
+    unstable.pkgs.steam
+    unstable.sway
+    vlc
+    wget
+    wine
+    xorg.xmodmap
+    xpra
+    xsettingsd
+    xss-lock
+    zsh
+    
+    (nmap.override {
+        graphicalSupport = true;
+    })
+    (vim_configurable.customize {
+      name = "vim";
+      vimrcConfig.customRC = ''
+      syntax enable
+      set smartindent
+      set smartcase
+      set cursorline
+      set visualbell
+      set hlsearch
+      set incsearch
+      set ruler
+      set backspace=indent,eol,start
+      '';
+      vimrcConfig.vam.knownPlugins = pkgs.vimPlugins;
+      vimrcConfig.vam.pluginDictionaries = [
+        { names = [
+          "vim-nix"
+        ];}
+      ];
+    })
+    # use version with seccomp fix
+    (proot.overrideAttrs (oldAttrs: {
+      src = fetchFromGitHub {
+        repo = "proot";
+        owner = "jorge-lip";
+        rev = "25e8461cbe56a3f035df145d9d762b65aa3eedb7";
+        sha256 = "1y4rlx0pzdg4xsjzrw0n5m6nwfmiiz87wq9vrm6cy8r89zambs7i";
+      };
+      version = "5.1.0.20171102";
+    }))
   ];
 
   # steam controller udev rule
-  nixpkgs.config.packageOverrides = pkgs: {
+  nixpkgs.config.packageOverrides = super: let self = super.pkgs; in {
+
     teamviewer = unstable.teamviewer;
     steamcontroller-udev-rules = pkgs.writeTextFile {
       name = "steamcontroller-udev-rules";
@@ -116,11 +224,15 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
 
   services.gnome3 = {
     chrome-gnome-shell.enable = true;
+    gnome-documents.enable = true;
     gnome-disks.enable = true;
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
     gnome-online-miners.enable = true;
     gnome-terminal-server.enable = true;
+    gnome-user-share.enable = true;
+    tracker-miners.enable = true;
+    tracker.enable = true;
     gvfs.enable = true;
     seahorse.enable = true;
     sushi.enable = true;
@@ -145,5 +257,9 @@ KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
   boot.kernelParams = [
     "spectre_v2=off"
     "nopti"
+    "bluetooth.disable_ertm=1"
   ];
+
+  # raise limit to avoid steamplay problems
+  systemd.extraConfig = "DefaultLimitNOFILE=1048576";
 }

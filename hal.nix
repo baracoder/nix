@@ -4,6 +4,9 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.extraModprobeConfig = ''
+    options bluetooth disable_ertm=1
+  '';
 
 
   hardware.bluetooth.enable = true;
@@ -44,8 +47,8 @@
   networking.hostName = "hal";
   networking.firewall.enable = false;
 
-  services.xserver.videoDrivers = [ "nvidia" ];
-  system.stateVersion = "17.09";
+  services.xserver.videoDrivers = [ "nvidiaBeta" ];
+  system.stateVersion = "18.09";
 
   services.wakeonlan.interfaces = [
     { interface = "enp4s0"; method = "magicpacket"; }
