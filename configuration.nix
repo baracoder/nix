@@ -46,6 +46,7 @@ in
       inconsolata
       ubuntu_font_family
       unifont
+      emojione
     ];
   };
 
