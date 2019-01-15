@@ -107,7 +107,6 @@ in
     espeak
     evince
     firefox
-    gcc
     gimp
     gitAndTools.gitFull
     gnomeExtensions.system-monitor
