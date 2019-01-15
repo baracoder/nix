@@ -1,6 +1,18 @@
 { config, pkgs, ... }:
 
 {
+  #nix.extraOptions = ''
+  #  netrc-file = /etc/nix/netrc
+  #  build-sandbox-paths = /etc/nix/netrc
+  #'';
+  nix.sandboxPaths = [
+    "/dev/nvidia0"
+    "/dev/nvidia1"
+    "/dev/nvidiactl"
+    "/dev/nvidia-modeset"
+    "/dev/nvidia-uvm"
+  ];
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
