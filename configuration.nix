@@ -125,7 +125,6 @@ in
     lightdm_gtk_greeter
     lightlocker
     lm_sensors
-    unstable.steam
     meld
     mtools
     mumble
@@ -147,18 +146,15 @@ in
     source-code-pro
     speechd
     sshfsFuse
-    steamcontroller-udev-rules
     synergy
     teamviewer
     unstable.google-chrome
     unstable.jetbrains.rider
-    unstable.pkgs.steam
-    unstable.sway
+    unstable.steam
     vlc
     wget
     wine
     xorg.xmodmap
-    xpra
     xsettingsd
     xss-lock
     zsh
@@ -200,26 +196,8 @@ in
 
   # steam controller udev rule
   nixpkgs.config.packageOverrides = super: let self = super.pkgs; in {
-
+    # override for service
     teamviewer = unstable.teamviewer;
-    steamcontroller-udev-rules = pkgs.writeTextFile {
-      name = "steamcontroller-udev-rules";
-      text = ''
-# This rule is needed for basic functionality of the controller in Steam and keyboard/mouse emulation
-SUBSYSTEM=="usb", ATTRS{idVendor}=="28de", MODE="0666"
-#
-# # This rule is necessary for gamepad emulation; make sure you replace 'users' with a group that the user that runs Steam belongs to
-KERNEL=="uinput", MODE="0660", GROUP="users", OPTIONS+="static_node=uinput"
-#
-# # Valve HID devices over USB hidraw
-KERNEL=="hidraw*", ATTRS{idVendor}=="28de", MODE="0666"
-#
-# # Valve HID devices over bluetooth hidraw
-KERNEL=="hidraw*", KERNELS=="*28DE:*", MODE="0666"
-
-      '';
-      destination = "/etc/udev/rules.d/99-steamcontroller.rules";
-    };
   };
 
   services.gnome3 = {
