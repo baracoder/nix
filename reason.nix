@@ -72,4 +72,5 @@
     enable = true;
     fileSystems = [ "/" ];
   };
+  services.xserver.displayManager.gdm.wayland = false;
 }
