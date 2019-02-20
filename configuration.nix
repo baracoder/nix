@@ -7,6 +7,9 @@ let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
 in
 {
+  nix.daemonIONiceLevel = 5;
+  nix.daemonNiceLevel = 5;
+
   nixpkgs.config.allowUnfree = true;
 
   imports =
