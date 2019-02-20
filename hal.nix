@@ -14,13 +14,12 @@
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   fileSystems."/".options= ["defaults" "discard" ];
 
-  #swapDevices = [
-  #{
-  #  device = "/dev/disk/by-partlabel/cryptswap";
-  #  label = "cryptswap";
-  #  randomEncryption = true;
-  #}
-  #];
+  swapDevices = [
+    {
+      device = "/dev/disk/by-partlabel/cryptswap";
+      randomEncryption.enable = true;
+    }
+  ];
   systemd.units."dev-sdc2.swap".enable = false;
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
 
