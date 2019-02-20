@@ -35,10 +35,10 @@
     enable = true;
   };
 
-    services.printing = {
-      enable = true;
-      drivers = [ pkgs.hplip ];
-    };
+  services.printing = {
+    enable = true;
+    drivers = [ pkgs.hplip ];
+  };
 
   services.logind.extraConfig = ''
   HandlePowerKey=suspend
