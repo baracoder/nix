@@ -32,6 +32,8 @@
 
   virtualisation.docker = {
     enable = true;
+    enableOnBoot = false;
+    storageDriver = "overlay2";
   };
 
   services.printing = {
