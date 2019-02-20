@@ -5,6 +5,8 @@
 { config, pkgs, ... }:
 let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
+  #wineFull = unstable.pkgs.wineWowPackages.full.override { wineRelease = "staging";};
+  wineFull = unstable.pkgs.wineWowPackages.full;
 in
 {
   nix.daemonIONiceLevel = 5;
@@ -153,15 +155,33 @@ in
     teamviewer
     unstable.google-chrome
     unstable.jetbrains.rider
-    unstable.steam
     vlc
     wget
-    wine
     xorg.xmodmap
     xsettingsd
     xss-lock
     zsh
-    
+    wineFull
+    samba
+
+    #springLobby
+    (buildFHSUserEnv {
+      name = "springlobbyFHS";
+      targetPkgs = _: [
+        libGL
+        curlFull
+        libGLU
+        openal
+        openssl
+        SDL2 
+        ((springLobby.overrideAttrs (old: {
+          postInstall = "wrapProgram $out/bin/springlobby";
+        })).override { curl = curlFull; })
+      ];
+      runScript = "springlobby";
+      inherit (springLobby) meta;
+    })
+    (winetricks.override { wine = wineFull; })
     (nmap.override {
         graphicalSupport = true;
     })
@@ -197,12 +217,6 @@ in
     }))
   ];
 
-  # steam controller udev rule
-  nixpkgs.config.packageOverrides = super: let self = super.pkgs; in {
-    # override for service
-    teamviewer = unstable.teamviewer;
-  };
-
   services.gnome3 = {
     chrome-gnome-shell.enable = true;
     gnome-documents.enable = true;
@@ -219,8 +233,7 @@ in
     sushi.enable = true;
   };
 
-  services.udev.packages = [ pkgs.steamcontroller-udev-rules ];
-  services.teamviewer.enable = true;
+  #services.teamviewer.enable = true;
   services.emacs = {
     defaultEditor = true;
     install = true;
