@@ -71,14 +71,32 @@ in
     openssh.forwardX11 = true;
     udisks2.enable = true;
     printing.enable = true;
-    xserver = {
+    xserver = 
+    let xkbVariant = "altgr-intl"; # no dead keys
+        xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
+    in {
+      inherit xkbVariant xkbOptions;
+
       enable = true;
       layout = "us";
-      xkbVariant = "altgr-intl"; # no dead keys
-      xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
       exportConfiguration = true;
-      displayManager.gdm.enable = true;
-      desktopManager.gnome3.enable = true;
+
+      displayManager.gdm = {
+        enable = true;
+        wayland = false;
+        autoLogin = {
+          enable = false;
+          user = "bara";
+        };
+      };
+      desktopManager.gnome3 = {
+        enable = true;
+        extraGSettingsOverrides = ''
+          [org.gnome.desktop.input-sources]
+          sources=[('xkb', '${xkbVariant}')]
+          xkb-options=['${xkbOptions}']
+        '';
+      };
     };
   };
 
