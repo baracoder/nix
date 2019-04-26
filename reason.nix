@@ -7,7 +7,6 @@
   #'';
   nix.sandboxPaths = [
     "/dev/nvidia0"
-    "/dev/nvidia1"
     "/dev/nvidiactl"
     "/dev/nvidia-modeset"
     "/dev/nvidia-uvm"
@@ -32,7 +31,7 @@
       "192.168.0.1"
     ];
     search = [ "fritz.box" ];
-    interfaces.bridge0.ip4 = [{
+    interfaces.bridge0.ipv4.addresses = [{
       address = "192.168.0.32";
       prefixLength = 24;
     }] ;
