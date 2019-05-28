@@ -277,4 +277,9 @@ in
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
+
+  hardware.bluetooth = {
+    enable = true;
+    package = pkgs.bluezFull;
+  };
 }
