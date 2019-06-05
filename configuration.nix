@@ -52,7 +52,7 @@ in
       inconsolata
       ubuntu_font_family
       unifont
-      emojione
+      twemoji-color-font
     ];
   };
 
