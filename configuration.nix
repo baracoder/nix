@@ -7,7 +7,7 @@ let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
   nixpkgs-azure-cli = import (fetchTarball https://github.com/stesie/nixpkgs/archive/azure-cli.tar.gz) {};
   #wineFull = unstable.pkgs.wineWowPackages.full.override { wineRelease = "staging";};
-  wineFull = unstable.pkgs.wineWowPackages.full;
+  #wineFull = unstable.pkgs.wineWowPackages.full;
 in
 {
   nix.daemonIONiceLevel = 5;
@@ -182,7 +182,7 @@ in
     xsettingsd
     xss-lock
     zsh
-    wineFull
+    #wineFull
     samba
 
     #springLobby
@@ -202,7 +202,7 @@ in
       runScript = "springlobby";
       inherit (springLobby) meta;
     })
-    (winetricks.override { wine = wineFull; })
+    #(winetricks.override { wine = wineFull; })
     (nmap.override {
         graphicalSupport = true;
     })
