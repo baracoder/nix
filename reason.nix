@@ -42,7 +42,7 @@
   ];
   virtualisation.docker = {
     enable = true;
-    storageDriver = "btrfs";
+    #storageDriver = "btrfs";
     autoPrune.enable = true;
   };
   services.xserver.videoDrivers = [ "nvidia" ];
