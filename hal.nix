@@ -10,6 +10,7 @@
 
 
   hardware.bluetooth.enable = true;
+  hardware.steam-hardware.enable = true;
 
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   fileSystems."/".options= ["defaults" "discard" ];
