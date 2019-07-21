@@ -5,8 +5,9 @@
 { config, pkgs, ... }:
 let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
+  nixpkgs-azure-cli = import (fetchTarball https://github.com/stesie/nixpkgs/archive/azure-cli.tar.gz) {};
   #wineFull = unstable.pkgs.wineWowPackages.full.override { wineRelease = "staging";};
-  wineFull = unstable.pkgs.wineWowPackages.full;
+  #wineFull = unstable.pkgs.wineWowPackages.full;
 in
 {
   nix.daemonIONiceLevel = 5;
@@ -51,7 +52,7 @@ in
       inconsolata
       ubuntu_font_family
       unifont
-      emojione
+      twemoji-color-font
     ];
   };
 
@@ -132,9 +133,11 @@ in
     firefox
     gimp
     gitAndTools.gitFull
-    gnomeExtensions.system-monitor
+    #gnomeExtensions.system-monitor broken
     gnumake
     google-chrome
+    google-cloud-sdk
+    nixpkgs-azure-cli.python36Packages.azure-cli
     gpicview
     gtk_engines
     hdparm
@@ -150,7 +153,7 @@ in
     lm_sensors
     meld
     mtools
-    mumble
+    #mumble
     networkmanagerapplet
     ntfs3g
     numlockx
@@ -179,7 +182,7 @@ in
     xsettingsd
     xss-lock
     zsh
-    wineFull
+    #wineFull
     samba
 
     #springLobby
@@ -199,7 +202,7 @@ in
       runScript = "springlobby";
       inherit (springLobby) meta;
     })
-    (winetricks.override { wine = wineFull; })
+    #(winetricks.override { wine = wineFull; })
     (nmap.override {
         graphicalSupport = true;
     })
@@ -274,4 +277,11 @@ in
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
+
+  programs.autojump.enable = true;
+
+  hardware.bluetooth = {
+    enable = true;
+    package = pkgs.bluezFull;
+  };
 }
