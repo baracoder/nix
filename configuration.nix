@@ -166,7 +166,7 @@ in
     roxterm
     seafile-client
     slack
-    smartgithg
+    #smartgithg
     source-code-pro
     speechd
     sshfsFuse
