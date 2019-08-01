@@ -274,6 +274,7 @@ in
     "nopti"
     "bluetooth.disable_ertm=1"
   ];
+  boot.kernelModules = [ "uinput" ];
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
