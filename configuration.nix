@@ -5,7 +5,6 @@
 { config, pkgs, ... }:
 let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
-  nixpkgs-azure-cli = import (fetchTarball https://github.com/stesie/nixpkgs/archive/azure-cli.tar.gz) {};
   #wineFull = unstable.pkgs.wineWowPackages.full.override { wineRelease = "staging";};
   #wineFull = unstable.pkgs.wineWowPackages.full;
 in
@@ -137,7 +136,6 @@ in
     gnumake
     google-chrome
     google-cloud-sdk
-    nixpkgs-azure-cli.python36Packages.azure-cli
     gpicview
     gtk_engines
     hdparm
