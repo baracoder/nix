@@ -184,22 +184,22 @@ in
     samba
 
     #springLobby
-    (buildFHSUserEnv {
-      name = "springlobbyFHS";
-      targetPkgs = _: [
-        libGL
-        curlFull
-        libGLU
-        openal
-        openssl
-        SDL2 
-        ((springLobby.overrideAttrs (old: {
-          postInstall = "wrapProgram $out/bin/springlobby";
-        })).override { curl = curlFull; })
-      ];
-      runScript = "springlobby";
-      inherit (springLobby) meta;
-    })
+    #(buildFHSUserEnv {
+    #  name = "springlobbyFHS";
+    #  targetPkgs = _: [
+    #    libGL
+    #    curlFull
+    #    libGLU
+    #    openal
+    #    openssl
+    #    SDL2 
+    #    ((springLobby.overrideAttrs (old: {
+    #      postInstall = "wrapProgram $out/bin/springlobby";
+    #    })).override { curl = curlFull; })
+    #  ];
+    #  runScript = "springlobby";
+    #  inherit (springLobby) meta;
+    #})
     #(winetricks.override { wine = wineFull; })
     (nmap.override {
         graphicalSupport = true;
