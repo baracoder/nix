@@ -108,7 +108,7 @@ in
     group = "bara";
     extraGroups = [ "dialout" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
     createHome = true;
-    shell = "/run/current-system/sw/bin/zsh";
+    shell = pkgs.zsh;
   };
   users.extraGroups.bara.gid = 1000;
 
@@ -265,6 +265,7 @@ in
 
   programs.adb.enable = true;
   programs.bash.enableCompletion = true;
+  programs.zsh.enable = true;
 
   #environment.etc."qemu/bridge.conf".text = ''
   #  allow bridge0
