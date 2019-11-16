@@ -68,4 +68,11 @@
     };
   };
 
+  boot.kernelParams = [
+    "nopti"
+    "bluetooth.disable_ertm=1"
+    "spectre_v2=off"
+    "nouveau.modeset=0"
+  ];
+  boot.kernelModules = [ "nct6775" ];
 }
