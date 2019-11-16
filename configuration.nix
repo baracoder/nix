@@ -23,7 +23,7 @@ in
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
 
-  hardware.enableKSM = true;
+  hardware.ksm.enable = true;
 
 
   i18n = {
@@ -236,21 +236,22 @@ in
     }))
   ];
 
+  services.gvfs.enable = true;
   services.gnome3 = {
     chrome-gnome-shell.enable = true;
-    gnome-documents.enable = true;
-    gnome-disks.enable = true;
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
     gnome-online-miners.enable = true;
-    gnome-terminal-server.enable = true;
     gnome-user-share.enable = true;
     tracker-miners.enable = true;
     tracker.enable = true;
-    gvfs.enable = true;
-    seahorse.enable = true;
     sushi.enable = true;
   };
+
+  programs.seahorse.enable = true;
+  programs.gnome-terminal.enable = true;
+  programs.gnome-documents.enable = true;
+  programs.gnome-disks.enable = true;
 
   #services.teamviewer.enable = true;
   services.emacs = {
