@@ -46,6 +46,9 @@
   networking.firewall.enable = false;
 
   services.xserver.videoDrivers = [ "nvidiaBeta" ];
+  services.xserver.screenSection = ''
+    Option         "metamodes" "DP-2: nvidia-auto-select +0+0 {AllowGSYNCCompatible=On}, HDMI-0: nvidia-auto-select +3440+0"
+  '';
   system.stateVersion = "18.09";
 
   services.wakeonlan.interfaces = [
