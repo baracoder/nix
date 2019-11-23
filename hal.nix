@@ -64,7 +64,7 @@
     wantedBy = [ "suspend.target" ];
     serviceConfig = {
       Type="oneshot";
-      ExecStart="${pkgs.systemd}/bin/systemctl restart --no-block fancontrol.service";
+      ExecStart="${pkgs.systemd}/bin/systemctl restart --no-block hd-idle.service";
     };
   };
 
