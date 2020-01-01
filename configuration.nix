@@ -247,6 +247,7 @@ in
     tracker.enable = true;
     sushi.enable = true;
   };
+  services.earlyoom.enable = true;
 
   programs.seahorse.enable = true;
   programs.gnome-terminal.enable = true;
