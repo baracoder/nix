@@ -255,10 +255,6 @@ in
   programs.gnome-disks.enable = true;
 
   #services.teamviewer.enable = true;
-  services.emacs = {
-    defaultEditor = true;
-    install = true;
-  };
 
   # ram verdoppler
   zramSwap.enable = false;
