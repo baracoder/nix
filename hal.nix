@@ -25,6 +25,7 @@
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
 
   powerManagement.enable = true;
+  powerManagement.cpuFreqGovernor = "ondemand";
 
 
   virtualisation.docker = {
