@@ -237,6 +237,7 @@ in
   ];
 
   services.gvfs.enable = true;
+  services.fwupd.enable = true;
   services.gnome3 = {
     chrome-gnome-shell.enable = true;
     gnome-keyring.enable = true;
