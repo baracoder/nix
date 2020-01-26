@@ -1,9 +1,16 @@
 { config, pkgs, ... }:
-
+let linuxPackages = pkgs.linuxPackages_5_4;
+in
 {
+  nixpkgs.overlays = [
+    (import ./overlays/asus-wmi.nix)
+  ];
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.kernelPackages = linuxPackages;
+  boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors ];
   boot.extraModprobeConfig = ''
     options bluetooth disable_ertm=1
   '';
