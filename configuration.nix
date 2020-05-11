@@ -164,17 +164,22 @@ in
         vscodeExtensions = with vscode-extensions; [
           bbenoist.Nix
           ms-kubernetes-tools.vscode-kubernetes-tools
+          ms-vscode-remote.remote-ssh
+          ms-azuretools.vscode-docker
+          justusadam.language-haskell
+          formulahendry.auto-close-tag
           redhat.vscode-yaml
           vscodevim.vim
+          alanz.vscode-hie-server
 
         ]
         # Concise version from the vscode market place when not available in the default set.
         ++ vscode-utils.extensionsFromVscodeMarketplace [
           {
-            name = "codestream";
-            publisher = "CodeStream";
-            version = "6.0.1";
-            sha256 = "0q6k3g2brmk5nf09z846d4whgv99rjmr928qzagqnv0fv1n9fyjf";
+            name = "vscode-power-mode";
+            publisher = "hoovercj";
+            version = "2.2.0";
+            sha256 = "0v1vqkcsnwwbb7xbpq7dqwg1qww5vqq7rc38qfk3p6b4xhaf8scm";
           }
         ];
       })
