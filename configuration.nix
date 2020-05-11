@@ -11,6 +11,11 @@ in
 {
   nix.daemonIONiceLevel = 5;
   nix.daemonNiceLevel = 5;
+  nix.gc = {
+    automatic = true;
+    dates = "13:00";
+    options = "--delete-older-than 30d";
+  };
 
   nixpkgs.config.allowUnfree = true;
 
