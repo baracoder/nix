@@ -5,8 +5,6 @@
 { config, pkgs, ... }:
 let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
-  #wineFull = unstable.pkgs.wineWowPackages.full.override { wineRelease = "staging";};
-  #wineFull = unstable.pkgs.wineWowPackages.full;
 in
 {
   nix.daemonIONiceLevel = 5;
@@ -32,11 +30,9 @@ in
   hardware.u2f.enable = true;
 
 
-  i18n = {
-    consoleFont = "Lat2-Terminus16";
-    consoleKeyMap = "us";
-    defaultLocale = "en_US.UTF-8";
-  };
+  console.font = "Lat2-Terminus16";
+  console.keyMap = "us";
+  i18n.defaultLocale = "en_US.UTF-8";
 
   time.timeZone = "Europe/Berlin";
 
@@ -89,7 +85,7 @@ in
 
       displayManager.gdm = {
         enable = true;
-        wayland = false;
+        nvidiaWayland = false;
         autoLogin = {
           enable = false;
           user = "bara";
@@ -124,71 +120,46 @@ in
     aspellDicts.en
     autojump
     avahi
-    bc
     cifs-utils
     curl
-    darktable
-    dmenu
     docker
     dosfstools
-    dunst
-    emacs
     espeak
     evince
     firefox
     gimp
     gitAndTools.gitFull
-    #gnomeExtensions.system-monitor broken
+    # broken again
+    #gnomeExtensions.system-monitor
     gnumake
     google-chrome
     google-cloud-sdk
-    gpicview
-    gtk_engines
     hdparm
     htop
-    i3
-    i3lock
-    i3status
     imagemagick
     iotop
-    lightdm
-    lightdm_gtk_greeter
-    lightlocker
     lm_sensors
     meld
     mtools
-    #mumble
-    networkmanagerapplet
     ntfs3g
-    numlockx
-    owncloudclient
+    nextcloud-client
     pamixer
     pass
     pavucontrol
-    pcmanfm
     python
     renameutils
-    rofi
-    roxterm
     seafile-client
     slack
-    #smartgithg
     source-code-pro
     speechd
     sshfsFuse
-    synergy
     teamviewer
-    unstable.google-chrome
-    unstable.jetbrains.rider
     vlc
     wget
-    xorg.xmodmap
-    xsettingsd
-    xss-lock
     zsh
-    #wineFull
     samba
     (vscode-with-extensions.override {
+        vscode = vscodium;
         # When the extension is already available in the default extensions set.
         vscodeExtensions = with vscode-extensions; [
           bbenoist.Nix
@@ -208,24 +179,6 @@ in
         ];
       })
 
-    #springLobby
-    #(buildFHSUserEnv {
-    #  name = "springlobbyFHS";
-    #  targetPkgs = _: [
-    #    libGL
-    #    curlFull
-    #    libGLU
-    #    openal
-    #    openssl
-    #    SDL2 
-    #    ((springLobby.overrideAttrs (old: {
-    #      postInstall = "wrapProgram $out/bin/springlobby";
-    #    })).override { curl = curlFull; })
-    #  ];
-    #  runScript = "springlobby";
-    #  inherit (springLobby) meta;
-    #})
-    #(winetricks.override { wine = wineFull; })
     (nmap.override {
         graphicalSupport = true;
     })
@@ -292,12 +245,7 @@ in
   #environment.etc."qemu/bridge.conf".text = ''
   #  allow bridge0
   #'';
-  boot.kernelParams = [
-    "spectre_v2=off"
-    "nopti"
-    "bluetooth.disable_ertm=1"
-  ];
-  boot.kernelModules = [ "uinput" ];
+  boot.kernelParams = [ "bluetooth.disable_ertm=1" ];
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
