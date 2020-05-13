@@ -53,7 +53,7 @@ in
   networking.hostName = "hal";
   networking.firewall.enable = false;
 
-  services.xserver.videoDrivers = [ "nvidiaBeta" ];
+  services.xserver.videoDrivers = [ "nvidia" ];
   services.xserver.screenSection = ''
     Option         "metamodes" "DP-2: nvidia-auto-select +0+0 {AllowGSYNCCompatible=On}, HDMI-0: nvidia-auto-select +3440+0"
   '';
@@ -64,9 +64,7 @@ in
   ];
 
   boot.kernelParams = [
-    "nopti"
     "bluetooth.disable_ertm=1"
-    "spectre_v2=off"
     "nouveau.modeset=0"
   ];
   boot.kernelModules = [ "nct6775" ];
