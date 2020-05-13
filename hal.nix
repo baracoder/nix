@@ -62,22 +62,6 @@ in
   services.wakeonlan.interfaces = [
     { interface = "enp4s0"; method = "magicpacket"; }
   ];
-  systemd.services.hd-idle = {
-    description = "External HD spin down daemon";
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.hd-idle}/bin/hd-idle -i 0 -a sdc -i 60 -d";
-    };
-  };
-  systemd.services.hd-idle-resume = {
-    description = "Restart hd-idle after resume from sleep/suspend";
-    after = [ "suspend.target" ];
-    wantedBy = [ "suspend.target" ];
-    serviceConfig = {
-      Type="oneshot";
-      ExecStart="${pkgs.systemd}/bin/systemctl restart --no-block hd-idle.service";
-    };
-  };
 
   boot.kernelParams = [
     "nopti"
