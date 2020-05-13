@@ -1,16 +1,12 @@
 { config, pkgs, ... }:
-let linuxPackages = pkgs.linuxPackages_5_4;
+let linuxPackages = pkgs.linuxPackages_5_6;
 in
 {
-  nixpkgs.overlays = [
-    (import ./overlays/asus-wmi.nix)
-  ];
-
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
-  boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors ];
+  boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback ];
   boot.extraModprobeConfig = ''
     options bluetooth disable_ertm=1
   '';
@@ -57,7 +53,7 @@ in
   services.xserver.screenSection = ''
     Option         "metamodes" "DP-2: nvidia-auto-select +0+0 {AllowGSYNCCompatible=On}, HDMI-0: nvidia-auto-select +3440+0"
   '';
-  system.stateVersion = "18.09";
+  system.stateVersion = "19.09";
 
   services.wakeonlan.interfaces = [
     { interface = "enp4s0"; method = "magicpacket"; }
@@ -67,5 +63,8 @@ in
     "bluetooth.disable_ertm=1"
     "nouveau.modeset=0"
   ];
-  boot.kernelModules = [ "nct6775" ];
+
+  services.logmein-hamachi.enable = false;
+  hardware.nvidia.modesetting.enable = false;
+
 }
