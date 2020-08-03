@@ -9,7 +9,9 @@ in
   boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback ];
   boot.extraModprobeConfig = ''
     options bluetooth disable_ertm=1
+    options v4l2loopback exclusive_caps=1 video_nr=9 card_label="obs"
   '';
+  boot.kernelModules = [ "v4l2loopback" ];
 
 
   hardware.bluetooth.enable = true;
