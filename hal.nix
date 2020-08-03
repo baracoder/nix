@@ -1,5 +1,5 @@
 { config, pkgs, ... }:
-let linuxPackages = pkgs.linuxPackages_5_6;
+let linuxPackages = pkgs.linuxPackages_5_7;
 in
 {
   boot.loader.systemd-boot.enable = true;
@@ -51,7 +51,7 @@ in
   networking.hostName = "hal";
   networking.firewall.enable = false;
 
-  services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.videoDrivers = [ "nvidiaBeta" ];
   services.xserver.screenSection = ''
     Option         "metamodes" "DP-2: nvidia-auto-select +0+0 {AllowGSYNCCompatible=On}, HDMI-0: nvidia-auto-select +3440+0"
   '';
