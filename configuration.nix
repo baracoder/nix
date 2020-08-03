@@ -27,7 +27,6 @@ in
   hardware.opengl.driSupport32Bit = true;
 
   hardware.ksm.enable = true;
-  hardware.u2f.enable = true;
 
 
   console.font = "Lat2-Terminus16";
