@@ -82,9 +82,11 @@ in
       layout = "us";
       exportConfiguration = true;
 
-      displayManager.gdm = {
-        enable = true;
-        nvidiaWayland = false;
+      displayManager = {
+        gdm = {
+          enable = true;
+          nvidiaWayland = false;
+        };
         autoLogin = {
           enable = false;
           user = "bara";
