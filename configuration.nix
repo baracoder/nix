@@ -206,6 +206,12 @@ in
             sha256 = "1bh6ws20yi757b4im5aa6zcjmsgdqxvr1rg86kfa638cd5ad1f97";
           }
           {
+            name = "git-graph";
+            publisher = "mhutchie";
+            version = "1.25.0";
+            sha256 = "126s0kzq0a0rp1dagyi2ks1vr91a4p8vn4y9yk2agx46xkcf8ycq";
+          }
+          {
             name = "code-spell-checker";
             publisher = "streetsidesoftware";
             version = "1.9.0";
