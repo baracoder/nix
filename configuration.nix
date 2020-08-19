@@ -115,6 +115,10 @@ in
   users.extraGroups.bara.gid = 1000;
 
 
+  services.udev.packages = with pkgs; [ 
+    openhantek6022
+  ];
+
   environment.systemPackages = with pkgs; [
     aspell
     aspellDicts.de
@@ -144,6 +148,7 @@ in
     mtools
     ntfs3g
     nextcloud-client
+    openhantek6022
     pamixer
     pass
     pavucontrol
