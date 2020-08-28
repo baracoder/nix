@@ -7,14 +7,19 @@ let
   unstable = import <nixos-unstable> { config.allowUnfree = true; };
 in
 {
-  nix.daemonIONiceLevel = 5;
-  nix.daemonNiceLevel = 5;
-  nix.gc = {
+  nix = {
+    package = pkgs.nixUnstable;
+    extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+    daemonIONiceLevel = 5;
+    daemonNiceLevel = 5;
+    gc = {
     automatic = true;
     dates = "13:00";
     options = "--delete-older-than 30d";
   };
-
+  };
   nixpkgs.config.allowUnfree = true;
 
   imports =
