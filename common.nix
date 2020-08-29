@@ -12,18 +12,18 @@
     daemonIONiceLevel = 5;
     daemonNiceLevel = 5;
     gc = {
-    automatic = true;
-    dates = "13:00";
-    options = "--delete-older-than 30d";
-    #binaryCaches = [
-    #  "https://cache.nixos.org/"
-    #  "https://hie-nix.cachix.org"
-    #];
-    #binaryCachePublicKeys = [ 
-    #  "hydra.nixos.org-1:CNHJZBh9K4tP3EKF6FkkgeVYsS3ohTl+oS0Qa8bezVs="
-    #  "hie-nix.cachix.org-1:EjBSHzF6VmDnzqlldGXbi0RM3HdjfTU3yDRi9Pd0jTY="
-    #];
-  };
+      automatic = true;
+      dates = "13:00";
+      options = "--delete-older-than 30d";
+      #binaryCaches = [
+      #  "https://cache.nixos.org/"
+      #  "https://hie-nix.cachix.org"
+      #];
+      #binaryCachePublicKeys = [ 
+      #  "hydra.nixos.org-1:CNHJZBh9K4tP3EKF6FkkgeVYsS3ohTl+oS0Qa8bezVs="
+      #  "hie-nix.cachix.org-1:EjBSHzF6VmDnzqlldGXbi0RM3HdjfTU3yDRi9Pd0jTY="
+      #];
+    };
   };
   nixpkgs.config.allowUnfree = true;
 
