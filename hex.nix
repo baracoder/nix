@@ -5,12 +5,11 @@
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.initrd.luks.devices = [
-    { name = "nixos-root"; device = "/dev/sda2";  allowDiscards = true; }
-  ];
   boot.kernelParams = [
     "nopti"
+    "mem_sleep_default=deep"
   ];
+  boot.blacklistedKernelModules = [ "psmouse" ];
 
   boot.kernelPackages = pkgs.linuxPackages_5_7;
   networking.hostName = "hex";
@@ -22,6 +21,13 @@
   ];
   # power management
   services.tlp.enable = true;
+  services.tlp.extraConfig = ''
+    CPU_SCALING_GOVERNOR_ON_BAT=powersave
+  '';
+  powerManagement = {
+    enable = true;
+    #cpuFreqGovernor = "powersave";
+  };
 
   virtualisation.docker.enable = true;
   #virtualisation.virtualbox.host.enable = true;
