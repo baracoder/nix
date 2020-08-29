@@ -20,8 +20,7 @@
   networking.networkmanager.enable = true;
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
-    qtcreator
-    steam
+    libinput-gestures
   ];
   # power management
   services.tlp.enable = true;
