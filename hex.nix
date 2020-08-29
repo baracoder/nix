@@ -13,6 +13,9 @@
   boot.blacklistedKernelModules = [ "psmouse" ];
 
   boot.kernelPackages = pkgs.linuxPackages_5_7;
+
+  services.fwupd.enable = true;
+
   networking.hostName = "hex";
   networking.networkmanager.enable = true;
   environment.systemPackages = with pkgs; [
