@@ -12,7 +12,7 @@
     "nopti"
   ];
 
-  hardware.trackpoint.emulateWheel = true;
+  boot.kernelPackages = pkgs.linuxPackages_5_7;
   networking.hostName = "hex";
   networking.networkmanager.enable = true;
   environment.systemPackages = with pkgs; [
