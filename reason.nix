@@ -72,4 +72,25 @@
     fileSystems = [ "/" ];
   };
   services.xserver.displayManager.gdm.wayland = false;
+
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.extraModulePackages = [ ];
+
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/19799161-ee9f-43d1-85e4-69fcda98e385";
+      fsType = "ext4";
+    };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/A94F-396C";
+      fsType = "vfat";
+    };
+
+  swapDevices = [ ];
+
+  nix.maxJobs = lib.mkDefault 8;
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+
+
 }

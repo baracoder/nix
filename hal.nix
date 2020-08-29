@@ -69,4 +69,29 @@ in
   services.logmein-hamachi.enable = false;
   hardware.nvidia.modesetting.enable = false;
 
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
+  boot.kernelModules = [ "kvm-intel" "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" ];
+  boot.extraModulePackages = [ ];
+
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/606839e6-36e4-41e4-8762-a8ccbe1704ce";
+      fsType = "ext4";
+    };
+
+  boot.initrd.luks.devices."crypt-ssd".device = "/dev/disk/by-uuid/4cee7fa9-8038-4da9-a176-624cdc89a515";
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/CDB5-AD45";
+      fsType = "vfat";
+    };
+
+  #fileSystems."/home/bara/archive" =
+  #  { device = "/dev/disk/by-uuid/979274ef-27bd-4a55-abd6-19243513bf4f";
+  #    fsType = "ext4";
+  #  };
+
+
+  nix.maxJobs = lib.mkDefault 8;
+
+
 }

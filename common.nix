@@ -3,9 +3,6 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, pkgs, ... }:
-let
-  unstable = import <nixos-unstable> { config.allowUnfree = true; };
-in
 {
   nix = {
     package = pkgs.nixUnstable;
@@ -18,15 +15,17 @@ in
     automatic = true;
     dates = "13:00";
     options = "--delete-older-than 30d";
+    #binaryCaches = [
+    #  "https://cache.nixos.org/"
+    #  "https://hie-nix.cachix.org"
+    #];
+    #binaryCachePublicKeys = [ 
+    #  "hydra.nixos.org-1:CNHJZBh9K4tP3EKF6FkkgeVYsS3ohTl+oS0Qa8bezVs="
+    #  "hie-nix.cachix.org-1:EjBSHzF6VmDnzqlldGXbi0RM3HdjfTU3yDRi9Pd0jTY="
+    #];
   };
   };
   nixpkgs.config.allowUnfree = true;
-
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ./host.nix
-    ];
 
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
