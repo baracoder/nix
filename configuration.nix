@@ -123,6 +123,7 @@ in
   services.udev.packages = with pkgs; [ 
     openhantek6022
   ];
+  environment.shells = [ pkgs.bashInteractive pkgs.zsh ];
 
   environment.systemPackages = with pkgs; [
     aspell
