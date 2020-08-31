@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 let linuxPackages = pkgs.linuxPackages_5_7;
 in
 {
@@ -7,11 +7,13 @@ in
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
+  boot.kernelModules = [ "kvm-intel" "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "v4l2loopback" ];
+
   boot.extraModprobeConfig = ''
     options bluetooth disable_ertm=1
     options v4l2loopback exclusive_caps=1 video_nr=9 card_label="obs"
   '';
-  boot.kernelModules = [ "v4l2loopback" ];
 
 
   hardware.bluetooth.enable = true;
@@ -69,9 +71,6 @@ in
   services.logmein-hamachi.enable = false;
   hardware.nvidia.modesetting.enable = false;
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
-  boot.kernelModules = [ "kvm-intel" "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" ];
-  boot.extraModulePackages = [ ];
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/606839e6-36e4-41e4-8762-a8ccbe1704ce";
