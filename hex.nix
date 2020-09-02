@@ -12,7 +12,7 @@
   ];
   boot.blacklistedKernelModules = [ "psmouse" ];
 
-  boot.kernelPackages = pkgs.linuxPackages_5_7;
+  boot.kernelPackages = pkgs.linuxPackages_5_4;
 
   services.fwupd.enable = true;
 
@@ -23,14 +23,17 @@
     libinput-gestures
   ];
   # power management
+  services.thermald.enable = true;
   services.tlp.enable = true;
   services.tlp.extraConfig = ''
     CPU_SCALING_GOVERNOR_ON_BAT=powersave
   '';
   powerManagement = {
     enable = true;
-    #cpuFreqGovernor = "powersave";
+    cpuFreqGovernor = null;
   };
+
+  hardware.opengl.enable = true;
 
   virtualisation.docker.enable = true;
   #virtualisation.virtualbox.host.enable = true;
@@ -57,7 +60,6 @@
   swapDevices = [ ];
 
   nix.maxJobs = lib.mkDefault 8;
-  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
 
   services.udev.extraRules = ''
     # UDEV Rules for PlatformIO supported boards, http://platformio.org/boards
