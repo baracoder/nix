@@ -20,7 +20,6 @@ in
   hardware.steam-hardware.enable = true;
 
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
-  fileSystems."/".options= ["defaults" "discard" ];
 
   swapDevices = [
     {
@@ -75,6 +74,7 @@ in
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/606839e6-36e4-41e4-8762-a8ccbe1704ce";
       fsType = "ext4";
+      options = [ "discard" "noatime" ];
     };
 
   boot.initrd.luks.devices."crypt-ssd".device = "/dev/disk/by-uuid/4cee7fa9-8038-4da9-a176-624cdc89a515";
@@ -82,12 +82,9 @@ in
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/CDB5-AD45";
       fsType = "vfat";
+      options = [ "noatime" ];
     };
 
-  #fileSystems."/home/bara/archive" =
-  #  { device = "/dev/disk/by-uuid/979274ef-27bd-4a55-abd6-19243513bf4f";
-  #    fsType = "ext4";
-  #  };
 
 
   nix.maxJobs = lib.mkDefault 8;

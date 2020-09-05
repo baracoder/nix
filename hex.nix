@@ -43,6 +43,7 @@
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/782c0b96-19a1-4073-8e35-a20b387da9be";
       fsType = "btrfs";
+      options = [ "discard" "noatime" ];
     };
 
   boot.initrd.luks.devices."nixos-root".device = "/dev/disk/by-uuid/f9ec90cb-4f20-448d-b33b-ffa09c58a4ab";
@@ -50,6 +51,7 @@
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/8659-B61F";
       fsType = "vfat";
+      options = [ "noatime" ];
     };
 
   swapDevices = [ ];
