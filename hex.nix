@@ -12,7 +12,7 @@
   ];
   boot.blacklistedKernelModules = [ "psmouse" ];
 
-  boot.kernelPackages = pkgs.linuxPackages_5_4;
+  boot.kernelPackages = pkgs.linuxPackages_5_7;
 
   services.fwupd.enable = true;
 
@@ -43,6 +43,14 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
+  services.xserver.videoDrivers = [ "modesetting" ];
+  services.xserver.useGlamor = true;
+  hardware.opengl.extraPackages = with pkgs; [
+    vaapiIntel
+    vaapiVdpau
+    libvdpau-va-gl
+    intel-media-driver
+  ];
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/782c0b96-19a1-4073-8e35-a20b387da9be";
       fsType = "btrfs";
