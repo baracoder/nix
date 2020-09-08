@@ -11,9 +11,8 @@
     '';
     daemonIONiceLevel = 5;
     daemonNiceLevel = 5;
+    trustedUsers = [ "root" "@wheel" ];
     gc = {
-      automatic = true;
-      dates = "13:00";
       options = "--delete-older-than 30d";
       #binaryCaches = [
       #  "https://cache.nixos.org/"
