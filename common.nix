@@ -161,6 +161,8 @@
     seafile-client
     slack
     source-code-pro
+    gnome3.gnome-boxes
+    spice-gtk
     speechd
     sshfsFuse
     teamviewer
@@ -383,4 +385,8 @@
     enable = true;
     package = pkgs.bluezFull;
   };
+
+  #virtualisation.spiceUSBRedirection.enable = true;
+  security.wrappers.spice-client-glib-usb-acl-helper.source = "${pkgs.spice-gtk}/bin/spice-client-glib-usb-acl-helper";
+
 }
