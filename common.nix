@@ -359,7 +359,6 @@
 
   programs.seahorse.enable = true;
   programs.gnome-terminal.enable = true;
-  programs.gnome-documents.enable = true;
   programs.gnome-disks.enable = true;
 
   #services.teamviewer.enable = true;
