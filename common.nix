@@ -170,6 +170,7 @@
     zsh
     samba
     (callPackage ./vscode.nix {})
+    (callPackage ./dotnetSdk.nix {})
 
     (nmap.override {
         graphicalSupport = true;
