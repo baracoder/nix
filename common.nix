@@ -117,11 +117,10 @@
   };
   users.extraGroups.bara.gid = 1000;
 
-
   services.udev.packages = with pkgs; [ 
     openhantek6022
   ];
-  environment.shells = [ pkgs.bashInteractive pkgs.zsh ];
+  environment.shells = with pkgs; [ bashInteractive zsh ];
 
   environment.systemPackages = with pkgs; [
     aspell
