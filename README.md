@@ -11,3 +11,8 @@ sudo nixos-rebuild switch --flake .#hostname
 `#host-name` is optional `sudo nixos-rebuild --flake .` will use the current name of the host.
 
 Note: untracked files won't be copied to store. Use `git add` first, to build from a dirty directory.
+
+To update nixpkgs input to latest unstable:
+```
+nix flake update --update-input nixpkgs
+```
