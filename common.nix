@@ -244,6 +244,10 @@
 
   programs.autojump.enable = true;
 
+  # directly run the missing commands via nix-shell (without installing anything)
+  programs.command-not-found.enable = true;
+  environment.variables.NIX_AUTO_RUN = "1";
+
   hardware.bluetooth = {
     enable = true;
     package = pkgs.bluezFull;
