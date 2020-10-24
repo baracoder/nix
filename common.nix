@@ -134,6 +134,7 @@
     dosfstools
     espeak
     evince
+    direnv
     firefox
     gimp
     gitAndTools.gitFull
