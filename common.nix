@@ -172,7 +172,10 @@
     samba
     (callPackage ./vscode.nix {})
     (callPackage ./dotnetSdk.nix {})
-
+    (mumble.override {
+      speechdSupport = true;
+      pulseSupport = true;
+    })
     (nmap.override {
         graphicalSupport = true;
     })
