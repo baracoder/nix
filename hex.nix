@@ -12,7 +12,7 @@
   ];
   boot.blacklistedKernelModules = [ "psmouse" ];
 
-  boot.kernelPackages = pkgs.linuxPackages_5_7;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   services.fwupd.enable = true;
 
