@@ -21,15 +21,6 @@
                 nixpkgs.nixosModules.notDetected
             ];
         };
-        reason = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [ 
-                ny.nixosModules.ny
-                ./common.nix
-                ./reason.nix
-                nixpkgs.nixosModules.notDetected
-            ];
-        };
       };
   };
 }
