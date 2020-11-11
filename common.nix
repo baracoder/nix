@@ -78,7 +78,7 @@
     udisks2.enable = true;
     printing.enable = true;
     printing.drivers = [ (pkgs.callPackage ./brql.nix {}) ];
-    xserver = 
+    xserver =
     let xkbVariant = "altgr-intl"; # no dead keys
         xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
     in {

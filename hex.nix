@@ -10,7 +10,6 @@
     "nopti"
     "mem_sleep_default=deep"
   ];
-  boot.blacklistedKernelModules = [ "psmouse" ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
@@ -34,30 +33,18 @@
   };
 
   hardware.opengl.enable = true;
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   
 
   virtualisation.docker.enable = true;
   #virtualisation.virtualbox.host.enable = true;
   system.stateVersion = "18.03";
-  boot.initrd.kernelModules = [ "i915" ];
-  boot.extraModulePackages = with config.boot.kernelPackages; [ acpi_call ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
-  boot.kernelModules = [ "kvm-intel" "acpi_call" ];
   boot.kernel.sysctl = {
     "vm.swappiness" = lib.mkDefault 1;
   };
 
   services.fstrim.enable = lib.mkDefault true;
-  services.xserver.videoDrivers = [ "modesetting" ];
-  services.xserver.useGlamor = true;
-  hardware.opengl.extraPackages = with pkgs; [
-    vaapiIntel
-    vaapiVdpau
-    libvdpau-va-gl
-    intel-media-driver
-  ];
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/782c0b96-19a1-4073-8e35-a20b387da9be";
       fsType = "btrfs";
