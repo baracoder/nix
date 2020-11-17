@@ -89,5 +89,6 @@ in
 
   nix.maxJobs = lib.mkDefault 8;
 
+  hardware.openrazer.enable = true;
 
 }

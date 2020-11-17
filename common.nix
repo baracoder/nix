@@ -112,7 +112,7 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "dialout" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" ];
+    extraGroups = [ "dialout" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" ];
     createHome = true;
     shell = pkgs.zsh;
   };
