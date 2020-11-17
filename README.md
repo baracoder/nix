@@ -16,3 +16,4 @@ To update nixpkgs input to latest unstable:
 ```
 nix flake update --update-input nixpkgs
 ```
+

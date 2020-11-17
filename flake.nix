@@ -9,8 +9,8 @@
             system = "x86_64-linux";
             modules = [ 
                 ny.nixosModules.ny
-                ./common.nix
-                ./hex.nix
+                ./machines/common.nix
+                ./machines/hex.nix
                 nixpkgs.nixosModules.notDetected
                 nixos-hardware.nixosModules.dell-xps-13-9380
 
@@ -20,8 +20,8 @@
             system = "x86_64-linux";
             modules = [ 
                 ny.nixosModules.ny
-                ./common.nix
-                ./hal.nix
+                ./machines/common.nix
+                ./machines/hal.nix
                 nixpkgs.nixosModules.notDetected
             ];
         };

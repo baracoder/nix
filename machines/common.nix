@@ -75,7 +75,7 @@
     openssh.forwardX11 = true;
     udisks2.enable = true;
     printing.enable = true;
-    printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper (pkgs.callPackage ./brql.nix {}) ];
+    printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper (pkgs.callPackage ../pkgs/brql.nix {}) ];
     xserver =
     let xkbVariant = "altgr-intl"; # no dead keys
         xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
@@ -171,8 +171,8 @@
     wget
     zsh
     samba
-    (callPackage ./vscode.nix {})
-    (callPackage ./dotnetSdk.nix {})
+    (callPackage ../pkgs/vscode.nix {})
+    (callPackage ../pkgs/dotnetSdk.nix {})
     (mumble.override {
       speechdSupport = true;
       pulseSupport = true;
