@@ -14,12 +14,10 @@
     trustedUsers = [ "root" "@wheel" ];
     binaryCaches = [
       "https://cache.nixos.org/"
-      "s3://cache?endpoint=nix-cache.i.nyris.io&scheme=https&profile=ny" 
       "https://all-hies.cachix.org"
     ];
     binaryCachePublicKeys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-      "nix-cache.i.nyris.io:vMX3jMmifTn3jQ7EoL4MozQtrWNCundHQ2Bju9ODZnI="
       "all-hies.cachix.org-1:JjrzAOEUsD9ZMt8fdFbzo3jNAyEWlPAwdVuHw4RD43k="
     ];
     gc = {

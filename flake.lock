@@ -69,18 +69,13 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1604955687,
-        "narHash": "sha256-Wz6vgIkcRWvecw1X1oWrBx0j1ohZLTs/PDF+ufPUxaY=",
-        "ref": "main",
-        "rev": "5c3070a33b1011f7d8ed7026ce87fb13987a03a3",
-        "revCount": 57,
-        "type": "git",
-        "url": "ssh://git@git.nyris.io:10022/nyris/ny"
+        "narHash": "sha256-hOyVF3qC1PuhSL01UyQvKEC8ZKWdsXmccU/KnghDETk=",
+        "path": "/home/bara/nyris/ny",
+        "type": "path"
       },
       "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "ssh://git@git.nyris.io:10022/nyris/ny"
+        "path": "/home/bara/nyris/ny",
+        "type": "path"
       }
     },
     "root": {
