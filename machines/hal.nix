@@ -38,6 +38,7 @@ in
     enable = true;
     enableOnBoot = false;
     storageDriver = "overlay2";
+    enableNvidia = true;
   };
 
   services.printing = {
