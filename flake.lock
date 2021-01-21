@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "dotnet2nix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1607113214,
+        "narHash": "sha256-g7jzWqnymMlQvJj33lT/UMATNwtxlwNLlLqVZKrJ7ME=",
+        "owner": "baracoder",
+        "repo": "dotnet2nix",
+        "rev": "2f2a84beb81ad83d9417ea8cb40850125c2a2e08",
+        "type": "github"
+      },
+      "original": {
+        "owner": "baracoder",
+        "repo": "dotnet2nix",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "locked": {
         "lastModified": 1598466101,
@@ -17,11 +33,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1604571579,
-        "narHash": "sha256-3kQmLlKOlH742cZqeFd18JaKcuOBItAY2Pf6V9Q4tx4=",
+        "lastModified": 1609915993,
+        "narHash": "sha256-lQYxrkVy7I5YZN+Ojv3hrdQFohRpLWa8XR6gr0r8HsY=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "40ade7c0349d31e9f9722c7331de3c473f65dce0",
+        "rev": "fb1682bab43b9dd8daf43ae28f09e44541ce33a2",
         "type": "github"
       },
       "original": {
@@ -65,15 +81,16 @@
     },
     "ny": {
       "inputs": {
+        "dotnet2nix": "dotnet2nix",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1605802670,
-        "narHash": "sha256-559f3QLox3pprb2bdiDOwnKNOIXXokSbY7dKXH+qFW0=",
+        "lastModified": 1610206539,
+        "narHash": "sha256-OAgZaSRImNmwSIg3LtLsdIXsLK/CdTArIJB2LvcrXFs=",
         "ref": "main",
-        "rev": "7eab860c6dba6d1f64e364b4e9892fd38c0cfeb7",
-        "revCount": 67,
+        "rev": "8e14b3b8fc50d595dc330b1d9e183ea3aea33bc0",
+        "revCount": 75,
         "type": "git",
         "url": "ssh://git@git.nyris.io:10022/nyris/ny"
       },

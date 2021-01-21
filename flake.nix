@@ -5,10 +5,10 @@
 
   outputs = { self, nixpkgs, ny, nixos-hardware}: {
       nixosConfigurations = {
-        hex = nixpkgs.lib.nixosSystem {
+        hex = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
             modules = [ 
-                ny.nixosModules.ny
+                ny.nixosModules.${system}.ny
                 ./machines/common.nix
                 ./machines/hex.nix
                 nixpkgs.nixosModules.notDetected
@@ -16,10 +16,10 @@
 
             ];
         };
-        hal = nixpkgs.lib.nixosSystem {
+        hal = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
             modules = [ 
-                ny.nixosModules.ny
+                ny.nixosModules.${system}.ny
                 ./machines/common.nix
                 ./machines/hal.nix
                 nixpkgs.nixosModules.notDetected
