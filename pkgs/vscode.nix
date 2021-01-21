@@ -134,6 +134,14 @@ vscode-with-extensions.override {
         sha256 = "0i5dljl5m42kiwqlaplbqi4bhq59456bxs0m0w1dzk80jxyfsv0i";
         }
 
+        # code reviews
+        {
+        name = "codestream";
+        publisher = "CodeStream";
+        version = "10.4.0";
+        sha256 = "sha256-HaLKdPxpsjothkXLGFxiMxeeeVzey+b2Bpsu0yJZb6Q=";
+        }
+
 
     ];
 }
