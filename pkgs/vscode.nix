@@ -13,7 +13,8 @@ vscode-with-extensions.override {
         redhat.vscode-yaml
         vscodevim.vim
         alanz.vscode-hie-server
-
+        dhall.dhall-lang
+        dhall.vscode-dhall-lsp-server
     ]
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [

@@ -136,6 +136,8 @@
     espeak
     evince
     direnv
+    dhall
+    dhall-json
     firefox
     gimp
     gitAndTools.gitFull
