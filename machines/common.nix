@@ -141,8 +141,7 @@
     firefox
     gimp
     gitAndTools.gitFull
-    # broken again
-    #gnomeExtensions.system-monitor
+    gnomeExtensions.system-monitor
     gnumake
     google-chrome
     google-cloud-sdk
