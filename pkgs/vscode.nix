@@ -143,6 +143,12 @@ vscode-with-extensions.override {
         sha256 = "sha256-HaLKdPxpsjothkXLGFxiMxeeeVzey+b2Bpsu0yJZb6Q=";
         }
 
+        {
+            name = "json2yaml";
+            publisher = "tuxtina";
+            version = "0.2.0";
+            sha256 = "sha256-zj2noFRlxhvrwEVSvtbLZDxKP3yNIGAfSB95X74PW8o=";
+        }
 
     ];
 }
