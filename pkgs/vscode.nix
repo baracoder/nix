@@ -27,8 +27,8 @@ vscode-with-extensions.override {
         {
         name = "ecdc";
         publisher = "mitchdenny";
-        version = "1.3.0";
-        sha256 = "0hkiwxizdr9nfpgms65hw3v55qvqz3k2lnaji2lwx8bbb9iwal14";
+        version = "1.4.0";
+        sha256 = "sha256-pP5VV1ahnYT2H5xNCVeM+APdqY132WrwJGyIX7HKYZI=";
         }
         {
         name = "nixfmt-vscode";
@@ -39,26 +39,26 @@ vscode-with-extensions.override {
         {
         name = "gitlens";
         publisher = "eamodio";
-        version = "10.2.1";
-        sha256 = "1bh6ws20yi757b4im5aa6zcjmsgdqxvr1rg86kfa638cd5ad1f97";
+        version = "11.3.0";
+        sha256 = "sha256-m2Zn+e6hj59SujcW5ptdrYDrc4CviZ4wyCndO2BhyF8=";
         }
         {
         name = "git-graph";
         publisher = "mhutchie";
-        version = "1.25.0";
-        sha256 = "126s0kzq0a0rp1dagyi2ks1vr91a4p8vn4y9yk2agx46xkcf8ycq";
+        version = "1.29.0";
+        sha256 = "sha256-RTN8U+OE+Mxo2WPvPFSVYi1cEK7yLZ9paCFrqw+zpAs=";
         }
         {
         name = "code-spell-checker";
         publisher = "streetsidesoftware";
-        version = "1.9.0";
-        sha256 = "0ic0zbv4pja5k4hlixmi6mikk8nzwr8l5w2jigdwx9hc4zhkf713";
+        version = "1.10.2";
+        sha256 = "sha256-K8pcjjy9cPEvjsz3avFf4pmifJm4L0uSOMy34rIhgNI=";
         }
         {
         name = "syncify";
         publisher = "arnohovhannisyan";
-        version = "4.0.4";
-        sha256 = "0fii948h47k6cd0cs92zmn1kirh3p9cl2h6rbc9kdp18ng4qqd64";
+        version = "4.0.5";
+        sha256 = "sha256-mbKy4NPcg7L31fIt8o+HyE01IyuEEE4YXGVy6led+qo=";
         }
         {
         name = "bracket-pair-colorizer-2";
@@ -72,16 +72,16 @@ vscode-with-extensions.override {
         {
         name = "csharp";
         publisher = "ms-dotnettools";
-        version = "1.22.1";
-        sha256 = "1cvyn4vj20ipdmp6jhiv1a84jaxgbfpn4r1043ayassdlimvdsl8";
+        version = "1.23.9";
+        sha256 = "sha256-5G3u3eqzaqP794E/i7aj4UCO6HAifGwnRKsVaFT3CZg=";
         # npm i
         # npm run compile
         }
         {
         name = "Ionide-fsharp";
         publisher = "Ionide";
-        version = "4.14.0";
-        sha256 = "0xdlknjmgn770pzpbw00gdqln9kkyksqnm1g9fcnrmclyhs639z4";
+        version = "5.4.1";
+        sha256 = "sha256-51awfU0nL3uAzMBy5W/bPweNNgAUrWBuptPZ59VH2iw=";
         }
         {
         name = "Ionide-Paket";
@@ -100,16 +100,16 @@ vscode-with-extensions.override {
         {
         name = "haskell";
         publisher = "haskell";
-        version = "1.0.0";
-        sha256 = "0i5dljl5m42kiwqlaplbqi4bhq59456bxs0m0w1dzk80jxyfsv0i";
+        version = "1.2.0";
+        sha256 = "sha256-nv7jFpIobEA7ZOeY1E7jLDEC0L6RkXvLxSrYIzSxum8=";
         }
 
         # code reviews
         {
         name = "codestream";
         publisher = "CodeStream";
-        version = "10.4.0";
-        sha256 = "sha256-HaLKdPxpsjothkXLGFxiMxeeeVzey+b2Bpsu0yJZb6Q=";
+        version = "10.7.2";
+        sha256 = "sha256-qqNx+XeArpOWnqavzp22F18AKJzZceP/Mj6yfBL47qc=";
         }
 
         {
