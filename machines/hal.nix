@@ -94,7 +94,7 @@ in
   # blinkblink rgb
 
   hardware.openrazer.enable = true;
-  environment.systemPackages = with pkgs; [ openrgb ];
+  environment.systemPackages = with pkgs; [ openrgb protontricks ];
   services.udev.packages = with pkgs; [ 
     openrgb
   ];
