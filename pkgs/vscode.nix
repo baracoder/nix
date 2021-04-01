@@ -67,37 +67,6 @@ vscode-with-extensions.override {
         sha256 = "0nppgfbmw0d089rka9cqs3sbd5260dhhiipmjfga3nar9vp87slh";
         }
 
-        # databases
-        {
-        name = "sqltools";
-        publisher = "mtxr";
-        version = "0.22.11";
-        sha256 = "0vrc66bzpddc2ik05r2yxpzz6l0mzf79qfq96fccnm1fmn4cc5r6";
-        }
-        {
-        name = "sqltools-driver-mysql";
-        publisher = "mtxr";
-        version = "0.1.1";
-        sha256 = "1mzwk0r430z46qdmyz280n61cjk22zvlcdq92w3zhs497kf9pa48";
-        }
-        {
-        name = "sqltools-driver-sqlite";
-        publisher = "mtxr";
-        version = "0.1.0";
-        sha256 = "01r271kpjw8g9si9ikfgcff68l7zs9xq15yx80w5bgni2d3h2hwm";
-        }
-        {
-        name = "sqltools-driver-pg";
-        publisher = "mtxr";
-        version = "0.1.0";
-        sha256 = "00a98fvgnhr93ihb21m7v36bzhbpnxj0snzn6sa64m1brhng0qgw";
-        }
-        {
-        name = "mongodb-vscode";
-        publisher = "mongodb";
-        version = "0.1.0";
-        sha256 = "1xayri5ld76i6ww1jfxfhlv0mk09kxa3wxps5j6hxdxyvyy7jccz";
-        }
 
         # dotnet
         {
