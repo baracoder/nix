@@ -98,5 +98,6 @@ in
   services.udev.packages = with pkgs; [ 
     openrgb
   ];
+  programs.steam.enable = true;
 
 }
