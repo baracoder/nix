@@ -66,6 +66,8 @@ in
   boot.kernelParams = [
     "bluetooth.disable_ertm=1"
     "nouveau.modeset=0"
+    # workaround for nvidia docker
+    "systemd.unified_cgroup_hierarchy=false" 
   ];
 
   services.logmein-hamachi.enable = false;
