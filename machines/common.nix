@@ -153,14 +153,16 @@
     meld
     mtools
     ntfs3g
-    nextcloud-client
+    # broken qt5webengine
+    #nextcloud-client
     openhantek6022
     pamixer
     pass
     pavucontrol
     python
     renameutils
-    seafile-client
+    # broken
+    #seafile-client
     slack
     source-code-pro
     gnome3.gnome-boxes
