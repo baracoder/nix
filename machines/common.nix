@@ -83,7 +83,7 @@
     openssh.forwardX11 = true;
     udisks2.enable = true;
     printing.enable = true;
-    printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper (pkgs.callPackage ../pkgs/brql.nix {}) ];
+    printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper ];
     xserver =
     let xkbVariant = "altgr-intl"; # no dead keys
         xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
