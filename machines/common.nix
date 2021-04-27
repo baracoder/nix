@@ -222,11 +222,13 @@
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
     gnome-online-miners.enable = true;
-    gnome-user-share.enable = true;
+    #gnome-user-share.enable = true;
     tracker-miners.enable = true;
     tracker.enable = true;
     sushi.enable = true;
   };
+  services.dleyna-renderer.enable = false;
+
   services.earlyoom.enable = true;
 
   programs.seahorse.enable = true;
