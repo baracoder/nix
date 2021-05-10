@@ -150,6 +150,7 @@
     gimp
     gitAndTools.gitFull
     gnomeExtensions.system-monitor
+    gnomeExtensions.sound-output-device-chooser
     gnumake
     google-chrome
     google-cloud-sdk
