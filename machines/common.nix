@@ -191,36 +191,7 @@
     (nmap.override {
         graphicalSupport = true;
     })
-    (vim_configurable.customize {
-      name = "vim";
-      vimrcConfig.customRC = ''
-      syntax enable
-      set smartindent
-      set smartcase
-      set cursorline
-      set visualbell
-      set hlsearch
-      set incsearch
-      set ruler
-      set backspace=indent,eol,start
-      '';
-      vimrcConfig.vam.knownPlugins = pkgs.vimPlugins;
-      vimrcConfig.vam.pluginDictionaries = [
-        { names = [
-          "vim-nix"
-        ];}
-      ];
-    })
-    # use version with seccomp fix
-    (proot.overrideAttrs (oldAttrs: {
-      src = fetchFromGitHub {
-        repo = "proot";
-        owner = "jorge-lip";
-        rev = "25e8461cbe56a3f035df145d9d762b65aa3eedb7";
-        sha256 = "1y4rlx0pzdg4xsjzrw0n5m6nwfmiiz87wq9vrm6cy8r89zambs7i";
-      };
-      version = "5.1.0.20171102";
-    }))
+    (callPackage ../pkgs/vim.nix {})
   ];
 
   services.gvfs.enable = true;
