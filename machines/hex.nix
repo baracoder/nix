@@ -19,14 +19,10 @@
   networking.networkmanager.enable = true;
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
-    libinput-gestures
   ];
   # power management
   services.thermald.enable = true;
-  services.tlp.enable = true;
-  services.tlp.extraConfig = ''
-    CPU_SCALING_GOVERNOR_ON_BAT=powersave
-  '';
+  services.tlp.enable = false;
   powerManagement = {
     enable = true;
     cpuFreqGovernor = null;
