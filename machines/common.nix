@@ -178,7 +178,6 @@
     spice-gtk
     speechd
     sshfsFuse
-    teamviewer
     vlc
     wget
     zsh
@@ -214,8 +213,6 @@
   programs.seahorse.enable = true;
   programs.gnome-terminal.enable = true;
   programs.gnome-disks.enable = true;
-
-  services.teamviewer.enable = true;
 
   # ram verdoppler
   zramSwap.enable = false;

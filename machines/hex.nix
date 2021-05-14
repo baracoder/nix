@@ -62,7 +62,6 @@
   swapDevices = [ ];
 
   nix.maxJobs = lib.mkDefault 8;
-  services.teamviewer.enable = true;
 
   services.udev.extraRules = ''
     # UDEV Rules for PlatformIO supported boards, http://platformio.org/boards
