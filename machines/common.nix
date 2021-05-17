@@ -150,7 +150,15 @@
     gimp
     gitAndTools.gitFull
     gnomeExtensions.system-monitor
-    gnomeExtensions.sound-output-device-chooser
+    (gnomeExtensions.sound-output-device-chooser.overrideAttrs (a: {
+      version = "38";
+      src = fetchFromGitHub {
+        owner = "kgshank";
+        repo = "gse-sound-output-device-chooser";
+        rev = "38";
+        sha256 = "sha256-LZ+C9iK+j7+DEscYCIObxXc0Bn0Z0xSsEFMZxc8REWA=";
+      };
+    }))
     gnumake
     google-chrome
     google-cloud-sdk
