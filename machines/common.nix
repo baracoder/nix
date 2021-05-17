@@ -104,7 +104,7 @@
           user = "bara";
         };
       };
-      desktopManager.gnome3 = {
+      desktopManager.gnome = {
         enable = true;
         extraGSettingsOverrides = ''
           [org.gnome.desktop.input-sources]
@@ -204,7 +204,7 @@
 
   services.gvfs.enable = true;
   services.fwupd.enable = true;
-  services.gnome3 = {
+  services.gnome = {
     chrome-gnome-shell.enable = true;
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
