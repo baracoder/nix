@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "dotnet2nix": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1607113214,
-        "narHash": "sha256-g7jzWqnymMlQvJj33lT/UMATNwtxlwNLlLqVZKrJ7ME=",
-        "owner": "baracoder",
-        "repo": "dotnet2nix",
-        "rev": "2f2a84beb81ad83d9417ea8cb40850125c2a2e08",
-        "type": "github"
-      },
-      "original": {
-        "owner": "baracoder",
-        "repo": "dotnet2nix",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "locked": {
         "lastModified": 1598466101,
@@ -33,11 +17,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1619336929,
-        "narHash": "sha256-joIC2D26jtSbHodR/o8r+5T9XL2hXs6NIp5mVyA4JOc=",
+        "lastModified": 1620983891,
+        "narHash": "sha256-E2OKVgGo/cUqDsrIeYGVx64b4cxgzd7+bX33NHL0rbA=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "f7540d6c27704ec0fe56ecc8b2a9b663181850b0",
+        "rev": "c4399b921fa7ff5f93ee10b3521b56b722ed74d8",
         "type": "github"
       },
       "original": {
@@ -49,11 +33,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1619323048,
-        "narHash": "sha256-wiLspuRrtX4JPO2Xpd0ySsaN+g5i5BVfslCfcIcHSrU=",
+        "lastModified": 1620901170,
+        "narHash": "sha256-hsJnA0fH6gGzj9KOoolUR+8mw+wNAJC/2SxjZsEq1AI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1fe6ed37fd9beb92afe90671c0c2a662a03463dd",
+        "rev": "d1601a40c48426ae460eede1675fd1d6ee23e198",
         "type": "github"
       },
       "original": {
@@ -65,11 +49,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1605225031,
-        "narHash": "sha256-W+7blIrccTCTyQCCE4aGn1cFrGIuTinN96GxZrJiojs=",
+        "lastModified": 1602425900,
+        "narHash": "sha256-Ixb5QOYXVq/vkkPdc7Yl7mk5bcYlfjTx3/vnkFr/has=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2deeb58f49480f468adca6b08291322de4dbce6b",
+        "rev": "24c9b05ac53e422f1af81a156f1fd58499eb27fb",
         "type": "github"
       },
       "original": {
@@ -81,23 +65,22 @@
     },
     "ny": {
       "inputs": {
-        "dotnet2nix": "dotnet2nix",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1612542612,
-        "narHash": "sha256-SjRk6b5Pm18lNutbpACJBhOWSY2vBwpqQQufni+EIlo=",
+        "lastModified": 1621005580,
+        "narHash": "sha256-3V//l/SUA4WZ0cbgwVJgXw2/fZR/fy6c9RQFX22qjbQ=",
         "ref": "main",
-        "rev": "3d8a66970f4d7331a8739e9f63dbbf3f7d607909",
-        "revCount": 90,
+        "rev": "1e7de39159d14eb5b2ce82489d606ccdc0ee9f3a",
+        "revCount": 65,
         "type": "git",
-        "url": "ssh://git@git.nyris.io:10022/nyris/ny"
+        "url": "ssh://git@github.com/baracoder/nyris-nix-overlay"
       },
       "original": {
         "ref": "main",
         "type": "git",
-        "url": "ssh://git@git.nyris.io:10022/nyris/ny"
+        "url": "ssh://git@github.com/baracoder/nyris-nix-overlay"
       }
     },
     "root": {
