@@ -69,11 +69,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1621005580,
-        "narHash": "sha256-3V//l/SUA4WZ0cbgwVJgXw2/fZR/fy6c9RQFX22qjbQ=",
+        "lastModified": 1621984462,
+        "narHash": "sha256-dDr9IuLGUcMkjgNvh38t4fWJCxjV+zw/dWG88sHdoo4=",
         "ref": "main",
-        "rev": "1e7de39159d14eb5b2ce82489d606ccdc0ee9f3a",
-        "revCount": 65,
+        "rev": "61851c21d279f2fee00d5b020b51f85df5c50834",
+        "revCount": 66,
         "type": "git",
         "url": "ssh://git@github.com/baracoder/nyris-nix-overlay"
       },
