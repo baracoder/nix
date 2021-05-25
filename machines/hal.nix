@@ -72,6 +72,7 @@ in
 
   services.logmein-hamachi.enable = false;
   hardware.nvidia.modesetting.enable = false;
+  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.beta;
 
 
   fileSystems."/" =
