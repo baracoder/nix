@@ -25,6 +25,9 @@
     };
   };
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.overlays = [
+    (import ../overlays/steam-fix.nix)
+  ];
 
   hardware.opengl.driSupport = true;
   hardware.opengl.driSupport32Bit = true;
