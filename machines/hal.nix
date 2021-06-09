@@ -68,6 +68,8 @@ in
     "nouveau.modeset=0"
     # workaround for nvidia docker
     "systemd.unified_cgroup_hierarchy=false" 
+    # workaround for https://github.com/ValveSoftware/Proton/issues/2927
+    "clearcpuid=514"
   ];
 
   services.logmein-hamachi.enable = false;
