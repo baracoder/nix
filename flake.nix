@@ -19,6 +19,11 @@
         hal = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
             modules = [ 
+                {
+                    nixpkgs.overlays = [
+                        (import ./overlays/egl-wayland.nix)
+                    ];
+                }
                 ny.nixosModules.ny
                 ./machines/common.nix
                 ./machines/hal.nix

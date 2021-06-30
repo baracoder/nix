@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_5_11;
+let linuxPackages = pkgs.linuxPackages_5_10;
 in
 {
   boot.loader.systemd-boot.enable = true;
@@ -54,6 +54,9 @@ in
   networking.firewall.enable = false;
 
   services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.deviceSection = ''
+    Option "Coolbits" "28"
+  '';
   services.xserver.screenSection = ''
     Option         "metamodes" "DP-2: nvidia-auto-select +0+0 {AllowGSYNCCompatible=On}, HDMI-0: nvidia-auto-select +3440+0"
   '';
@@ -72,9 +75,10 @@ in
     "clearcpuid=514"
   ];
 
-  services.logmein-hamachi.enable = false;
-  hardware.nvidia.modesetting.enable = false;
+  hardware.nvidia.modesetting.enable = true;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.beta;
+  services.xserver.displayManager.gdm.nvidiaWayland = true;
+  programs.xwayland.enable = true;
 
 
   fileSystems."/" =
