@@ -125,7 +125,7 @@
     group = "bara";
     extraGroups = [ "dialout" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" ];
     createHome = true;
-    shell = pkgs.zsh;
+    shell = pkgs.fish;
   };
   users.extraGroups.bara.gid = 1000;
 
