@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_5_10;
+let linuxPackages = pkgs.linuxPackages_5_12;
 in
 {
   boot.loader.systemd-boot.enable = true;
