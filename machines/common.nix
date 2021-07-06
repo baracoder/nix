@@ -98,7 +98,6 @@
       displayManager = {
         gdm = {
           enable = true;
-          nvidiaWayland = false;
         };
         autoLogin = {
           enable = false;
