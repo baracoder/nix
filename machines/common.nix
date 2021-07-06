@@ -178,6 +178,8 @@
     sshfsFuse
     vlc
     wget
+    fzf
+    fd
     zsh
     samba
     (callPackage ../pkgs/vscode.nix {})
@@ -196,7 +198,7 @@
     topicons-plus
     bing-wallpaper-changer
     emoji-selector
-  ]);
+  ]) ++ (with fishPlugins; [ done forgit fzf-fish ]);
 
   services.gvfs.enable = true;
   services.fwupd.enable = true;
