@@ -1,12 +1,28 @@
 {
   "nodes": {
+    "dotnet2nix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1607113214,
+        "narHash": "sha256-g7jzWqnymMlQvJj33lT/UMATNwtxlwNLlLqVZKrJ7ME=",
+        "owner": "baracoder",
+        "repo": "dotnet2nix",
+        "rev": "2f2a84beb81ad83d9417ea8cb40850125c2a2e08",
+        "type": "github"
+      },
+      "original": {
+        "owner": "baracoder",
+        "repo": "dotnet2nix",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "locked": {
-        "lastModified": 1598466101,
-        "narHash": "sha256-JPhv+Ay98KMWRVRFlLEK9+eLpvNjhTBGWdFKZsE97ck=",
+        "lastModified": 1623875721,
+        "narHash": "sha256-A8BU7bjS5GirpAUv4QA+QnJ4CceLHkcXdRp4xITDB0s=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "a586a6b966d59f53f45a04f8891fbc017dc09dbe",
+        "rev": "f7e004a55b120c02ecb6219596820fcd32ca8772",
         "type": "github"
       },
       "original": {
@@ -17,11 +33,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1623143341,
-        "narHash": "sha256-a8NjpJVvJkb3ehu/KP1OaWwlRexom2D7lQEH5uCO9yA=",
+        "lastModified": 1625333638,
+        "narHash": "sha256-M6J9RN60XJyv6nUfDFCwnz5aVjhe8+GJnV8Q9VpdQQQ=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "fccbee72df707c3fb074854668deee6e1ff02351",
+        "rev": "41775780a0b6b32b3d32dcc32bb9bc6df809062d",
         "type": "github"
       },
       "original": {
@@ -33,11 +49,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1622966049,
-        "narHash": "sha256-6g+28v94ISkVk9TBSsITVOnB2slK8plieWPIF2jo/l0=",
+        "lastModified": 1625366435,
+        "narHash": "sha256-29ZJQBmJ9p2IienoYXCT/qq8sf+rfOvXWfeqVLZOh0E=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fbfb79400a08bf754e32b4d4fc3f7d8f8055cf94",
+        "rev": "20887e4bbfdae3aed6bfa1f53ddf138ee325515e",
         "type": "github"
       },
       "original": {
@@ -49,11 +65,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1602425900,
-        "narHash": "sha256-Ixb5QOYXVq/vkkPdc7Yl7mk5bcYlfjTx3/vnkFr/has=",
+        "lastModified": 1624922035,
+        "narHash": "sha256-OiIxJQuMRkICxaUwY3xMBbrPPu20de/n7tVYnWzLvS4=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "24c9b05ac53e422f1af81a156f1fd58499eb27fb",
+        "rev": "3a8d7958a610cd3fec3a6f424480f91a1b259185",
         "type": "github"
       },
       "original": {
@@ -65,22 +81,23 @@
     },
     "ny": {
       "inputs": {
+        "dotnet2nix": "dotnet2nix",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1621984462,
-        "narHash": "sha256-dDr9IuLGUcMkjgNvh38t4fWJCxjV+zw/dWG88sHdoo4=",
+        "lastModified": 1625435086,
+        "narHash": "sha256-JNpweX7kom7q1sMpi0veg1rwSvZoLJ+uBeHyUxqRSXs=",
         "ref": "main",
-        "rev": "61851c21d279f2fee00d5b020b51f85df5c50834",
-        "revCount": 66,
+        "rev": "1a25cf4450dce64729d50b6a64adebfded3b7827",
+        "revCount": 119,
         "type": "git",
-        "url": "ssh://git@github.com/baracoder/nyris-nix-overlay"
+        "url": "ssh://git@git.nyris.io:10022/nyris/ny"
       },
       "original": {
         "ref": "main",
         "type": "git",
-        "url": "ssh://git@github.com/baracoder/nyris-nix-overlay"
+        "url": "ssh://git@git.nyris.io:10022/nyris/ny"
       }
     },
     "root": {
