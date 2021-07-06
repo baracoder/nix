@@ -227,11 +227,6 @@
   programs.bash.enableCompletion = true;
   programs.zsh.enable = true;
 
-  #environment.etc."qemu/bridge.conf".text = ''
-  #  allow bridge0
-  #'';
-  boot.kernelParams = [ "bluetooth.disable_ertm=1" ];
-
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
 

@@ -10,11 +10,6 @@ in
   boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
   boot.kernelModules = [ "kvm-intel" "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "v4l2loopback" ];
 
-  boot.extraModprobeConfig = ''
-    options bluetooth disable_ertm=1
-    options v4l2loopback exclusive_caps=1 video_nr=9 card_label="obs"
-  '';
-
 
   hardware.bluetooth.enable = true;
   hardware.steam-hardware.enable = true;
@@ -67,7 +62,6 @@ in
   ];
 
   boot.kernelParams = [
-    "bluetooth.disable_ertm=1"
     "nouveau.modeset=0"
     # workaround for nvidia docker
     "systemd.unified_cgroup_hierarchy=false" 
