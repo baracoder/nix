@@ -157,6 +157,7 @@
     imagemagick
     iotop
     lm_sensors
+    lutris
     meld
     mtools
     ntfs3g
