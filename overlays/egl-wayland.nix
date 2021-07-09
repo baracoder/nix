@@ -11,7 +11,7 @@ self: super:
     });
     xwayland = super.xwayland.overrideAttrs (a: rec {
         pname = a.pname;
-        version = "21.1.1.901";
+        version = "21.1.2";
         mesonFlags = a.mesonFlags ++ [
             "-Dxwayland_eglstream=true"
             "-Ddri3=true" 
@@ -20,7 +20,7 @@ self: super:
 
         src = super.fetchurl {
             url = "mirror://xorg/individual/xserver/${pname}-${version}.tar.xz";
-            sha256 = "sha256-CrD5jwl+CQwZYS/oZY1n/nKUwlK0GB98CIIYn3jSF2k=";
+            sha256 = "sha256-uBy91a1guLetjD7MfsKijJvwIUSGcHNc67UB8Ivr0Ys=";
         };
     });
 
