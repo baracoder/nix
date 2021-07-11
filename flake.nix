@@ -20,9 +20,7 @@
             system = "x86_64-linux";
             modules = [ 
                 {
-                    nixpkgs.overlays = [
-                        (import ./overlays/egl-wayland.nix)
-                    ];
+                    nixpkgs.overlays = [ ];
                 }
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
