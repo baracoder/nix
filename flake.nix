@@ -20,7 +20,9 @@
             system = "x86_64-linux";
             modules = [ 
                 {
-                    nixpkgs.overlays = [ ];
+                    nixpkgs.overlays = [ 
+                        (import ./overlays/local-hal.nix)
+                    ];
                 }
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix

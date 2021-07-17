@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_5_12;
+let linuxPackages = pkgs.linuxPackages_5_13;
 in
 {
   boot.loader.systemd-boot.enable = true;
@@ -94,10 +94,16 @@ in
   nix.maxJobs = lib.mkDefault 8;
 
 
-  # blinkblink rgb
-
   hardware.openrazer.enable = true;
-  environment.systemPackages = with pkgs; [ openrgb protontricks ];
+
+  environment.systemPackages = with pkgs; [
+    openrgb
+    protontricks
+    (gwe.override {
+      nvidia_x11 = config.boot.kernelPackages.nvidia_x11_beta;
+    })
+  ];
+
   services.udev.packages = with pkgs; [ 
     openrgb
     ( pkgs.writeTextFile {
