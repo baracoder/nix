@@ -4,6 +4,7 @@
   inputs.nixos-hardware.url = github:NixOS/nixos-hardware/master;
 
   outputs = { self, nixpkgs, ny, nixos-hardware}: {
+      legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
