@@ -130,7 +130,6 @@
   services.udev.packages = with pkgs; [ 
     openhantek6022
   ];
-  environment.shells = with pkgs; [ bashInteractive zsh ];
 
   environment.systemPackages = with pkgs; [
     aspell
@@ -229,6 +228,7 @@
   programs.adb.enable = true;
   programs.bash.enableCompletion = true;
   programs.zsh.enable = true;
+  programs.fish.enable = true;
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
