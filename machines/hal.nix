@@ -95,7 +95,10 @@ in
   nix.maxJobs = lib.mkDefault 8;
 
 
-  hardware.openrazer.enable = true;
+  hardware.openrazer = {
+    enable = true;
+    users = [ "bara" ];
+  };
 
   environment.systemPackages = with pkgs; [
     openrgb
