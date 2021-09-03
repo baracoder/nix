@@ -7,7 +7,7 @@
   nix = {
     package = pkgs.nixUnstable;
     extraOptions = ''
-      experimental-features = nix-command flakes ca-references
+      experimental-features = nix-command flakes ca-references ca-derivations
     '';
     daemonIONiceLevel = 5;
     daemonNiceLevel = 5;
