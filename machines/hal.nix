@@ -110,6 +110,7 @@ in
   ];
 
   services.udev.packages = with pkgs; [ 
+    prismatik
     openrgb
     ( pkgs.writeTextFile {
       name = "extra-udev-rules";
