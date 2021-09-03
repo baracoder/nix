@@ -4,7 +4,7 @@ vscode-with-extensions.override {
     vscode = vscodium;
     # When the extension is already available in the default extensions set.
     vscodeExtensions = with vscode-extensions; [
-        bbenoist.Nix
+        bbenoist.nix
         ms-kubernetes-tools.vscode-kubernetes-tools
         ms-vscode-remote.remote-ssh
         ms-azuretools.vscode-docker
