@@ -1,5 +1,6 @@
 { config, pkgs, lib, ... }:
 let linuxPackages = pkgs.linuxPackages_5_13;
+    nvidiaPackage = linuxPackages.nvidiaPackages.stable;
 in
 {
   boot.loader.systemd-boot.enable = true;
@@ -70,7 +71,7 @@ in
   ];
 
   hardware.nvidia.modesetting.enable = true;
-  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.beta;
+  hardware.nvidia.package = nvidiaPackage;
   services.xserver.displayManager.gdm.nvidiaWayland = true;
   programs.xwayland.enable = true;
 
@@ -101,7 +102,7 @@ in
     prismatik
     protontricks
     (gwe.override {
-      nvidia_x11 = config.boot.kernelPackages.nvidia_x11_beta;
+      nvidia_x11 = nvidiaPackage;
     })
   ];
 
