@@ -98,6 +98,7 @@ in
 
   environment.systemPackages = with pkgs; [
     openrgb
+    prismatik
     protontricks
     (gwe.override {
       nvidia_x11 = config.boot.kernelPackages.nvidia_x11_beta;
