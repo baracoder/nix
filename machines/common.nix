@@ -197,9 +197,11 @@
   ] ++ (with gnomeExtensions; [
     system-monitor
     sound-output-device-chooser
-    topicons-plus
     bing-wallpaper-changer
     emoji-selector
+    appindicator
+    tiling-assistant
+    tilingnome
   ]) ++ (with fishPlugins; [ done forgit fzf-fish ]);
 
   services.gvfs.enable = true;
