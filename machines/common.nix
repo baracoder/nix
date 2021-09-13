@@ -57,6 +57,7 @@
       ubuntu_font_family
       unifont
       twemoji-color-font
+      nerdfonts
     ];
   };
 
