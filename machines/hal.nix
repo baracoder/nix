@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_5_13;
+let linuxPackages = pkgs.linuxPackages_5_14;
     nvidiaPackage = linuxPackages.nvidiaPackages.stable;
 in
 {
