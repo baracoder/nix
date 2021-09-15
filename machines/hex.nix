@@ -25,7 +25,7 @@
   services.tlp.enable = false;
   powerManagement = {
     enable = true;
-    cpuFreqGovernor = null;
+    cpuFreqGovernor = "powersave";
   };
 
   hardware.opengl.enable = true;
