@@ -154,6 +154,7 @@
     google-chrome
     google-cloud-sdk
     hdparm
+    btop
     htop
     imagemagick
     iotop
