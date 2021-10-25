@@ -48,6 +48,7 @@ in
 
   networking.hostName = "hal";
   networking.firewall.enable = false;
+  networking.interfaces.enp4s0.wakeOnLan.enable = true;
 
   services.xserver.videoDrivers = [ "nvidia" ];
   services.xserver.screenSection = ''
@@ -55,9 +56,6 @@ in
   '';
   system.stateVersion = "19.09";
 
-  services.wakeonlan.interfaces = [
-    { interface = "enp4s0"; method = "magicpacket"; }
-  ];
 
   boot.kernelParams = [
     "nouveau.modeset=0"
