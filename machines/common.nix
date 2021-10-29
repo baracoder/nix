@@ -184,6 +184,7 @@
     wget
     fzf
     fd
+    psensor
     zsh
     samba
     (callPackage ../pkgs/vscode.nix {})
