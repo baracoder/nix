@@ -135,11 +135,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1631717303,
-        "narHash": "sha256-pEZ3b3zCFaox30ms3EsdsBOHz8VGmPbpTm++Bhi/0zA=",
+        "lastModified": 1635941343,
+        "narHash": "sha256-eyWrUQeIfNyPO3jEVwJ8anCuf4QPYLE8rCYXf1HYYbw=",
         "ref": "main",
-        "rev": "3a25e8bca5c8b6e9f674f404260bacd81ea14c98",
-        "revCount": 138,
+        "rev": "dc38447640e7b970af5a427ccf5012f9a8b3526a",
+        "revCount": 139,
         "type": "git",
         "url": "ssh://git@git.nyris.io:10022/nyris/ny"
       },
