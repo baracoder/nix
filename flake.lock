@@ -67,11 +67,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1635449388,
-        "narHash": "sha256-i7hMiAgpRTGsMPTQKuNCDfW/ftQ+g9N6iaMj+RN6yws=",
+        "lastModified": 1636317251,
+        "narHash": "sha256-u1cWvvtGH5mfGkeIKrqw2usk4IL7wDiRcnJkUSiZq3Q=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "518b9c2159e7d4b7696ee18b8828f9086012923b",
+        "rev": "fd6f34afcf062761fb5035230f6297752bfedcba",
         "type": "github"
       },
       "original": {
@@ -98,11 +98,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1635844945,
-        "narHash": "sha256-tZcL307dj28jgEU1Wdn+zwG9neyW0H2+ZjdVhvJxh9g=",
+        "lastModified": 1636267212,
+        "narHash": "sha256-KDS173KqmqrYUPY9N4vf750GxIo+S6E0djyq2BsQm8s=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b67e752c29f18a0ca5534a07661366d6a2c2e649",
+        "rev": "c935f5e0add2cf0ae650d072c8357533e21b0c35",
         "type": "github"
       },
       "original": {
@@ -135,11 +135,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1635941343,
-        "narHash": "sha256-eyWrUQeIfNyPO3jEVwJ8anCuf4QPYLE8rCYXf1HYYbw=",
+        "lastModified": 1636559868,
+        "narHash": "sha256-/TwcmOCagK85OldyhEqSHzCH9/GKeWXPRXKcY/tCAH0=",
         "ref": "main",
-        "rev": "dc38447640e7b970af5a427ccf5012f9a8b3526a",
-        "revCount": 139,
+        "rev": "6192d41fa13252b3d569a82ac18841951c4f8f59",
+        "revCount": 142,
         "type": "git",
         "url": "ssh://git@git.nyris.io:10022/nyris/ny"
       },
