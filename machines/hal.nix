@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_5_14;
+let linuxPackages = pkgs.linuxPackages_latest;
     nvidiaPackage = linuxPackages.nvidiaPackages.stable;
 in
 {
@@ -94,6 +94,9 @@ in
     enable = true;
     users = [ "bara" ];
   };
+
+  # workaround https://nixpk.gs/pr-tracker.html?pr=145319
+  environment.variables.GBM_BACKENDS_PATH="/run/opengl-driver/lib/gbm";
 
   environment.systemPackages = with pkgs; [
     openrgb
