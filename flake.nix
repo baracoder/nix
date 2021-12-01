@@ -2,9 +2,17 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.ny.url = "git+ssh://git@git.nyris.io:10022/nyris/ny?ref=main";
   inputs.nixos-hardware.url = github:NixOS/nixos-hardware/master;
-  inputs.nix-autobahn.url = github:Lassulus/nix-autobahn;
 
-  outputs = { self, nixpkgs, nix-autobahn, ny, nixos-hardware}: {
+  inputs.nix-alien = {
+    url = "github:thiagokokada/nix-alien";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+  inputs.nix-ld = {
+    url = "github:Mic92/nix-ld/main";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  outputs = { self, nixpkgs, nix-alien, nix-ld, ny, nixos-hardware}: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
@@ -18,17 +26,23 @@
 
             ];
         };
-        hal = nixpkgs.lib.nixosSystem rec {
+        hal = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
+            #specialArgs = { inherit self; };
+
             modules = [ 
-                {
+                ({pkgs, ...}: {
                     nixpkgs.overlays = [ 
-                        (import ./overlays/local-hal.nix)
+                        (import ./overlays/local-hal.nix )
+                        nix-alien.overlay
                     ];
                     environment.systemPackages = [
-                        nix-autobahn.packages.x86_64-linux.nix-autobahn
+                        pkgs.nix-alien
+                        pkgs.nix-index 
+                        pkgs.nix-index-update
                     ];
-                }
+                })
+                nix-ld.nixosModules.nix-ld
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
                 ./machines/hal.nix
