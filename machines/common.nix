@@ -187,6 +187,7 @@
     samba
     (callPackage ../pkgs/vscode.nix {})
     (callPackage ../pkgs/dotnetSdk.nix {})
+    (callPackage ../pkgs/lens.nix {})
     (mumble.override {
       speechdSupport = true;
       pulseSupport = true;
