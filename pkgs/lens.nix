@@ -2,13 +2,13 @@
 
 let
   pname = "lens";
-  version = "5.2.6";
-  build = "${version}-latest.20211104.1";
+  version = "5.3.2";
+  build = "${version}-latest.20211201.1";
   name = "${pname}-${version}";
 
   src = fetchurl {
     url = "https://api.k8slens.dev/binaries/Lens-${build}.x86_64.AppImage";
-    sha256 = "1lkxzgwrgafraimpnciv89fs6r399275vb73drxlg5z83acacf5z";
+    sha256 = "sha256-qfECxUxu7TWSjZxIsTh+AeL16MlmORchYORMO8zuAG4=";
     name="${pname}.AppImage";
   };
 
