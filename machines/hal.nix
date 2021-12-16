@@ -105,6 +105,9 @@ in
     openrgb
     prismatik
     protontricks
+    steam.run
+    vulkan-tools
+    libva-utils
   ];
 
   services.udev.packages = with pkgs; [ 
@@ -126,7 +129,5 @@ SUBSYSTEM=="input", ATTRS{name}=="relabsd:*", ENV{ID_INPUT_MOUSE}="0", ENV{ID_IN
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="075c", MODE="0666"
 
   '';
-
-  programs.steam.enable = true;
 
 }
