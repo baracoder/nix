@@ -172,7 +172,6 @@
     renameutils
     # broken
     #seafile-client
-    slack
     source-code-pro
     gnome3.gnome-boxes
     spice-gtk
