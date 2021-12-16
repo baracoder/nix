@@ -95,8 +95,11 @@ in
     users = [ "bara" ];
   };
 
-  # workaround https://nixpk.gs/pr-tracker.html?pr=145319
-  environment.variables.GBM_BACKENDS_PATH="/run/opengl-driver/lib/gbm";
+  hardware.opengl = {
+      extraPackages = with pkgs; [ libvdpau-va-gl vaapiVdpau ];
+      extraPackages32 = with pkgs; [ libvdpau-va-gl vaapiVdpau ];
+    };
+
 
   environment.systemPackages = with pkgs; [
     openrgb
