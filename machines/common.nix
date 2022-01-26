@@ -150,6 +150,7 @@
     gimp
     gitAndTools.gitFull
     gnumake
+    gnome-usage
     google-chrome
     google-cloud-sdk
     hdparm
