@@ -80,6 +80,7 @@
       enable = true;
       nssmdns = true;
     };
+    resolved.enable = true;
     openssh.enable = true;
     openssh.forwardX11 = true;
     udisks2.enable = true;
