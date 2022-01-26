@@ -12,6 +12,7 @@ in
   boot.kernelModules = [ "kvm-intel" "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "v4l2loopback" ];
 
 
+  hardware.cpu.amd.updateMicrocode = true;
   hardware.bluetooth.enable = true;
   hardware.steam-hardware.enable = true;
 
