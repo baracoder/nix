@@ -179,7 +179,8 @@
     # broken
     #seafile-client
     source-code-pro
-    gnome3.gnome-boxes
+    gnome.gnome-boxes
+    gnome.ghex
     spice-gtk
     speechd
     sshfsFuse
