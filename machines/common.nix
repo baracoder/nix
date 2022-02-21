@@ -191,6 +191,8 @@
     psensor
     zsh
     samba
+    virt-manager
+    wireshark
     (callPackage ../pkgs/vscode.nix {})
     (callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/lens.nix {})
