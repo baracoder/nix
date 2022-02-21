@@ -166,6 +166,7 @@
     meld
     mellowplayer
     mtools
+    nodejs-12_x
     ntfs3g
     # broken qt5webengine
     #nextcloud-client
