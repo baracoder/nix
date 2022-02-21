@@ -176,8 +176,7 @@
     python
     qjackctl
     renameutils
-    # broken
-    #seafile-client
+    robo3t
     source-code-pro
     gnome.gnome-boxes
     gnome.ghex
