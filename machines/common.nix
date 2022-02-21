@@ -164,6 +164,7 @@
     lm_sensors
     lutris
     meld
+    mellowplayer
     mtools
     ntfs3g
     # broken qt5webengine
