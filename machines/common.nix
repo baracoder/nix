@@ -158,6 +158,7 @@
     gnome-usage
     google-chrome
     google-cloud-sdk
+    gsmartcontrol
     hdparm
     btop
     htop
