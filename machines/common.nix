@@ -76,6 +76,7 @@
     alsa.support32Bit = true;
   };
   security.rtkit.enable = true;
+  services.smartd.enable = true;
 
   services = {
     flatpak.enable = true;
