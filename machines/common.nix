@@ -171,8 +171,7 @@
     mtools
     nodejs-12_x
     ntfs3g
-    # broken qt5webengine
-    #nextcloud-client
+    nvme-cli
     openhantek6022
     pamixer
     pass
