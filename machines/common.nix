@@ -175,6 +175,7 @@
     openhantek6022
     pamixer
     pass
+    peek
     pavucontrol
     python
     qjackctl
