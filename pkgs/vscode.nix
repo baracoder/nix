@@ -23,6 +23,7 @@ vscode-with-extensions.override {
         streetsidesoftware.code-spell-checker
         coenraads.bracket-pair-colorizer-2
         brettm12345.nixfmt-vscode
+        ms-python.python
     ]
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
@@ -43,6 +44,18 @@ vscode-with-extensions.override {
             publisher = "tuxtina";
             version = "0.2.0";
             sha256 = "sha256-zj2noFRlxhvrwEVSvtbLZDxKP3yNIGAfSB95X74PW8o=";
+        }
+        {
+            name = "dotnet-interactive-vscode";
+            publisher = "ms-dotnettools";
+            version = "1.0.3103011";
+            sha256 = "sha256-W2dDbp6D2ENn3e8aqtwwQig7qkTdQUHez/wzdhvWQXs=";
+        }
+        {
+            name = "jupyter";
+            publisher = "ms-toolsai";
+            version = "2022.2.1010561006";
+            sha256 = "sha256-RaLslp6Q4F3oxMCJhs5WQqTsNqsGIDIPW7OD/fRSLWY=";
         }
 
     ];
