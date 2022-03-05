@@ -186,7 +186,7 @@
     gnome.ghex
     spice-gtk
     speechd
-    sshfsFuse
+    sshfs-fuse
     vlc
     wget
     fzf

@@ -10,7 +10,7 @@
 , which
 , pkg-config
 , libusb
-, libudev
+, udev
 , fftwFloat }:
 
 stdenv.mkDerivation rec {
@@ -41,6 +41,6 @@ stdenv.mkDerivation rec {
     '';
 
 
-    buildInputs = [ qtbase qtserialport libpulseaudio fftwFloat libusb libudev ];
+    buildInputs = [ qtbase qtserialport libpulseaudio fftwFloat libusb udev ];
     nativeBuildInputs = [ wrapQtAppsHook qmake which pkg-config qttools ];
 }
