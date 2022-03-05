@@ -153,6 +153,7 @@
     firefox
     gimp
     gitAndTools.gitFull
+    git-lfs
     gnumake
     gnome-usage
     google-chrome
