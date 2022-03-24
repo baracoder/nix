@@ -148,8 +148,10 @@
     espeak
     evince
     direnv
+    delta
     dhall
     dhall-json
+    dogdns
     firefox
     gimp
     gitAndTools.gitFull
@@ -180,6 +182,7 @@
     python
     qjackctl
     renameutils
+    ripgrep
     robo3t
     source-code-pro
     gnome.gnome-boxes
@@ -187,10 +190,12 @@
     spice-gtk
     speechd
     sshfs-fuse
+    super-slicer
     vlc
     wget
     fzf
     fd
+    tldr
     psensor
     zsh
     samba
