@@ -200,6 +200,7 @@
     zsh
     samba
     virt-manager
+    wireguard-tools
     wireshark
     (callPackage ../pkgs/vscode.nix {})
     (callPackage ../pkgs/dotnetSdk.nix {})
