@@ -35,7 +35,7 @@
   #virtualisation.virtualbox.host.enable = true;
   system.stateVersion = "18.03";
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [ "wireguard" "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.kernel.sysctl = {
     "vm.swappiness" = lib.mkDefault 1;
   };
