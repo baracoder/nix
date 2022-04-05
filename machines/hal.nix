@@ -103,7 +103,6 @@ in
 
   environment.systemPackages = with pkgs; [
     openrgb
-    prismatik
     protontricks
     steam.run
     vulkan-tools
@@ -111,7 +110,6 @@ in
   ];
 
   services.udev.packages = with pkgs; [ 
-    prismatik
     openrgb
     ( pkgs.writeTextFile {
       name = "extra-udev-rules";
