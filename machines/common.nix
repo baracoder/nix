@@ -68,6 +68,8 @@
     package = pkgs.pulseaudioFull;
   };
 
+  services.packagekit.enable = true;
+
   services.pipewire = {
     enable = true;
     pulse.enable = true;
