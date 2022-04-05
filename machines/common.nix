@@ -149,6 +149,7 @@
     docker
     dosfstools
     espeak
+    emote
     evince
     direnv
     delta
@@ -217,11 +218,11 @@
     })
     (callPackage ../pkgs/vim.nix {})
   ] ++ (with gnomeExtensions; [
-    system-monitor
-    sound-output-device-chooser
-    bing-wallpaper-changer
-    emoji-selector
     appindicator
+    bing-wallpaper-changer
+    bluetooth-quick-connect
+    sound-output-device-chooser
+    system-monitor
     tiling-assistant
     tilingnome
   ]) ++ (with fishPlugins; [ done forgit fzf-fish ]);
