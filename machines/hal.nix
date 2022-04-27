@@ -107,6 +107,7 @@ in
     steam.run
     vulkan-tools
     libva-utils
+    psensor
   ];
 
   services.udev.packages = with pkgs; [ 

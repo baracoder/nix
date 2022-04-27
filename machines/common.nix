@@ -200,7 +200,6 @@
     fzf
     fd
     tldr
-    psensor
     zsh
     samba
     virt-manager
