@@ -22,7 +22,7 @@
                 ./machines/common.nix
                 ./machines/hex.nix
                 nixpkgs.nixosModules.notDetected
-                nixos-hardware.nixosModules.dell-xps-13-9380
+                nixos-hardware.nixosModules.framework
 
             ];
         };
