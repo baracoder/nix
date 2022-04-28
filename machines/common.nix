@@ -205,6 +205,8 @@
     virt-manager
     wireguard-tools
     wireshark
+    x2goclient
+    xpra
     (callPackage ../pkgs/vscode.nix {})
     (callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/lens.nix {})
