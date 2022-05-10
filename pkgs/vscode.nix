@@ -24,6 +24,7 @@ vscode-with-extensions.override {
         coenraads.bracket-pair-colorizer-2
         brettm12345.nixfmt-vscode
         ms-python.python
+        kubukoz.nickel-syntax
     ]
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
