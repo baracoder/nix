@@ -175,7 +175,8 @@
     meld
     mellowplayer
     mtools
-    nodejs-12_x
+    nmap
+    nodejs-14_x
     ntfs3g
     nvme-cli
     openhantek6022
