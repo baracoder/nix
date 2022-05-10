@@ -215,9 +215,6 @@
       speechdSupport = true;
       pulseSupport = true;
     })
-    (nmap.override {
-        graphicalSupport = true;
-    })
     (callPackage ../pkgs/vim.nix {})
   ] ++ (with gnomeExtensions; [
     appindicator
