@@ -209,7 +209,8 @@
     x2goclient
     xpra
     (callPackage ../pkgs/vscode.nix {})
-    (callPackage ../pkgs/dotnetSdk.nix {})
+    # Broken https://github.com/NixOS/nixpkgs/pull/172335
+    #(callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/lens.nix {})
     (mumble.override {
       speechdSupport = true;
