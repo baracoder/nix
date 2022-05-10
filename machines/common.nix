@@ -186,6 +186,7 @@
     pavucontrol
     python
     qjackctl
+    remmina
     renameutils
     ripgrep
     robo3t
