@@ -15,6 +15,7 @@
 
   services.fwupd.enable = true;
   services.x2goserver.enable = true;
+  services.logind.lidSwitchExternalPower = "ignore";
 
   networking.hostName = "hex";
   networking.networkmanager.enable = true;
