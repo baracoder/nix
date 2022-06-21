@@ -25,6 +25,7 @@ vscode-with-extensions.override {
         brettm12345.nixfmt-vscode
         ms-python.python
         kubukoz.nickel-syntax
+        golang.go
     ]
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
