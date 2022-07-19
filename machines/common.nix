@@ -178,6 +178,7 @@
     lutris
     meld
     mellowplayer
+    mumble
     mtools
     nmap
     nodejs-14_x
@@ -217,10 +218,6 @@
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
     #(callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/lens.nix {})
-    (mumble.override {
-      speechdSupport = true;
-      pulseSupport = true;
-    })
     (callPackage ../pkgs/vim.nix {})
   ] ++ (with gnomeExtensions; [
     appindicator
