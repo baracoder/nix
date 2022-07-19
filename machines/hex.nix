@@ -43,6 +43,8 @@
     "vm.swappiness" = lib.mkDefault 1;
   };
 
+  services.globalprotect.enable = true;
+
   services.fstrim.enable = lib.mkDefault true;
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/782c0b96-19a1-4073-8e35-a20b387da9be";
