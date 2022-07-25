@@ -26,6 +26,7 @@ vscode-with-extensions.override {
         ms-python.python
         kubukoz.nickel-syntax
         golang.go
+        ms-toolsai.jupyter
     ]
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
@@ -53,12 +54,5 @@ vscode-with-extensions.override {
             version = "1.0.3103011";
             sha256 = "sha256-W2dDbp6D2ENn3e8aqtwwQig7qkTdQUHez/wzdhvWQXs=";
         }
-        {
-            name = "jupyter";
-            publisher = "ms-toolsai";
-            version = "2022.2.1010561006";
-            sha256 = "sha256-RaLslp6Q4F3oxMCJhs5WQqTsNqsGIDIPW7OD/fRSLWY=";
-        }
-
     ];
 }
