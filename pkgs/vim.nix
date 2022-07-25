@@ -13,8 +13,8 @@ vim_configurable.customize {
     set ruler
     set backspace=indent,eol,start
     '';
-    vimrcConfig.vam.knownPlugins = vimPlugins;
-    vimrcConfig.vam.pluginDictionaries = [
-        { names = [ "vim-nix" ]; }
-    ];
+    vimrcConfig.packages.myVimPackage = with vimPlugins; {
+        start = [ vim-nix ];
+
+    };
 }
