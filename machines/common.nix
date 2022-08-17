@@ -146,7 +146,6 @@
     aspell
     aspellDicts.de
     aspellDicts.en
-    autojump
     avahi
     cifs-utils
     curl
@@ -259,8 +258,6 @@
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
-
-  programs.autojump.enable = true;
 
   # directly run the missing commands via nix-shell (without installing anything)
   programs.command-not-found.enable = true;
