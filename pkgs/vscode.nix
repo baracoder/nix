@@ -54,5 +54,12 @@ vscode-with-extensions.override {
             version = "1.0.3103011";
             sha256 = "sha256-W2dDbp6D2ENn3e8aqtwwQig7qkTdQUHez/wzdhvWQXs=";
         }
+        {
+            name = "aw-watcher-vscode";
+            publisher = "activitywatch";
+            version = "0.5.0";
+            sha256 = "sha256-OrdIhgNXpEbLXYVJAx/jpt2c6Qa5jf8FNxqrbu5FfFs=";
+
+        }
     ];
 }
