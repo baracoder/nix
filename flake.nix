@@ -11,18 +11,35 @@
     url = "github:Mic92/nix-ld/main";
     inputs.nixpkgs.follows = "nixpkgs";
   };
+  inputs.nixgl = {
+    url = "github:guibou/nixGL";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
 
-  outputs = { self, nixpkgs, nix-alien, nix-ld, ny, nixos-hardware}: {
+  outputs = { self, nixpkgs, nix-alien, nix-ld, ny, nixos-hardware, nixgl}: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
             modules = [ 
+                ({pkgs, ...}: {
+                    nixpkgs.overlays = [
+                        nix-alien.overlay
+                        nixgl.overlay
+                    ];
+                    environment.systemPackages = [
+                        pkgs.nix-alien
+                        pkgs.nix-index
+                        pkgs.nix-index-update
+                        pkgs.nixgl.nixGLIntel
+                    ];
+                })
+                nixos-hardware.nixosModules.framework
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
                 ./machines/hex.nix
                 nixpkgs.nixosModules.notDetected
-                nixos-hardware.nixosModules.framework
+                nix-ld.nixosModules.nix-ld
 
             ];
         };
