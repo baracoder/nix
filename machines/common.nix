@@ -153,6 +153,7 @@
     dosfstools
     espeak
     emote
+    unzip
     evince
     direnv
     delta
@@ -160,6 +161,7 @@
     dhall-json
     dogdns
     firefox
+    file
     gimp
     gitAndTools.gitFull
     git-lfs
@@ -183,11 +185,13 @@
     nodejs-14_x
     ntfs3g
     nvme-cli
+    octave
     openhantek6022
     pamixer
     pass
     peek
     pavucontrol
+    pwgen
     python
     qjackctl
     remmina
