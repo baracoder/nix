@@ -8,7 +8,8 @@
 
   boot.kernelParams = [
     "nopti"
-    "mem_sleep_default=deep"
+    "mem_sleep_default=s2idle"
+    "nvme.noacpi=1"
   ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
@@ -22,19 +23,29 @@
   networking.firewall.allowedTCPPorts = [ 3389 ];
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
+    jetbrains.datagrip
   ];
   # power management
-  services.thermald.enable = true;
-  services.tlp.enable = false;
-  powerManagement = {
-    enable = true;
-    cpuFreqGovernor = "powersave";
-  };
+  #services.thermald.enable = true;
+  #services.tlp.enable = false;
+  #powerManagement = {
+  #  enable = true;
+  #  cpuFreqGovernor = "powersave";
+  #};
+  powerManagement.powertop.enable = true;
 
-  hardware.opengl.enable = true;
-  
+
+  hardware.opengl = {
+      enable = true;
+      extraPackages = with pkgs; [ vaapiIntel libvdpau-va-gl ];
+      extraPackages32 = with pkgs; [ vaapiIntel libvdpau-va-gl ];
+    };
+  hardware.video.hidpi.enable = true;
+
+
 
   virtualisation.docker.enable = true;
+  virtualisation.docker.extraOptions = "--bip 172.30.0.1/16 --default-address-pool=base=172.30.0.0/16,size=24";
   #virtualisation.virtualbox.host.enable = true;
   system.stateVersion = "18.03";
 
@@ -63,4 +74,38 @@
   swapDevices = [ ];
 
   nix.settings.max-jobs = lib.mkDefault 8;
+
+
+  networking.extraHosts = ''
+# AD hosts Intercars
+#10.123.250.33 dcinter01.intercars.local dcinter01
+#10.123.250.35 dcinter02.intercars.local dcinter02
+#10.123.250.41 dcinter03.intercars.local dcinter03
+#10.123.250.40 dcinter04.intercars.local dcinter04
+#10.123.250.32 dcic03.ic dcic03
+#10.123.250.34 dcic04.ic dcic04
+#10.123.250.38 dcic05.ic dcic05
+#10.123.250.39 dcic06.ic dcic06
+##CDP Stage environment
+#10.125.3.4 cdp-stage-ldr-4.intercars.local cdp-stage-ldr-4
+#10.125.3.5 cdp-stage-ldr-5.intercars.local cdp-stage-ldr-5
+#10.125.3.6 cdp-stage-ldr-6.intercars.local cdp-stage-ldr-6
+## CDP prod environment
+#10.123.15.207 cdp-prod-ldr-1.intercars.local cdp-prod-ldr-1
+#10.123.15.208 cdp-prod-ldr-2.intercars.local cdp-prod-ldr-2
+#10.123.15.209 cdp-prod-ldr-3.intercars.local cdp-prod-ldr-3
+
+10.123.250.33   dcinter01.intercars.local       dcinter01
+10.123.250.35   dcinter02.intercars.local       dcinter02
+10.123.250.41   dcinter03.intercars.local       dcinter03
+10.123.250.40   dcinter04.intercars.local       dcinter04
+10.123.250.32   dcic03.ic       dcic03
+10.123.250.34   dcic04.ic       dcic04
+10.123.250.38   dcic05.ic       dcic05
+10.123.250.39   dcic06.ic       dcic06
+10.123.15.207   cdp-prod-ldr-1  cdp-prod-ldr-1.intercars.local
+10.123.15.208   cdp-prod-ldr-2  cdp-prod-ldr-2.intercars.local
+10.123.15.209   cdp-prod-ldr-3  cdp-prod-ldr-3.intercars.local
+  '';
+
 }
