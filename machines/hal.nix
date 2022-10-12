@@ -93,10 +93,6 @@ in
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
-  hardware.openrazer = {
-    enable = true;
-    users = [ "bara" ];
-  };
 
   hardware.opengl = {
       extraPackages = with pkgs; [ libvdpau-va-gl ];

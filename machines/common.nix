@@ -232,6 +232,11 @@
     tiling-assistant
   ]) ++ (with fishPlugins; [ done forgit fzf-fish ]);
 
+  hardware.openrazer = {
+    enable = true;
+    users = [ "bara" ];
+  };
+
   services.gvfs.enable = true;
   services.fwupd.enable = true;
   services.gnome = {
