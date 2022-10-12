@@ -272,10 +272,7 @@
   programs.command-not-found.enable = true;
   environment.variables.NIX_AUTO_RUN = "1";
 
-  hardware.bluetooth = {
-    enable = true;
-    package = pkgs.bluezFull;
-  };
+  hardware.bluetooth.enable = true;
 
   virtualisation.spiceUSBRedirection.enable = true;
 
