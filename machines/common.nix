@@ -189,6 +189,7 @@
     openhantek6022
     pamixer
     pass
+    pciutils
     peek
     pavucontrol
     pwgen
@@ -210,6 +211,7 @@
     fzf
     fd
     tldr
+    usbutils
     zsh
     samba
     virt-manager
