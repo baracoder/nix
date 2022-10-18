@@ -228,10 +228,8 @@
     appindicator
     bing-wallpaper-changer
     bluetooth-quick-connect
-    sound-output-device-chooser
     system-monitor
     tiling-assistant
-    tilingnome
   ]) ++ (with fishPlugins; [ done forgit fzf-fish ]);
 
   services.gvfs.enable = true;
