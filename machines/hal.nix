@@ -84,8 +84,11 @@ in
     "clearcpuid=514"
   ];
 
-  hardware.nvidia.modesetting.enable = true;
-  hardware.nvidia.package = nvidiaPackage;
+  hardware.nvidia = {
+    modesetting.enable = true;
+    package = nvidiaPackage;
+    powerManagement.enable = true;
+  };
   programs.xwayland.enable = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
