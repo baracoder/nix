@@ -240,7 +240,7 @@
   services.gvfs.enable = true;
   services.fwupd.enable = true;
   services.gnome = {
-    chrome-gnome-shell.enable = true;
+    gnome-browser-connector.enable = true;
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
     gnome-online-miners.enable = true;
