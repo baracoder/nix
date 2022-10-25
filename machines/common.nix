@@ -138,7 +138,7 @@
   };
   users.extraGroups.bara.gid = 1000;
 
-  services.udev.packages = with pkgs; [ 
+  services.udev.packages = with pkgs; [
     openhantek6022
   ];
 
@@ -230,6 +230,11 @@
     bluetooth-quick-connect
     system-monitor
     tiling-assistant
+    (gesture-improvements.overrideAttrs (a: {
+      postInstall = ''
+        sed -i 's/"42"/"43"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
+      '';
+    }))
   ]) ++ (with fishPlugins; [ done forgit fzf-fish ]);
 
   hardware.openrazer = {
