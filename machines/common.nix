@@ -7,7 +7,7 @@
   nix = {
     package = pkgs.nixUnstable;
     extraOptions = ''
-      experimental-features = nix-command flakes ca-derivations
+      experimental-features = nix-command flakes ca-derivations repl-flake
     '';
     settings = {
       trusted-users = [ "root" "@wheel" ];
