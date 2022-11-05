@@ -18,8 +18,6 @@ vscode-with-extensions.override {
         alanz.vscode-hie-server
         dhall.dhall-lang
         dhall.vscode-dhall-lsp-server
-        eamodio.gitlens
-        mhutchie.git-graph
         streetsidesoftware.code-spell-checker
         coenraads.bracket-pair-colorizer-2
         brettm12345.nixfmt-vscode
@@ -31,16 +29,22 @@ vscode-with-extensions.override {
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
         {
-        name = "ecdc";
-        publisher = "mitchdenny";
-        version = "1.4.0";
-        sha256 = "sha256-pP5VV1ahnYT2H5xNCVeM+APdqY132WrwJGyIX7HKYZI=";
+            name = "gitlens";
+            publisher = "eamodio";
+            version = "2022.11.405";
+            sha256 = "sha256-01cN6PqE4g/jOWXUuWScS5qZzMmFN/70SPAVLHHsejQ=";
         }
         {
-        name = "syncify";
-        publisher = "arnohovhannisyan";
-        version = "4.0.5";
-        sha256 = "sha256-mbKy4NPcg7L31fIt8o+HyE01IyuEEE4YXGVy6led+qo=";
+            name = "ecdc";
+            publisher = "mitchdenny";
+            version = "1.8.0";
+            sha256 = "sha256-W2WlngFC5pAAjkj4lQNR5yPJZiedkjqGZHldjx8m7IU=";
+        }
+        {
+            name = "syncify";
+            publisher = "arnohovhannisyan";
+            version = "4.0.5";
+            sha256 = "sha256-mbKy4NPcg7L31fIt8o+HyE01IyuEEE4YXGVy6led+qo=";
         }
         {
             name = "json2yaml";
@@ -51,8 +55,8 @@ vscode-with-extensions.override {
         {
             name = "dotnet-interactive-vscode";
             publisher = "ms-dotnettools";
-            version = "1.0.3103011";
-            sha256 = "sha256-W2dDbp6D2ENn3e8aqtwwQig7qkTdQUHez/wzdhvWQXs=";
+            version = "1.0.3553071";
+            sha256 = "sha256-EZIKb4CvNRZf6KxMrSPEGhxNLZ3CVCAXQg0P/894LNI=";
         }
         {
             name = "aw-watcher-vscode";
