@@ -10,6 +10,9 @@
     "nopti"
     "mem_sleep_default=s2idle"
     "nvme.noacpi=1"
+    # Workaround: https://gitlab.freedesktop.org/drm/intel/-/issues/6757#note_1602653
+    "i915.enable_psr=0"
+    "i915.enable_dc=0"
   ];
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
