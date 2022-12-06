@@ -48,7 +48,7 @@
 
 
   virtualisation.docker.enable = true;
-  virtualisation.docker.extraOptions = "--bip 172.30.0.1/16 --default-address-pool=base=172.30.0.0/16,size=24";
+  virtualisation.docker.extraOptions = "--bip 172.30.0.1/16 --default-address-pool=base=172.30.0.0/16,size=24 --default-address-pool=base=172.40.1.0/16,size=24";
   #virtualisation.virtualbox.host.enable = true;
   system.stateVersion = "18.03";
 
