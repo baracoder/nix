@@ -170,6 +170,7 @@
     cifs-utils
     curl
     docker
+    docker-compose
     dosfstools
     espeak
     emote
