@@ -27,6 +27,7 @@
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
     jetbrains.datagrip
+    jetbrains.rider
   ];
   # power management
   #services.thermald.enable = true;
