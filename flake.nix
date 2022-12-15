@@ -21,7 +21,7 @@
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
-            modules = [ 
+            modules = [
                 ({pkgs, ...}: {
                     nixpkgs.overlays = [
                         nix-alien.overlay
@@ -38,6 +38,7 @@
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
                 ./machines/hex.nix
+                ./modules/nix-ld.nix
                 nixpkgs.nixosModules.notDetected
                 nix-ld.nixosModules.nix-ld
 
@@ -47,15 +48,15 @@
             system = "x86_64-linux";
             #specialArgs = { inherit self; };
 
-            modules = [ 
+            modules = [
                 ({pkgs, ...}: {
-                    nixpkgs.overlays = [ 
+                    nixpkgs.overlays = [
                         (import ./overlays/local-hal.nix )
                         nix-alien.overlay
                     ];
                     environment.systemPackages = [
                         pkgs.nix-alien
-                        pkgs.nix-index 
+                        pkgs.nix-index
                         pkgs.nix-index-update
                     ];
                 })

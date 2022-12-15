@@ -37,6 +37,7 @@
   #};
   powerManagement.powertop.enable = true;
 
+  programs.nix-ld.enable = true;
 
   hardware.opengl = {
       enable = true;

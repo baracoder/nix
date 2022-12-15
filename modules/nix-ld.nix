@@ -28,6 +28,7 @@ let
   ];
 
   libraries = with pkgs; [
+    icu
     fuse3
     alsa-lib
     at-spi2-atk
@@ -104,7 +105,7 @@ in
   };
   config = lib.mkIf cfg.enable {
     systemd.tmpfiles.packages = [
-      (pkgs.callPackage ../nix-ld.nix {})
+      pkgs.nix-ld
     ];
 
     environment.systemPackages = [ nix-ld-libraries ];
