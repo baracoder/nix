@@ -226,7 +226,6 @@
     spice-gtk
     speechd
     sshfs-fuse
-    super-slicer-latest
     vlc
     wget
     fzf
