@@ -7,16 +7,12 @@
     url = "github:thiagokokada/nix-alien";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  inputs.nix-ld = {
-    url = "github:Mic92/nix-ld/main";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
   inputs.nixgl = {
     url = "github:guibou/nixGL";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nix-alien, nix-ld, ny, nixos-hardware, nixgl}: {
+  outputs = { self, nixpkgs, nix-alien, ny, nixos-hardware, nixgl}: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
@@ -38,9 +34,7 @@
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
                 ./machines/hex.nix
-                ./modules/nix-ld.nix
                 nixpkgs.nixosModules.notDetected
-                nix-ld.nixosModules.nix-ld
 
             ];
         };
@@ -60,7 +54,6 @@
                         pkgs.nix-index-update
                     ];
                 })
-                nix-ld.nixosModules.nix-ld
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
                 ./machines/hal.nix

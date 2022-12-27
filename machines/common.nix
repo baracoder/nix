@@ -214,7 +214,6 @@
     peek
     pavucontrol
     pwgen
-    python
     qjackctl
     remmina
     renameutils
