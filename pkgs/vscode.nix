@@ -5,6 +5,7 @@ vscode-with-extensions.override {
     # When the extension is already available in the default extensions set.
     vscodeExtensions = with vscode-extensions; [
         bbenoist.nix
+        mhutchie.git-graph
         ms-kubernetes-tools.vscode-kubernetes-tools
         ms-vscode-remote.remote-ssh
         ms-azuretools.vscode-docker
@@ -29,10 +30,10 @@ vscode-with-extensions.override {
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
         {
-            name = "gitlens";
-            publisher = "eamodio";
-            version = "2022.11.405";
-            sha256 = "sha256-01cN6PqE4g/jOWXUuWScS5qZzMmFN/70SPAVLHHsejQ=";
+            name = "gitblame";
+            publisher = "waderyan";
+            version = "10.1.0";
+            sha256 = "sha256-TTYBaJ4gcMVICz4bGZTvbNRPpWD4tXuAJbI8QcHNDv0=";
         }
         {
             name = "ecdc";
@@ -57,13 +58,6 @@ vscode-with-extensions.override {
             publisher = "ms-dotnettools";
             version = "1.0.3553071";
             sha256 = "sha256-EZIKb4CvNRZf6KxMrSPEGhxNLZ3CVCAXQg0P/894LNI=";
-        }
-        {
-            name = "aw-watcher-vscode";
-            publisher = "activitywatch";
-            version = "0.5.0";
-            sha256 = "sha256-OrdIhgNXpEbLXYVJAx/jpt2c6Qa5jf8FNxqrbu5FfFs=";
-
         }
     ];
 }
