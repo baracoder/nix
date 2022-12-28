@@ -107,6 +107,7 @@ in
     vulkan-tools
     libva-utils
     psensor
+    lutris
   ];
 
   services.udev.packages = with pkgs; [ 

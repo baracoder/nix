@@ -197,7 +197,6 @@
     imagemagick
     iotop
     lm_sensors
-    lutris
     meld
     mellowplayer
     mumble
