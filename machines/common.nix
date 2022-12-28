@@ -235,7 +235,6 @@
     virt-manager
     wireguard-tools
     wireshark
-    x2goclient
     xpra
     (callPackage ../pkgs/vscode.nix {})
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
