@@ -62,7 +62,7 @@
       ubuntu_font_family
       unifont
       twemoji-color-font
-      nerdfonts
+      (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" "DejaVuSansMono" "Terminus" ]; })
     ];
   };
 
