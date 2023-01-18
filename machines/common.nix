@@ -33,7 +33,6 @@
 
   hardware.ksm.enable = true;
 
-
   console.font = "Lat2-Terminus16";
   console.keyMap = "us";
   i18n.defaultLocale = "en_US.UTF-8";
@@ -104,6 +103,8 @@
 
   security.rtkit.enable = true;
   services.smartd.enable = true;
+
+  services.envfs.enable = true;
 
   services = {
     flatpak.enable = true;
