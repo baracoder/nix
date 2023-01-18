@@ -3,16 +3,12 @@
   inputs.ny.url = "git+ssh://git@git.nyris.io:10022/nyris/ny?ref=main";
   inputs.nixos-hardware.url = github:NixOS/nixos-hardware/master;
 
-  inputs.nix-alien = {
-    url = "github:thiagokokada/nix-alien";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
   inputs.nixgl = {
     url = "github:guibou/nixGL";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nix-alien, ny, nixos-hardware, nixgl}: {
+  outputs = { self, nixpkgs, ny, nixos-hardware, nixgl}: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
@@ -20,13 +16,9 @@
             modules = [
                 ({pkgs, ...}: {
                     nixpkgs.overlays = [
-                        nix-alien.overlay
                         nixgl.overlay
                     ];
                     environment.systemPackages = [
-                        pkgs.nix-alien
-                        pkgs.nix-index
-                        pkgs.nix-index-update
                         pkgs.nixgl.nixGLIntel
                     ];
                 })
@@ -46,12 +38,8 @@
                 ({pkgs, ...}: {
                     nixpkgs.overlays = [
                         (import ./overlays/local-hal.nix )
-                        nix-alien.overlay
                     ];
                     environment.systemPackages = [
-                        pkgs.nix-alien
-                        pkgs.nix-index
-                        pkgs.nix-index-update
                     ];
                 })
                 ny.nixosModules.x86_64-linux.ny
