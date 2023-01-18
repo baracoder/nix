@@ -24,6 +24,8 @@
     xorg.xbacklight
     jetbrains.datagrip
     jetbrains.rider
+    bespokesynth
+    sonic-pi
   ];
 
   programs.nix-ld.enable = true;
