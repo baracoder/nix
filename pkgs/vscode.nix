@@ -22,7 +22,8 @@ vscode-with-extensions.override {
         streetsidesoftware.code-spell-checker
         coenraads.bracket-pair-colorizer-2
         brettm12345.nixfmt-vscode
-        ms-python.python
+        # https://nixpk.gs/pr-tracker.html?pr=204457
+        #ms-python.python
         kubukoz.nickel-syntax
         golang.go
         ms-toolsai.jupyter

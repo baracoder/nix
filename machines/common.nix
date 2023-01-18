@@ -181,7 +181,8 @@
     delta
     dhall
     dhall-json
-    dogdns
+    # https://nixpk.gs/pr-tracker.html?pr=210738
+    #dogdns
     firefox
     file
     gimp
