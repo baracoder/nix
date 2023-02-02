@@ -188,9 +188,11 @@
     gitAndTools.gitFull
     git-lfs
     gnumake
+    gnome-console
     gnome-usage
     google-chrome
     google-cloud-sdk
+    gnome.gnome-tweaks
     gsmartcontrol
     hdparm
     btop
