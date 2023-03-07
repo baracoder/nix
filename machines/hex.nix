@@ -45,6 +45,7 @@
   system.stateVersion = "18.03";
 
   boot.initrd.availableKernelModules = [ "wireguard" "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.systemd.enable = true;
   boot.kernel.sysctl = {
     "vm.swappiness" = lib.mkDefault 1;
   };
