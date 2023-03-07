@@ -215,6 +215,7 @@
     pciutils
     peek
     pavucontrol
+    pre-commit
     pwgen
     qjackctl
     remmina
