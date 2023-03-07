@@ -114,7 +114,7 @@
     };
     resolved.enable = true;
     openssh.enable = true;
-    openssh.forwardX11 = true;
+    openssh.settings.X11Forwarding = true;
     udisks2.enable = true;
     printing.enable = true;
     printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper hplip ];
