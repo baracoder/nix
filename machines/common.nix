@@ -299,6 +299,8 @@
   environment.variables.NIX_AUTO_RUN = "1";
 
   hardware.bluetooth.enable = true;
+  hardware.logitech.wireless.enable = true;
+  hardware.logitech.wireless.enableGraphical = true;
 
   virtualisation.spiceUSBRedirection.enable = true;
 
