@@ -111,9 +111,11 @@ in
     libva-utils
     psensor
     lutris
+    liquidctl
   ];
 
   services.udev.packages = with pkgs; [ 
+    liquidctl
     openrgb
     ( pkgs.writeTextFile {
       name = "extra-udev-rules";
