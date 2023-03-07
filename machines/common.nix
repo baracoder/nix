@@ -291,6 +291,8 @@
   programs.zsh.enable = true;
   programs.fish.enable = true;
 
+  programs.nix-ld.enable = true;
+
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
 
