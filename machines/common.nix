@@ -250,6 +250,7 @@
     appindicator
     bing-wallpaper-changer
     bluetooth-quick-connect
+    emoji-selector
     system-monitor
     tiling-assistant
     (gesture-improvements.overrideAttrs (a: {
