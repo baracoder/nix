@@ -186,6 +186,7 @@
     file
     gimp
     gitAndTools.gitFull
+    gitflow
     git-lfs
     gnumake
     gnome-console
