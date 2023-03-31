@@ -35,9 +35,6 @@
       extraPackages = with pkgs; [ vaapiIntel libvdpau-va-gl ];
       extraPackages32 = with pkgs; [ vaapiIntel libvdpau-va-gl ];
     };
-  hardware.video.hidpi.enable = true;
-
-
 
   virtualisation.docker.enable = true;
   virtualisation.docker.extraOptions = "--bip 172.30.0.1/16 --default-address-pool=base=172.30.0.0/16,size=24 --default-address-pool=base=172.40.1.0/16,size=24";
