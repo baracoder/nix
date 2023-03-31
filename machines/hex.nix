@@ -16,6 +16,7 @@
 
   services.fwupd.enable = true;
   services.logind.lidSwitchExternalPower = "ignore";
+  services.tlp.enable = true;
 
   networking.hostName = "hex";
   networking.networkmanager.enable = true;
@@ -27,7 +28,7 @@
     bespokesynth
     sonic-pi
   ];
-
+  services.power-profiles-daemon.enable = false;
   programs.nix-ld.enable = true;
 
   hardware.opengl = {
