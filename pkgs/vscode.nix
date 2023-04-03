@@ -20,7 +20,6 @@ vscode-with-extensions.override {
         dhall.dhall-lang
         dhall.vscode-dhall-lsp-server
         streetsidesoftware.code-spell-checker
-        coenraads.bracket-pair-colorizer-2
         brettm12345.nixfmt-vscode
         # https://nixpk.gs/pr-tracker.html?pr=204457
         #ms-python.python
