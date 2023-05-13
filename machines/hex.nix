@@ -32,6 +32,7 @@
     jetbrains.rider
     bespokesynth
     sonic-pi
+    clamav
   ];
   services.power-profiles-daemon.enable = false;
   programs.nix-ld.enable = true;
