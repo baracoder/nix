@@ -12,6 +12,11 @@
     "nvme.noacpi=1"
   ];
 
+  system.autoUpgrade = {
+    enable = true;
+    flake = "/home/bara/src/baracoder-nix";
+  };
+
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   services.fwupd.enable = true;
