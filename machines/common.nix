@@ -72,6 +72,11 @@
   };
 
   services.packagekit.enable = true;
+  services.emacs = {
+    install = true;
+    enable = true;
+    defaultEditor = true;
+  };
 
   services.pipewire = {
     enable = true;
@@ -174,6 +179,7 @@
     docker-compose
     dosfstools
     espeak
+    emacs
     emote
     unzip
     evince
