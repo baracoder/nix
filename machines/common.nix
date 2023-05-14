@@ -117,7 +117,10 @@
       enable = true;
       nssmdns = true;
     };
-    resolved.enable = false; # Due to Random DNS Server fallback
+    resolved = {
+      enable = true;
+      fallbackDns = [ "" ];
+    };
     openssh.enable = true;
     openssh.settings.X11Forwarding = true;
     udisks2.enable = true;
