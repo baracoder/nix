@@ -227,6 +227,7 @@
     pavucontrol
     pre-commit
     pwgen
+    python3
     qjackctl
     remmina
     renameutils
