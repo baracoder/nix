@@ -111,6 +111,7 @@ in
     libva-utils
     psensor
     lutris
+    orcaslicer
     liquidctl
   ];
 
