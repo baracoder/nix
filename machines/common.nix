@@ -73,9 +73,9 @@
 
   services.packagekit.enable = true;
   services.emacs = {
-    install = true;
-    enable = true;
-    defaultEditor = true;
+    install = false;
+    enable = false;
+    defaultEditor = false;
   };
 
   services.pipewire = {
@@ -182,7 +182,12 @@
     docker-compose
     dosfstools
     espeak
-    emacs
+    ((emacsPackagesFor emacs).emacsWithPackages (epkgs: with epkgs; [
+      vterm
+      sqlite
+      sqlite3
+      emacsql-sqlite
+    ]))
     emote
     unzip
     evince
@@ -239,6 +244,7 @@
     spice-gtk
     speechd
     sshfs-fuse
+    sqlite
     vlc
     wget
     fzf
@@ -252,6 +258,7 @@
     wireshark
     xpra
     nix-tree
+    yaml-language-server
     (callPackage ../pkgs/vscode.nix {})
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
     (callPackage ../pkgs/dotnetSdk.nix {})
