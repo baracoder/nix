@@ -119,21 +119,14 @@ in
   services.udev.packages = with pkgs; [ 
     liquidctl
     openrgb
-    ( pkgs.writeTextFile {
-      name = "extra-udev-rules";
-      text = ''
-SUBSYSTEM=="input", ATTRS{name}=="relabsd:*", ENV{ID_INPUT_MOUSE}="0", ENV{ID_INPUT_JOYSTICK}="1", ENV{ID_CLASS}="joystick", MODE="0666"
-      
-      '';
-      destination = "/etc/udev/rules.d/99-relabsd.rules";
-    } )
   ];
   services.udev.extraRules = ''
     # x52 joystick
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0762", MODE="0666"
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0255", MODE="0666"
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="075c", MODE="0666"
-
+    # relabsd space mouse
+    SUBSYSTEM=="input", ATTRS{name}=="relabsd:*", ENV{ID_INPUT_MOUSE}="0", ENV{ID_INPUT_JOYSTICK}="1", ENV{ID_CLASS}="joystick", MODE="0666"
   '';
 
 }
