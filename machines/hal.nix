@@ -78,6 +78,8 @@ in
   '';
   system.stateVersion = "19.09";
 
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
 
   boot.kernelParams = [
     "nouveau.modeset=0"
