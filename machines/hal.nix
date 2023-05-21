@@ -112,7 +112,6 @@ in
     vulkan-tools
     libva-utils
     psensor
-    lutris
     orcaslicer
     liquidctl
   ];
