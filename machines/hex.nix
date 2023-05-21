@@ -6,10 +6,12 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.plymouth.enable = true;
 
-  boot.kernelParams = [
+  boot.kernelParams = lib.mkForce [
     "nopti"
     "mem_sleep_default=s2idle"
     "nvme.noacpi=1"
+    "splash"
+    "loglevel=4"
   ];
 
   system.autoUpgrade = {
@@ -21,7 +23,13 @@
 
   services.fwupd.enable = true;
   services.logind.lidSwitchExternalPower = "ignore";
-  services.tlp.enable = true;
+  services.tlp = {
+    enable = true;
+    settings = {
+      PCIE_ASPM_ON_BAT = "powersupersave";
+    };
+  };
+  services.fprintd.enable = false;
 
   networking.hostName = "hex";
   networking.networkmanager.enable = true;
