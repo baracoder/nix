@@ -72,11 +72,6 @@
   };
 
   services.packagekit.enable = true;
-  services.emacs = {
-    install = false;
-    enable = false;
-    defaultEditor = false;
-  };
 
   services.pipewire = {
     enable = true;
