@@ -177,7 +177,7 @@
     docker-compose
     dosfstools
     espeak
-    ((emacsPackagesFor emacs).emacsWithPackages (epkgs: with epkgs; [
+    ((emacsPackagesFor emacs29).emacsWithPackages (epkgs: with epkgs; [
       vterm
       sqlite
       sqlite3
