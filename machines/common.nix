@@ -225,6 +225,7 @@
     pciutils
     peek
     pavucontrol
+    pinentry_gnome
     pre-commit
     pwgen
     python3
@@ -297,6 +298,12 @@
   programs.seahorse.enable = true;
   programs.gnome-terminal.enable = true;
   programs.gnome-disks.enable = true;
+  programs.gnupg.agent = {
+    enable = true;
+    pinentryFlavor = "gnome3";
+  };
+  services.pcscd.enable = true;
+
 
   # ram verdoppler
   zramSwap.enable = false;
