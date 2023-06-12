@@ -215,7 +215,7 @@
     mumble
     mtools
     nmap
-    nodejs-14_x
+    nodejs-18_x
     ntfs3g
     nvme-cli
     octave
