@@ -223,7 +223,7 @@
     pamixer
     pass
     pciutils
-    peek
+    #peek
     pavucontrol
     pinentry_gnome
     pre-commit
