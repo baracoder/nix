@@ -46,14 +46,14 @@
   hardware.sane.enable = true;
 
   fonts = {
-    enableDefaultFonts = true;
+    enableDefaultPackages = true;
     fontDir.enable = true;
     enableGhostscriptFonts = true;
     fontconfig = {
       enable = true;
       allowBitmaps = true;
     };
-    fonts = with pkgs; [
+    packages = with pkgs; [
       terminus_font
       terminus_font_ttf
       corefonts
