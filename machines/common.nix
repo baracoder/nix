@@ -71,6 +71,11 @@
     package = pkgs.pulseaudioFull;
   };
 
+  xdg.portal = {
+    xdgOpenUsePortal = true;
+    enable = true;
+  };
+
   services.packagekit.enable = true;
 
   services.pipewire = {
