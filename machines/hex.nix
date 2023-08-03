@@ -49,8 +49,13 @@
     jetbrains.rider
     bespokesynth
     sonic-pi
-    clamav # required for ISO-27001
+    (callPackage ../pkgs/drata-agent.nix {})
+    clamav
   ];
+
+  # required for ISO-27001
+  services.clamav.daemon.enable = true;
+  services.clamav.updater.enable = true;
 
   programs.nix-ld.enable = true;
 
