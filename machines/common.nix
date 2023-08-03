@@ -225,6 +225,7 @@
     pciutils
     #peek
     pavucontrol
+    pdfgrep
     pinentry_gnome
     pre-commit
     pwgen
