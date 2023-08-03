@@ -202,6 +202,7 @@
     gitAndTools.gitFull
     gitflow
     git-lfs
+    glab
     gnumake
     gnome-console
     gnome-usage
