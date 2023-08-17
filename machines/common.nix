@@ -142,6 +142,7 @@
           enable = false;
           user = "bara";
         };
+        defaultSession = "gnome";
       };
       desktopManager.gnome = {
         enable = true;
