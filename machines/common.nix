@@ -313,10 +313,6 @@
   };
   services.pcscd.enable = true;
 
-
-  # ram verdoppler
-  zramSwap.enable = false;
-
   programs.adb.enable = true;
   programs.bash.enableCompletion = true;
   programs.zsh.enable = true;
