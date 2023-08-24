@@ -16,8 +16,6 @@ vscode-with-extensions.override {
         redhat.vscode-yaml
         vscodevim.vim
         alanz.vscode-hie-server
-        dhall.dhall-lang
-        dhall.vscode-dhall-lsp-server
         streetsidesoftware.code-spell-checker
         brettm12345.nixfmt-vscode
         # https://nixpk.gs/pr-tracker.html?pr=204457
