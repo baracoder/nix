@@ -4,7 +4,6 @@ vscode-with-extensions.override {
     vscode = vscodium;
     # When the extension is already available in the default extensions set.
     vscodeExtensions = with vscode-extensions; [
-        bbenoist.nix
         mhutchie.git-graph
         ms-kubernetes-tools.vscode-kubernetes-tools
         ms-vscode-remote.remote-ssh
@@ -26,6 +25,7 @@ vscode-with-extensions.override {
         kubukoz.nickel-syntax
         golang.go
         ms-toolsai.jupyter
+        jnoortheen.nix-ide
     ]
     # Concise version from the vscode market place when not available in the default set.
     ++ vscode-utils.extensionsFromVscodeMarketplace [
