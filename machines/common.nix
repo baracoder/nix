@@ -297,7 +297,6 @@
     tracker.enable = true;
     sushi.enable = true;
   };
-  services.dleyna-renderer.enable = false;
 
   services.earlyoom.enable = true;
 
