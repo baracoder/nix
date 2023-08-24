@@ -195,7 +195,6 @@
     dhall
     dhall-json
     dogdns
-    firefox
     file
     gimp
     gitAndTools.gitFull
@@ -302,6 +301,10 @@
 
   services.earlyoom.enable = true;
 
+  programs.firefox = {
+    enable = true;
+    languagePacks = [ "en-US" "de" ];
+  };
   programs.seahorse.enable = true;
   programs.gnome-terminal.enable = true;
   programs.gnome-disks.enable = true;
