@@ -25,8 +25,6 @@ in
   boot.initrd.luks.devices."crypt-ssd".device = "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   boot.initrd.systemd.enable = true;
-  boot.plymouth.enable = true;
-
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/4B1E-8899";
@@ -78,8 +76,10 @@ in
   '';
   system.stateVersion = "19.09";
 
-  environment.sessionVariables.NIXOS_OZONE_WL = "1";
-
+  environment.sessionVariables = {
+    NIXOS_OZONE_WL = "1";
+    WLR_NO_HARDWARE_CURSORS = "1";
+  };
 
   boot.kernelParams = [
     "nouveau.modeset=0"
@@ -97,7 +97,6 @@ in
   programs.xwayland.enable = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
-
 
   hardware.opengl = {
       extraPackages = with pkgs; [ libvdpau-va-gl ];
@@ -128,5 +127,4 @@ in
     # relabsd space mouse
     SUBSYSTEM=="input", ATTRS{name}=="relabsd:*", ENV{ID_INPUT_MOUSE}="0", ENV{ID_INPUT_JOYSTICK}="1", ENV{ID_CLASS}="joystick", MODE="0666"
   '';
-
 }
