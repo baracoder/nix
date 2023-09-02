@@ -71,6 +71,7 @@
     package = pkgs.pulseaudioFull;
   };
 
+  xdg.autostart.enable = true;
   xdg.portal = {
     xdgOpenUsePortal = true;
     enable = true;
