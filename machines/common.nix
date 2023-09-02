@@ -156,6 +156,21 @@
     };
   };
 
+  services.blueman.enable = true;
+  networking.networkmanager.enable = true;
+  security.pam.services.gtklock = {};
+  qt.style = "adwaita-dark";
+  environment.etc = {
+    "xdg/gtk-3.0/settings.ini".text = ''
+      [Settings]
+      gtk-application-prefer-dark-theme=1
+    '';
+    "xdg/gtk-4.0/settings.ini".text = ''
+      [Settings]
+      gtk-application-prefer-dark-theme=1
+    '';
+  };
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.extraUsers.bara = {
     isNormalUser = true;
@@ -297,6 +312,7 @@
     tracker-miners.enable = true;
     tracker.enable = true;
     sushi.enable = true;
+    at-spi2-core.enable = true;
   };
 
   services.earlyoom.enable = true;
