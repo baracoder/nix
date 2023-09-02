@@ -2,17 +2,20 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.ny.url = "git+ssh://git@git.nyris.io:10022/nyris/ny?ref=main";
   inputs.nixos-hardware.url = github:NixOS/nixos-hardware/master;
+  inputs.hyprland.url = "github:hyprwm/Hyprland";
+
 
   inputs.nixgl = {
     url = "github:guibou/nixGL";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, ny, nixos-hardware, nixgl}: {
+  outputs = { self, nixpkgs, ny, nixos-hardware, nixgl, hyprland} @ inputs: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
             system = "x86_64-linux";
+            specialArgs = { inherit inputs; };
             modules = [
                 ({pkgs, ...}: {
                     nixpkgs.overlays = [
@@ -32,7 +35,7 @@
         };
         hal = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
-            #specialArgs = { inherit self; };
+            specialArgs = { inherit inputs; };
 
             modules = [
                 ({pkgs, ...}: {
