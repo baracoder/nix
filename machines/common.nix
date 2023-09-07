@@ -43,6 +43,8 @@
 
   time.timeZone = "Europe/Berlin";
 
+  documentation.man.generateCaches = false;
+
   hardware.sane.enable = true;
 
   fonts = {
