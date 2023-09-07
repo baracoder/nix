@@ -10,13 +10,14 @@
     "vm.swappiness" = lib.mkDefault 1;
   };
 
-  boot.kernelParams = lib.mkForce [
-    "nopti"
-    "mem_sleep_default=deep"
-    "nvme.noacpi=1"
-    "splash"
-    "loglevel=4"
-  ];
+  #boot.kernelParams = lib.mkForce [
+  #  "nopti"
+  #  "mem_sleep_default=deep"
+  #  "nvme.noacpi=1"
+  #  "splash"
+  #  "loglevel=4"
+  #];
+  boot.kernelParams = [ "nopti" ];
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # Required for ISO-27001
@@ -70,6 +71,7 @@
   # fs stuff
   services.fstrim.enable = lib.mkDefault true;
   boot.initrd.luks.devices."nixos-root".device = "/dev/disk/by-uuid/f9ec90cb-4f20-448d-b33b-ffa09c58a4ab";
+  boot.initrd.luks.devices."cryptswap".device = "/dev/disk/by-uuid/7edba97a-1db8-4fbd-a0e4-192f42dd779a";
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/782c0b96-19a1-4073-8e35-a20b387da9be";
@@ -81,7 +83,7 @@
       fsType = "vfat";
       options = [ "noatime" ];
     };
-  swapDevices = [ ];
+  swapDevices = [ "/dev/mapper/luks-7edba97a-1db8-4fbd-a0e4-192f42dd779a" ];
 
   nix.settings.max-jobs = lib.mkDefault 8;
 }

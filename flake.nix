@@ -25,7 +25,8 @@
                         pkgs.nixgl.nixGLIntel
                     ];
                 })
-                nixos-hardware.nixosModules.framework
+                #nixos-hardware.nixosModules.framework
+                nixos-hardware.nixosModules.dell-xps-13-9380
                 ny.nixosModules.x86_64-linux.ny
                 ./machines/common.nix
                 ./machines/hex.nix
