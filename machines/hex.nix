@@ -83,7 +83,7 @@
       fsType = "vfat";
       options = [ "noatime" ];
     };
-  swapDevices = [ "/dev/mapper/luks-7edba97a-1db8-4fbd-a0e4-192f42dd779a" ];
+  swapDevices = [ { device = "/dev/mapper/luks-7edba97a-1db8-4fbd-a0e4-192f42dd779a"; } ];
 
   nix.settings.max-jobs = lib.mkDefault 8;
 }
