@@ -76,6 +76,10 @@
   xdg.autostart.enable = true;
   xdg.portal = {
     xdgOpenUsePortal = true;
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-gtk
+      xdg-desktop-portal-wlr
+     ];
     enable = true;
   };
 
@@ -145,10 +149,10 @@
           enable = false;
           user = "bara";
         };
-        defaultSession = "gnome";
+        defaultSession = "hyprland";
       };
       desktopManager.gnome = {
-        enable = true;
+        enable = false; # Not compatible with hyprland
         extraGSettingsOverrides = ''
           [org.gnome.desktop.input-sources]
           sources=[('xkb', '${xkbVariant}')]
@@ -159,6 +163,10 @@
   };
 
   services.blueman.enable = true;
+  programs.hyprland = {
+    enable = true;
+    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  };
   networking.networkmanager.enable = true;
   security.pam.services.gtklock = {};
   qt.style = "adwaita-dark";
@@ -188,7 +196,41 @@
     openhantek6022
   ];
 
+  systemd.packages = with pkgs; [
+    swayosd
+  ];
+
   environment.systemPackages = with pkgs; [
+    # hyprland related
+    fuzzel
+    networkmanagerapplet
+    polybarFull
+    playerctl
+    gsettings-desktop-schemas
+    nwg-bar
+    nwg-dock
+    nwg-panel
+    nwg-drawer
+    nwg-displays
+    gtklock
+    gtklock-userinfo-module
+    gtklock-powerbar-module
+    gtklock-playerctl-module
+    wlr-randr
+    swaynotificationcenter
+    lxappearance
+    gsettings-desktop-schemas
+    gnome.adwaita-icon-theme
+    gtk3
+    blueman
+    swayidle
+    gopsuinfo
+    swayosd
+    gnome.nautilus
+    xfce.thunar
+    flameshot
+    grim
+
     aspell
     aspellDicts.de
     aspellDicts.en
@@ -210,10 +252,10 @@
     evince
     direnv
     delta
-    dhall
-    dhall-json
+    dmenu
     dogdns
     file
+    foot
     gimp
     gitAndTools.gitFull
     gitflow
@@ -228,6 +270,7 @@
     gnome.gnome-tweaks
     gsmartcontrol
     hdparm
+    hyprpaper
     btop
     htop
     imagemagick

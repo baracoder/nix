@@ -95,6 +95,7 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
+  programs.hyprland.enableNvidiaPatches = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
