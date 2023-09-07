@@ -230,6 +230,8 @@
     xfce.thunar
     flameshot
     grim
+    slurp
+    swappy
 
     aspell
     aspellDicts.de
