@@ -79,6 +79,7 @@ in
   environment.sessionVariables.WLR_NO_HARDWARE_CURSORS = "1";
 
   boot.kernelParams = [
+    "quiet"
     "nouveau.modeset=0"
     # workaround for nvidia docker
     "systemd.unified_cgroup_hierarchy=false" 
