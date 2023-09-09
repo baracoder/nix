@@ -232,7 +232,7 @@
     grim
     slurp
     swappy
-    wlr-clipboard
+    wl-clipboard
 
     aspell
     aspellDicts.de
