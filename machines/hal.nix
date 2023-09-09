@@ -85,6 +85,8 @@ in
     "systemd.unified_cgroup_hierarchy=false" 
     # workaround for https://github.com/ValveSoftware/Proton/issues/2927
     "clearcpuid=514"
+    # workaround for ACPI errors on b450 chipset see https://bbs.minisforum.com/threads/the-iommu-issue-boot-and-usb-problems.2180/
+    "amd_iommu=off"
   ];
 
   hardware.nvidia = {
