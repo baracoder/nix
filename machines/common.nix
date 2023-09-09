@@ -342,7 +342,7 @@
         sed -i 's/"42"/"43"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
       '';
     }))
-  ]) ++ (with fishPlugins; [ done forgit fzf-fish tide ]);
+  ]);
 
   hardware.openrazer = {
     enable = true;
@@ -381,7 +381,6 @@
   programs.adb.enable = true;
   programs.bash.enableCompletion = true;
   programs.zsh.enable = true;
-  programs.fish.enable = true;
 
   programs.nix-ld.enable = true;
 
