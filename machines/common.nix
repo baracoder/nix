@@ -233,6 +233,9 @@
     slurp
     swappy
     wl-clipboard
+    alacritty
+    kitty
+    gnome3.eog
 
     aspell
     aspellDicts.de
