@@ -381,9 +381,16 @@
   };
   services.pcscd.enable = true;
 
+  programs.nix-index.enable = true;
+  programs.nix-index.enableZshIntegration = true;
+  programs.command-not-found.enable = false;
   programs.adb.enable = true;
   programs.bash.enableCompletion = true;
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    autosuggestions.enable = true;
+    syntaxHighlighting.enable = true;
+  };
 
   programs.nix-ld.enable = true;
 
@@ -391,7 +398,6 @@
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
 
   # directly run the missing commands via nix-shell (without installing anything)
-  programs.command-not-found.enable = true;
   environment.variables.NIX_AUTO_RUN = "1";
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
