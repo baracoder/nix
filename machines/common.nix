@@ -298,7 +298,7 @@
     #peek
     pavucontrol
     pdfgrep
-    pinentry_gnome
+    pinentry-gnome
     pre-commit
     pwgen
     python3
