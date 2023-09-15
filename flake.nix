@@ -3,14 +3,14 @@
   inputs.ny.url = "git+ssh://git@git.nyris.io:10022/nyris/ny?ref=main";
   inputs.nixos-hardware.url = github:NixOS/nixos-hardware/master;
   inputs.hyprland.url = "github:hyprwm/Hyprland";
-
+  inputs.gBar.url = "github:scorpion-26/gBar";
 
   inputs.nixgl = {
     url = "github:guibou/nixGL";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, ny, nixos-hardware, nixgl, hyprland} @ inputs: {
+  outputs = { self, nixpkgs, ny, nixos-hardware, nixgl, hyprland, gBar} @ inputs: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
@@ -23,6 +23,7 @@
                     ];
                     environment.systemPackages = [
                         pkgs.nixgl.nixGLIntel
+			gBar.defaultPackage.x86_64-linux
                     ];
                 })
                 #nixos-hardware.nixosModules.framework
