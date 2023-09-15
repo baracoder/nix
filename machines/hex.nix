@@ -51,6 +51,7 @@
     sonic-pi
     (callPackage ../pkgs/drata-agent.nix {})
     clamav
+    brightnessctl
   ];
 
   # required for ISO-27001
