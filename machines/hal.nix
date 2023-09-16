@@ -84,7 +84,7 @@ in
     # workaround for nvidia docker
     "systemd.unified_cgroup_hierarchy=false" 
     # workaround for ACPI errors on b450 chipset see https://bbs.minisforum.com/threads/the-iommu-issue-boot-and-usb-problems.2180/
-    "amd_iommu=off"
+    "amd_iommu=off" "iommu=disable"
   ];
 
   hardware.nvidia = {
