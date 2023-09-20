@@ -9,7 +9,7 @@ in
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback ];
   boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
-  boot.kernelModules = [ "kvm-intel" "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "v4l2loopback" "btrfs" ];
+  boot.kernelModules = [ "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "v4l2loopback" "btrfs" ];
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
@@ -48,8 +48,8 @@ in
   powerManagement.enable = true;
   powerManagement.cpuFreqGovernor = "ondemand";
 
-  virtualisation.waydroid.enable = true;
-  virtualisation.libvirtd.enable = true;
+  #virtualisation.waydroid.enable = true;
+  #virtualisation.libvirtd.enable = true;
   virtualisation.docker = {
     enable = true;
     enableOnBoot = false;
@@ -84,7 +84,7 @@ in
     # workaround for nvidia docker
     "systemd.unified_cgroup_hierarchy=false" 
     # workaround for ACPI errors on b450 chipset see https://bbs.minisforum.com/threads/the-iommu-issue-boot-and-usb-problems.2180/
-    "amd_iommu=off" "iommu=disable"
+    #"amd_iommu=off" "iommu=disable"
   ];
 
   hardware.nvidia = {

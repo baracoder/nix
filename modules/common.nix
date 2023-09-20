@@ -43,7 +43,7 @@
 
   time.timeZone = "Europe/Berlin";
 
-  documentation.man.generateCaches = false;
+  #documentation.man.generateCaches = false;
 
   hardware.sane.enable = true;
 
@@ -76,10 +76,6 @@
   xdg.autostart.enable = true;
   xdg.portal = {
     xdgOpenUsePortal = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-      xdg-desktop-portal-wlr
-     ];
     enable = true;
   };
 
@@ -149,10 +145,10 @@
           enable = false;
           user = "bara";
         };
-        defaultSession = "hyprland";
+        defaultSession = "gnome";
       };
       desktopManager.gnome = {
-        enable = false; # Not compatible with hyprland
+        enable = true;
         extraGSettingsOverrides = ''
           [org.gnome.desktop.input-sources]
           sources=[('xkb', '${xkbVariant}')]
@@ -162,24 +158,6 @@
     };
   };
 
-  services.blueman.enable = true;
-  programs.hyprland = {
-    enable = true;
-    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
-  };
-  networking.networkmanager.enable = true;
-  security.pam.services.gtklock = {};
-  qt.style = "adwaita-dark";
-  environment.etc = {
-    "xdg/gtk-3.0/settings.ini".text = ''
-      [Settings]
-      gtk-application-prefer-dark-theme=1
-    '';
-    "xdg/gtk-4.0/settings.ini".text = ''
-      [Settings]
-      gtk-application-prefer-dark-theme=1
-    '';
-  };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.extraUsers.bara = {
@@ -196,47 +174,7 @@
     openhantek6022
   ];
 
-  systemd.packages = with pkgs; [
-    swayosd
-  ];
-
   environment.systemPackages = with pkgs; [
-    # hyprland related
-    fuzzel
-    networkmanagerapplet
-    polybarFull
-    playerctl
-    gsettings-desktop-schemas
-    nwg-bar
-    nwg-dock
-    nwg-panel
-    nwg-drawer
-    nwg-displays
-    gtklock
-    gtklock-userinfo-module
-    gtklock-powerbar-module
-    gtklock-playerctl-module
-    wlr-randr
-    swaynotificationcenter
-    lxappearance
-    gsettings-desktop-schemas
-    gnome.adwaita-icon-theme
-    gtk3
-    blueman
-    swayidle
-    gopsuinfo
-    swayosd
-    gnome.nautilus
-    xfce.thunar
-    flameshot
-    grim
-    slurp
-    swappy
-    wl-clipboard
-    alacritty
-    kitty
-    gnome3.eog
-
     aspell
     aspellDicts.de
     aspellDicts.en
@@ -372,7 +310,7 @@
     enable = true;
     languagePacks = [ "en-US" "de" ];
   };
-  programs.seahorse.enable = true;
+  #programs.seahorse.enable = true;
   programs.gnome-terminal.enable = true;
   programs.gnome-disks.enable = true;
   programs.gnupg.agent = {
@@ -388,6 +326,7 @@
   programs.bash.enableCompletion = true;
   programs.zsh = {
     enable = true;
+    enableCompletion = true;
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
   };
@@ -406,6 +345,7 @@
   hardware.logitech.wireless.enableGraphical = true;
 
   virtualisation.spiceUSBRedirection.enable = true;
+  programs.ssh.askPassword = pkgs.lib.mkForce "${pkgs.gnome.seahorse.out}/libexec/seahorse/ssh-askpass";
 
   nyris.programs.enable = true;
 }

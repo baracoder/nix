@@ -29,7 +29,8 @@
                 #nixos-hardware.nixosModules.framework
                 nixos-hardware.nixosModules.dell-xps-13-9380
                 ny.nixosModules.x86_64-linux.ny
-                ./machines/common.nix
+                ./modules/common.nix
+                ./modules/hyprland.nix
                 ./machines/hex.nix
                 nixpkgs.nixosModules.notDetected
 
@@ -48,7 +49,8 @@
                     ];
                 })
                 ny.nixosModules.x86_64-linux.ny
-                ./machines/common.nix
+                ./modules/common.nix
+                ./modules/hyprland.nix
                 ./machines/hal.nix
                 nixpkgs.nixosModules.notDetected
             ];
