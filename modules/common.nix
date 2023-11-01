@@ -272,6 +272,7 @@
     (callPackage ../pkgs/lens.nix {})
     (callPackage ../pkgs/vim.nix {})
   ] ++ (with gnomeExtensions; [
+    quick-settings-audio-devices-hider
     appindicator
     bing-wallpaper-changer
     bluetooth-quick-connect
