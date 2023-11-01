@@ -26,8 +26,8 @@
 			gBar.defaultPackage.x86_64-linux
                     ];
                 })
-                #nixos-hardware.nixosModules.framework
-                nixos-hardware.nixosModules.dell-xps-13-9380
+                nixos-hardware.nixosModules.framework
+                #nixos-hardware.nixosModules.dell-xps-13-9380
                 ny.nixosModules.x86_64-linux.ny
                 ./modules/common.nix
                 ./modules/hyprland.nix
