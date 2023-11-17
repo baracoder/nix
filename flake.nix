@@ -26,7 +26,7 @@
 			gBar.defaultPackage.x86_64-linux
                     ];
                 })
-                nixos-hardware.nixosModules.framework
+                nixos-hardware.nixosModules.framework-11th-gen-intel
                 #nixos-hardware.nixosModules.dell-xps-13-9380
                 ny.nixosModules.x86_64-linux.ny
                 ./modules/common.nix
