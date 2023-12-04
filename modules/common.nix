@@ -269,7 +269,6 @@
     (callPackage ../pkgs/vscode.nix {})
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
     (callPackage ../pkgs/dotnetSdk.nix {})
-    (callPackage ../pkgs/lens.nix {})
     (callPackage ../pkgs/vim.nix {})
   ] ++ (with gnomeExtensions; [
     quick-settings-audio-devices-hider
