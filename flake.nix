@@ -5,12 +5,7 @@
   inputs.hyprland.url = "github:hyprwm/Hyprland";
   inputs.gBar.url = "github:scorpion-26/gBar";
 
-  inputs.nixgl = {
-    url = "github:guibou/nixGL";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-
-  outputs = { self, nixpkgs, ny, nixos-hardware, nixgl, hyprland, gBar} @ inputs: {
+  outputs = { self, nixpkgs, ny, nixos-hardware, hyprland, gBar} @ inputs: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
@@ -18,11 +13,7 @@
             specialArgs = { inherit inputs; };
             modules = [
                 ({pkgs, ...}: {
-                    nixpkgs.overlays = [
-                        nixgl.overlay
-                    ];
                     environment.systemPackages = [
-                        pkgs.nixgl.nixGLIntel
 			gBar.defaultPackage.x86_64-linux
                     ];
                 })
