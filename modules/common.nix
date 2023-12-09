@@ -213,6 +213,7 @@
     google-cloud-sdk
     gnome.gnome-tweaks
     gsmartcontrol
+    keepass
     hdparm
     hyprpaper
     btop
