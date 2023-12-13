@@ -113,6 +113,7 @@ in
     psensor
     orcaslicer
     liquidctl
+    bambu-studio
   ];
 
   services.udev.packages = with pkgs; [ 
