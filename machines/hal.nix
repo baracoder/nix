@@ -111,7 +111,7 @@ in
     vulkan-tools
     libva-utils
     psensor
-    orcaslicer
+    orca-slicer
     liquidctl
     bambu-studio
   ];
