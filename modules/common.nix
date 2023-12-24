@@ -116,7 +116,7 @@
     flatpak.enable = true;
     avahi = {
       enable = true;
-      nssmdns = true;
+      nssmdns4 = true;
     };
     resolved = {
       enable = true;
