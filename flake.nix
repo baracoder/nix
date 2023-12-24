@@ -39,7 +39,6 @@
                     environment.systemPackages = [
                     ];
                 })
-                ny.nixosModules.x86_64-linux.ny
                 ./modules/common.nix
                 ./modules/hyprland.nix
                 ./machines/hal.nix
