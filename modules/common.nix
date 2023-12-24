@@ -277,7 +277,7 @@
     bing-wallpaper-changer
     bluetooth-quick-connect
     emoji-selector
-    system-monitor
+    system-monitor-next
     tiling-assistant
     (gesture-improvements.overrideAttrs (a: {
       postInstall = ''
