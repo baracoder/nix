@@ -94,7 +94,6 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
-  programs.hyprland.enableNvidiaPatches = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
@@ -128,4 +127,5 @@ in
     # relabsd space mouse
     SUBSYSTEM=="input", ATTRS{name}=="relabsd:*", ENV{ID_INPUT_MOUSE}="0", ENV{ID_INPUT_JOYSTICK}="1", ENV{ID_CLASS}="joystick", MODE="0666"
   '';
+  services.xserver.displayManager.defaultSession = lib.mkForce "gnome-xorg";
 }
