@@ -273,6 +273,7 @@
     nix-tree
     yaml-language-server
     (callPackage ../pkgs/vscode.nix {})
+    vscode
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
     (callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/vim.nix {})
