@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }:
 let linuxPackages = pkgs.linuxPackages_zen;
-    nvidiaPackage = linuxPackages.nvidiaPackages.stable;
+    nvidiaPackage = linuxPackages.nvidiaPackages.latest;
 in
 {
   boot.loader.systemd-boot.enable = true;
