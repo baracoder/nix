@@ -180,6 +180,7 @@
   ];
 
   environment.systemPackages = with pkgs; [
+    _1password-gui
     aspell
     aspellDicts.de
     aspellDicts.en
