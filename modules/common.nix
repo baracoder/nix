@@ -111,6 +111,11 @@
   services.smartd.enable = true;
 
   services.envfs.enable = true;
+  services.envfs.extraFallbackPathCommands = ''
+  ln -s ${pkgs.bash}/bin/bash $out/bash
+  ln -s ${pkgs.coreutils}/bin/uname $out/uname
+  '';
+
 
   services = {
     flatpak.enable = true;
