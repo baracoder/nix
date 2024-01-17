@@ -45,10 +45,6 @@
 
   environment.systemPackages = with pkgs; [
     xorg.xbacklight
-    jetbrains.datagrip
-    jetbrains.rider
-    bespokesynth
-    sonic-pi
     (callPackage ../pkgs/drata-agent.nix {})
     clamav
     brightnessctl
