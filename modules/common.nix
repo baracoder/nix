@@ -33,8 +33,12 @@
 
   hardware.ksm.enable = true;
 
-  console.font = "Lat2-Terminus16";
-  console.keyMap = "us";
+  console = {
+    font = "Lat2-Terminus16";
+    keyMap = "us";
+    packages = with pkgs; [ terminus_font ];
+  };
+
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.supportedLocales = [
     "en_US.UTF-8/UTF-8"
@@ -46,6 +50,7 @@
   #documentation.man.generateCaches = false;
 
   hardware.sane.enable = true;
+  hardware.sane.disabledDefaultBackends = [ "v4l" ];
 
   fonts = {
     enableDefaultPackages = true;
