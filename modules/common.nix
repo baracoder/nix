@@ -230,6 +230,7 @@
     btop
     htop
     imagemagick
+    immersed-vr
     iotop
     lm_sensors
     meld
