@@ -4,6 +4,8 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  boot.extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
   boot.initrd.availableKernelModules = [ "wireguard" "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.initrd.systemd.enable = true;
   boot.kernel.sysctl = {
@@ -41,9 +43,13 @@
 
   networking.hostName = "hex";
   networking.networkmanager.enable = true;
-  networking.firewall.allowedTCPPorts = [ 3389 ];
+  networking.firewall.allowedTCPPorts = [
+    3389
+    21000 21013 # immersed-vr
+  ];
 
   environment.systemPackages = with pkgs; [
+    libva-utils
     xorg.xbacklight
     (callPackage ../pkgs/drata-agent.nix {})
     clamav
@@ -56,7 +62,17 @@
 
   programs.nix-ld.enable = true;
 
-  hardware.opengl.enable = true;
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
+    extraPackages = with pkgs; [
+      intel-media-driver # LIBVA_DRIVER_NAME=iHD
+      vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+      vaapiVdpau
+      libvdpau-va-gl
+    ];
+  };
 
   virtualisation.docker = {
     enable = true;

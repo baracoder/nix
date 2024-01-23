@@ -10,6 +10,13 @@
             system = "x86_64-linux";
             specialArgs = { inherit inputs; };
             modules = [
+                ({pkgs, ...}: {
+                    nixpkgs.overlays = [
+                        (import ./overlays/local.nix )
+                    ];
+                    environment.systemPackages = [
+                    ];
+                })
                 nixos-hardware.nixosModules.framework-11th-gen-intel
                 #nixos-hardware.nixosModules.dell-xps-13-9380
                 ny.nixosModules.x86_64-linux.ny
@@ -26,7 +33,7 @@
             modules = [
                 ({pkgs, ...}: {
                     nixpkgs.overlays = [
-                        (import ./overlays/local-hal.nix )
+                        (import ./overlays/local.nix )
                     ];
                     environment.systemPackages = [
                     ];
