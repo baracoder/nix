@@ -12,4 +12,6 @@ self: super:
         };
     });
 
+    appimageTools = super.callPackage ../pkgs/appimage { };
+
 }

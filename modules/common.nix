@@ -193,6 +193,7 @@
 
   environment.systemPackages = with pkgs; [
     _1password-gui
+    appimage-run
     aspell
     aspellDicts.de
     aspellDicts.en
