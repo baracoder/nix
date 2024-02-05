@@ -300,6 +300,9 @@
     emoji-selector
     system-monitor-next
     tiling-assistant
+    pop-shell
+    blur-my-shell
+    weeks-start-on-monday-again
     (gesture-improvements.overrideAttrs (a: {
       postInstall = ''
         sed -i 's/"42"/"43"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
