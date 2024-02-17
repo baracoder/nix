@@ -30,7 +30,6 @@
   };
 
 
-  services.fwupd.enableTestRemote = true;
   services.logind.lidSwitchExternalPower = "ignore";
   #services.tlp = {
   #  enable = true;
