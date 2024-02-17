@@ -21,6 +21,7 @@
   #];
   boot.kernelParams = [ "nopti" ];
   boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.plymouth.enable = true;
 
   # Required for ISO-27001
   system.autoUpgrade = {
