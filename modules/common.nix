@@ -288,6 +288,7 @@
     xpra
     nix-tree
     yaml-language-server
+    youtube-music
     (callPackage ../pkgs/vscode.nix {})
     vscode-fhs
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
