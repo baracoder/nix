@@ -126,6 +126,9 @@ in
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="075c", MODE="0666"
     # relabsd space mouse
     SUBSYSTEM=="input", ATTRS{name}=="relabsd:*", ENV{ID_INPUT_MOUSE}="0", ENV{ID_INPUT_JOYSTICK}="1", ENV{ID_CLASS}="joystick", MODE="0666"
+
+    # NZXT RGB & Fan Controller (3+6 channels)
+    SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", ATTRS{idProduct}=="2019", TAG+="uaccess"
   '';
   services.xserver.displayManager.defaultSession = lib.mkForce "gnome-xorg";
 }
