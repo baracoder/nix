@@ -41,9 +41,7 @@
   '';
 
   console = {
-    font = "Lat2-Terminus16";
     keyMap = "us";
-    packages = with pkgs; [ terminus_font ];
   };
 
   i18n.defaultLocale = "en_US.UTF-8";
