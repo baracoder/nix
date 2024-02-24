@@ -9,7 +9,7 @@ in
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback ];
   boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
-  boot.kernelModules = [ "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "btrfs" ];
+  boot.kernelModules = [ "nvidia_uvm" "nvidia_drm" "nvidia_modeset" "nvidia" "asus-wmi-sensors" "btrfs" "v4l2loopback" ];
   boot.plymouth.enable = true;
 
   fileSystems."/" =
