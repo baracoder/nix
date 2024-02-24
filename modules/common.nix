@@ -346,6 +346,11 @@
   };
   services.pcscd.enable = true;
 
+  programs.kdeconnect = {
+    package = pkgs.gnomeExtensions.gsconnect;
+    enable = true;
+  };
+
   programs.nix-index.enable = true;
   programs.nix-index.enableZshIntegration = true;
   programs.command-not-found.enable = false;
