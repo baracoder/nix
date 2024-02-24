@@ -148,10 +148,6 @@
     let xkbVariant = "altgr-intl"; # no dead keys
         xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
     in {
-      xkb.variant = xkbVariant;
-      xkb.options = xkbOptions;
-      xkb.layout = "us";
-
       enable = true;
       exportConfiguration = true;
 
