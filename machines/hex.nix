@@ -31,14 +31,14 @@
 
 
   services.logind.lidSwitchExternalPower = "ignore";
-  #services.tlp = {
-  #  enable = true;
-  #  settings = {
-  #    PCIE_ASPM_ON_BAT = "powersupersave";
-  #  };
-  #};
+  services.tlp = {
+    enable = true;
+    settings = {
+      PCIE_ASPM_ON_BAT = "powersupersave";
+    };
+  };
   services.fprintd.enable = false;
-  services.power-profiles-daemon.enable = true;
+  services.power-profiles-daemon.enable = false;
   services.globalprotect.enable = true;
 
   networking.hostName = "hex";
@@ -54,6 +54,7 @@
     (callPackage ../pkgs/drata-agent.nix {})
     clamav
     brightnessctl
+    powertop
   ];
 
   # required for ISO-27001
