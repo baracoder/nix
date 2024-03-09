@@ -97,25 +97,6 @@
     alsa.enable = true;
     alsa.support32Bit = true;
   };
-  # Workaround for HDML & USB sound delayed start
-  # From https://wiki.archlinux.org/title/PipeWire#Noticeable_audio_delay_or_audible_pop/crack_when_starting_playback
-  environment.etc."wireplumber/main.lua.d/51-disable-suspend.lua".text = ''
-    table.insert (alsa_monitor.rules, {
-      matches = {
-        {
-          -- Matches all sources.
-          { "node.name", "matches", "alsa_input.*" },
-        },
-        {
-          -- Matches all sinks.
-          { "node.name", "matches", "alsa_output.*" },
-        },
-      },
-      apply_properties = {
-        ["session.suspend-timeout-seconds"] = 0,  -- 0 disables suspend
-      },
-    })
-  '';
 
   security.rtkit.enable = true;
   services.smartd.enable = true;
