@@ -94,6 +94,8 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
+  programs.coolercontrol.enable = true;
+  systemd.services.coolercontrold.path = [ nvidiaPackage pkgs.bash nvidiaPackage.settings ];
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
