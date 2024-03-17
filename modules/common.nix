@@ -233,7 +233,6 @@
     #peek
     pavucontrol
     pdfgrep
-    pinentry-gnome
     pre-commit
     pwgen
     python3
@@ -317,7 +316,6 @@
   programs.gnome-disks.enable = true;
   programs.gnupg.agent = {
     enable = true;
-    pinentryFlavor = "gnome3";
   };
   services.pcscd.enable = true;
 
