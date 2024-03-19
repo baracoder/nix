@@ -132,4 +132,7 @@ in
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", ATTRS{idProduct}=="2019", TAG+="uaccess"
   '';
   services.xserver.displayManager.defaultSession = lib.mkForce "gnome-xorg";
+
+  programs.haguichi.enable = true;
+  services.logmein-hamachi.enable = true;
 }
