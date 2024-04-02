@@ -95,7 +95,8 @@ in
   };
   programs.xwayland.enable = true;
   programs.coolercontrol.enable = true;
-  systemd.services.coolercontrold.path = [ nvidiaPackage pkgs.bash nvidiaPackage.settings ];
+  systemd.services.coolercontrold.path = [ nvidiaPackage pkgs.bash pkgs.libglvnd nvidiaPackage.settings ];
+  systemd.services.coolercontrold.environment.LD_LIBRARY_PATH = "${pkgs.libglvnd}/lib";
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
