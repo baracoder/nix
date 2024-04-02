@@ -350,10 +350,10 @@
   hardware.bluetooth.enable = true;
   hardware.logitech.wireless.enable = true;
   hardware.logitech.wireless.enableGraphical = true;
+  hardware.usb-modeswitch.enable = true;
 
   virtualisation.spiceUSBRedirection.enable = true;
   programs.ssh.askPassword = pkgs.lib.mkForce "${pkgs.gnome.seahorse.out}/libexec/seahorse/ssh-askpass";
 
   programs.fuse.userAllowOther = true;
-
 }
