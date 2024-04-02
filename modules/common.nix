@@ -221,6 +221,7 @@
     mellowplayer
     mumble
     mtools
+    ncdu
     nmap
     nodejs-18_x
     ntfs3g
@@ -244,6 +245,7 @@
     source-code-pro
     gnome.gnome-boxes
     gnome.ghex
+    skopeo
     spice-gtk
     speechd
     sshfs-fuse
