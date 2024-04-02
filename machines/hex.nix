@@ -12,14 +12,14 @@
     "vm.swappiness" = lib.mkDefault 1;
   };
 
-  #boot.kernelParams = lib.mkForce [
-  #  "nopti"
-  #  "mem_sleep_default=deep"
-  #  "nvme.noacpi=1"
-  #  "splash"
-  #  "loglevel=4"
-  #];
-  boot.kernelParams = [ "nopti" ];
+  boot.kernelParams = lib.mkForce [
+    "nopti"
+    "mem_sleep_default=deep"
+    "nvme.noacpi=1"
+    "splash"
+    "loglevel=4"
+    "acpi_osi=\"!Windows 2020\""
+  ];
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.plymouth.enable = true;
 
