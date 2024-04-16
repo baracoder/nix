@@ -178,6 +178,7 @@ in
       mode = "0660";
     };
   };
+  services.switcherooControl.enable = true;
 
   programs.haguichi.enable = true;
   services.logmein-hamachi.enable = true;
