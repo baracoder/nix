@@ -123,23 +123,21 @@
     udisks2.enable = true;
     printing.enable = true;
     printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper hplip ];
+    displayManager = {
+      autoLogin = {
+        enable = false;
+        user = "bara";
+      };
+      defaultSession = "gnome";
+    };
     xserver =
     let xkbVariant = "altgr-intl"; # no dead keys
         xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
     in {
+      displayManager.gdm.enable = true;
       enable = true;
       exportConfiguration = true;
 
-      displayManager = {
-        gdm = {
-          enable = true;
-        };
-        autoLogin = {
-          enable = false;
-          user = "bara";
-        };
-        defaultSession = "gnome";
-      };
       desktopManager.gnome = {
         enable = true;
         extraGSettingsOverrides = ''
@@ -275,7 +273,6 @@
     appindicator
     bing-wallpaper-changer
     bluetooth-quick-connect
-    emoji-selector
     system-monitor-next
     tiling-assistant
     pop-shell
