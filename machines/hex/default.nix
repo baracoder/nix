@@ -61,8 +61,6 @@
   services.clamav.daemon.enable = true;
   services.clamav.updater.enable = true;
 
-  programs.nix-ld.enable = true;
-
   hardware.opengl = {
     enable = true;
     driSupport = true;
