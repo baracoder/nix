@@ -215,6 +215,7 @@
     immersed-vr
     iotop
     lm_sensors
+    lsof
     meld
     mellowplayer
     mumble
