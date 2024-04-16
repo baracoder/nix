@@ -8,7 +8,7 @@ self: super:
         version = "9.10";
         src = super.fetchurl {
             url = "https://static.immersed.com/dl/Immersed-x86_64.AppImage";
-            hash = "sha256-NwO8nJqwLnr4wi+MSoXaJwsPi8zSlFQ8hNsIscdEcw8=";
+            hash = "sha256-hKaF1XzZa0qAh7r1CtK0j2JFqE16hGNBGph7aOnYJCQ=";
         };
     });
 
