@@ -16,10 +16,18 @@ in
   boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
-  boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback ];
+  boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback nct6687d ];
   boot.initrd.kernelModules = [ "amdgpu" ];
   boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
-  boot.kernelModules = [ "btrfs" "v4l2loopback"  ];
+  boot.kernelModules = [ "btrfs" "v4l2loopback" "nct6687" ];
+  boot.kernelPatches = [ {
+    # Workaround for PAT conflicts: "conflicting memory types write-combining<->uncached-minus"
+    # see https://gitlab.freedesktop.org/drm/amd/-/issues/2794
+    # and https://nixos.wiki/wiki/Linux_kernel#Custom_configuration
+    name = "workaround-pat-errors";
+    patch = null;
+    extraConfig = "HSA_AMD_SVM n";
+  } ];
   boot.plymouth.enable = true;
 
   fileSystems."/boot" =
@@ -49,7 +57,7 @@ in
   boot.initrd.luks.devices."crypt-media".allowDiscards = true;
   boot.initrd.systemd.enable = true;
 
-  boot.blacklistedKernelModules = ["nvidia_drm" "nvidia_uvm" "nvidia_modeset" "nvidia"];
+  boot.blacklistedKernelModules = [ "nouveau" ];
 
   swapDevices = [
     {
@@ -101,6 +109,7 @@ in
     "systemd.unified_cgroup_hierarchy=false" 
     # allow PCI device pass through
     "amd_iommu=on" "iommu=pt"
+    "acpi_enforce_resources=lax"
   ];
 
   services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
@@ -111,21 +120,9 @@ in
   };
   programs.xwayland.enable = true;
   programs.coolercontrol.enable = true;
-  # coolercontrold might load nvidia modules. Make it wait for libvirtd to start the VM
   systemd.services.coolercontrold = {
     path = [ nvidiaPackage pkgs.bash pkgs.libglvnd nvidiaPackage.settings ];
     environment.LD_LIBRARY_PATH = "${pkgs.libglvnd}/lib";
-    after = [ "wait-win10.service" ];
-    wants = [ "wait-win10.service" ];
-  };
-  systemd.services."wait-win10" = {
-      serviceConfig.Type = "oneshot";
-      serviceConfig.RemainAfterExit="yes";
-      enable = true;
-      path = [ pkgs.libvirt pkgs.bash ];
-      script = ''
-        timeout 15 bash -c 'until virsh -c qemu:///system list --state-running|grep win10; do sleep 1; done'
-      '';
   };
 
   nix.settings.max-jobs = lib.mkDefault 8;
