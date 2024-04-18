@@ -31,6 +31,7 @@
 
   hardware.ksm.enable = true;
 
+  boot.loader.systemd-boot.memtest86.enable = true;
   boot.extraModprobeConfig = ''
     # exclusive_caps: Skype, Zoom, Teams etc. will only show device when actually streaming
     # card_label: Name of virtual camera, how it'll show up in Skype, Zoom, Teams
