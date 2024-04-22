@@ -221,6 +221,7 @@
     mumble
     mtools
     ncdu
+    nixd
     nmap
     nodejs-18_x
     ntfs3g
