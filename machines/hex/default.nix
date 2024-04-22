@@ -51,7 +51,7 @@
   environment.systemPackages = with pkgs; [
     libva-utils
     xorg.xbacklight
-    (callPackage ../pkgs/drata-agent.nix {})
+    drata-agent
     clamav
     brightnessctl
     powertop
