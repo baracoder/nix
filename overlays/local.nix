@@ -5,10 +5,10 @@ self: super:
     });
 
     immersed-vr = super.immersed-vr.overrideAttrs (a: {
-        version = "9.10";
+        version = "10.0";
         src = super.fetchurl {
-            url = "https://static.immersed.com/dl/Immersed-x86_64.AppImage";
-            hash = "sha256-hKaF1XzZa0qAh7r1CtK0j2JFqE16hGNBGph7aOnYJCQ=";
+            url = "https://web.archive.org/web/20240411143649/https://static.immersed.com/dl/Immersed-x86_64.AppImage";
+            hash = "sha256-ZY9pwOryADkpbMLx1w5Lymx6iQ0BhIrFAAvy47wLnQ8=";
         };
     });
 
