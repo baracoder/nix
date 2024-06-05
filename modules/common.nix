@@ -186,6 +186,7 @@
     unzip
     evince
     direnv
+    distrobox
     delta
     dmenu
     dogdns
