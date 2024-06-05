@@ -93,13 +93,33 @@
         "type": "github"
       }
     },
+    "gke": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "dir": "tools",
+        "lastModified": 1714744612,
+        "narHash": "sha256-fA9mZSsc+X4PHO5nYqth4m7Tjr9UbbpvbGurduNDxWs=",
+        "ref": "refs/heads/develop",
+        "rev": "eefbacd0f3a4f7517acd6537fd243c56c191620b",
+        "revCount": 13783,
+        "type": "git",
+        "url": "ssh://git@git.nyris.io:10022/system-config/gke.git?dir=tools"
+      },
+      "original": {
+        "dir": "tools",
+        "type": "git",
+        "url": "ssh://git@git.nyris.io:10022/system-config/gke.git?dir=tools"
+      }
+    },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1712909959,
-        "narHash": "sha256-7/5ubuwdEbQ7Z+Vqd4u0mM5L2VMNDsBh54visp27CtQ=",
+        "lastModified": 1716881121,
+        "narHash": "sha256-oTf3enbe/lbiNzsyZ8ria+422hx4e/FB3xQcY2LPnJw=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "f58b25254be441cd2a9b4b444ed83f1e51244f1f",
+        "rev": "806e9d4a933dd1e75592e88894d4bd2f296f5bbf",
         "type": "github"
       },
       "original": {
@@ -111,11 +131,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1712963716,
-        "narHash": "sha256-WKm9CvgCldeIVvRz87iOMi8CFVB1apJlkUT4GGvA0iM=",
+        "lastModified": 1716509168,
+        "narHash": "sha256-4zSIhSRRIoEBwjbPm3YiGtbd8HDWzFxJjw5DYSDy1n8=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "cfd6b5fc90b15709b780a5a1619695a88505a176",
+        "rev": "bfb7a882678e518398ce9a31a881538679f6f092",
         "type": "github"
       },
       "original": {
@@ -159,6 +179,22 @@
     },
     "nixpkgs_3": {
       "locked": {
+        "lastModified": 1714253743,
+        "narHash": "sha256-mdTQw2XlariysyScCv2tTE45QSU9v/ezLcHJ22f0Nxc=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "58a1abdbae3217ca6b702f03d3b35125d88a2994",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
+      "locked": {
         "lastModified": 1703013332,
         "narHash": "sha256-+tFNwMvlXLbJZXiMHqYq77z/RfmpfpiI3yjL6o/Zo9M=",
         "owner": "nixos",
@@ -177,14 +213,15 @@
       "inputs": {
         "attic": "attic",
         "flake-utils": "flake-utils_2",
-        "nixpkgs": "nixpkgs_3"
+        "gke": "gke",
+        "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1711040388,
-        "narHash": "sha256-+X/j7Oon3FyKeMX2gPQWD7yOhORkzYkvAi7ri9rHuAg=",
+        "lastModified": 1714744716,
+        "narHash": "sha256-Nn7JpSAxIYGOnHHBHpPSdlq7lqC+3kPHlb59zbMLUoc=",
         "ref": "main",
-        "rev": "6c096ad55d467be78af40a811df3a3f4e62f557a",
-        "revCount": 303,
+        "rev": "3dae9dd5c3c6cbaa2709ae4d3874c23b97ecddb3",
+        "revCount": 307,
         "type": "git",
         "url": "ssh://git@git.nyris.io:10022/nyris/ny"
       },
