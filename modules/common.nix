@@ -5,9 +5,9 @@
 { config, pkgs, inputs, ... }:
 {
   nix = {
-    package = pkgs.nixUnstable;
+    package = pkgs.nixVersions.latest;
     extraOptions = ''
-      experimental-features = nix-command flakes ca-derivations repl-flake
+      experimental-features = nix-command flakes ca-derivations
     '';
     settings = {
       trusted-users = [ "root" "@wheel" ];
