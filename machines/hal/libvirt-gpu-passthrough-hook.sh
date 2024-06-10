@@ -34,7 +34,7 @@ if [ $ACTION = "prepare" ]; then
     #systemctl stop display-manager.service
 
     # make sure gnome remote desktop is also stopped
-    runuser -l userNameHere -c 'systemctl --user stop gnome-remote-desktop.service'
+    runuser -l bara -c 'systemctl --user stop gnome-remote-desktop.service'
 
     # Unbind VTconsoles
     echo 0 > /sys/class/vtconsole/vtcon0/bind
