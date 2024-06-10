@@ -329,7 +329,7 @@
   programs.nix-index.enableZshIntegration = true;
   programs.command-not-found.enable = false;
   programs.adb.enable = true;
-  programs.bash.enableCompletion = true;
+  programs.bash.completion.enable = true;
   programs.zsh = {
     enable = true;
     enableCompletion = true;
