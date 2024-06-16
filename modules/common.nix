@@ -160,9 +160,7 @@
   };
   users.extraGroups.bara.gid = 1000;
 
-  services.udev.packages = with pkgs; [
-    openhantek6022
-  ];
+  services.udev.packages = with pkgs; [ ];
 
   environment.systemPackages = with pkgs; [
     _1password-gui
@@ -227,7 +225,6 @@
     ntfs3g
     nvme-cli
     octave
-    openhantek6022
     pamixer
     pass
     pciutils
