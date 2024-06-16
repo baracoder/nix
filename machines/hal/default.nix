@@ -1,6 +1,6 @@
 { config, pkgs, lib, ... }:
 let linuxPackages = pkgs.linuxPackages_zen;
-    nvidiaPackage = linuxPackages.nvidiaPackages.latest;
+    nvidiaPackage = linuxPackages.nvidiaPackages.beta;
     nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
         export __NV_PRIME_RENDER_OFFLOAD=1
         #export VK_ICD_FILENAMES=/var/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json
@@ -84,6 +84,8 @@ in
     enableOnBoot = false;
     storageDriver = "overlay2";
     enableNvidia = true;
+    listenOptions = [ "/run/docker.sock" "0.0.0.0:2375" ];
+
   };
 
   services.printing = {
