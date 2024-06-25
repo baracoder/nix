@@ -50,7 +50,11 @@ if [ $ACTION = "prepare" ]; then
     systemctl stop coolercontrold.service
 
     # Unload NVIDIA kernel modules
-    modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia
+    while true; do
+        modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia
+        lsmod | grep -q nvidia || break
+        sleep 0.5
+    done
 
     # Detach GPU devices from host
     #virsh nodedev-detach $VIRSH_GPU_VIDEO
