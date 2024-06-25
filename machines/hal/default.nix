@@ -129,7 +129,7 @@ in
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
-  hardware.opengl = {
+  hardware.graphics = {
       extraPackages = with pkgs; [ libvdpau-va-gl ];
       extraPackages32 = with pkgs; [ libvdpau-va-gl ];
     };
