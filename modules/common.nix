@@ -26,8 +26,7 @@
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [ ];
 
-  hardware.opengl.driSupport = true;
-  hardware.opengl.driSupport32Bit = true;
+  hardware.graphics.enable32Bit = true;
 
   hardware.ksm.enable = true;
 
