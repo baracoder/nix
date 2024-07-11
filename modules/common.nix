@@ -263,6 +263,7 @@
     youtube-music
     (callPackage ../pkgs/vscode.nix {})
     vscode-fhs
+    zed-editor
     # Broken https://github.com/NixOS/nixpkgs/pull/172335
     (callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/vim.nix {})
