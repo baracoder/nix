@@ -79,7 +79,7 @@ rec {
     targetPkgs = pkgs: with pkgs; [
       gtk3
       bashInteractive
-      gnome.zenity
+      zenity
       xorg.xrandr
       which
       perl

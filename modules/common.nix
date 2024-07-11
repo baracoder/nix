@@ -201,7 +201,7 @@
     gnome-usage
     google-chrome
     google-cloud-sdk
-    gnome.gnome-tweaks
+    gnome-tweaks
     gsmartcontrol
     keepass
     lazygit
@@ -241,7 +241,7 @@
     robo3t
     source-code-pro
     gnome.gnome-boxes
-    gnome.ghex
+    ghex
     skopeo
     spice-gtk
     speechd
@@ -350,7 +350,7 @@
   hardware.usb-modeswitch.enable = true;
 
   virtualisation.spiceUSBRedirection.enable = true;
-  programs.ssh.askPassword = pkgs.lib.mkForce "${pkgs.gnome.seahorse.out}/libexec/seahorse/ssh-askpass";
+  programs.ssh.askPassword = pkgs.lib.mkForce "${pkgs.seahorse.out}/libexec/seahorse/ssh-askpass";
 
   programs.fuse.userAllowOther = true;
 }
