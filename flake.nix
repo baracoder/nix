@@ -1,7 +1,7 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.ny.url = "git+ssh://git@git.nyris.io:10022/nyris/ny?ref=main";
-  inputs.nixos-hardware.url = github:NixOS/nixos-hardware/master;
+  inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
   outputs = { self, nixpkgs, ny, nixos-hardware } @ inputs: {
       legacyPackages = nixpkgs.legacyPackages;
