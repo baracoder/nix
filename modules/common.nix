@@ -260,6 +260,7 @@
     wireshark
     xpra
     nix-tree
+    vulnix
     yaml-language-server
     youtube-music
     (callPackage ../pkgs/vscode.nix {})
