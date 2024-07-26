@@ -224,6 +224,7 @@
     nmap
     nodejs-18_x
     ntfs3g
+    nvd
     nvme-cli
     octave
     pamixer
