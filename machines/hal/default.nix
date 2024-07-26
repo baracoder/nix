@@ -108,7 +108,7 @@ in
     "quiet"
     "nouveau.modeset=0"
     # workaround for nvidia docker
-    "systemd.unified_cgroup_hierarchy=false" 
+    "systemd.unified_cgroup_hierarchy=false"
     # allow PCI device pass through
     "amd_iommu=on" "iommu=pt"
     "acpi_enforce_resources=lax"
@@ -147,9 +147,10 @@ in
     looking-glass-client
     nvidia-offload
     virtiofsd
+    gnomeExtensions.dual-shock-4-battery-percentage
   ];
 
-  services.udev.packages = with pkgs; [ 
+  services.udev.packages = with pkgs; [
     liquidctl
     openrgb
   ];
