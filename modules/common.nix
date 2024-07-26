@@ -204,6 +204,7 @@
     gnome-tweaks
     gsmartcontrol
     keepass
+    k9s
     lazygit
     hdparm
     hyprpaper
