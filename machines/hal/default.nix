@@ -83,7 +83,6 @@ in
     enable = true;
     enableOnBoot = false;
     storageDriver = "overlay2";
-    enableNvidia = true;
     listenOptions = [ "/run/docker.sock" "0.0.0.0:2375" ];
 
   };
