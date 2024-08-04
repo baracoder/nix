@@ -87,6 +87,9 @@ in
     listenOptions = [ "/run/docker.sock" "0.0.0.0:2375" ];
 
   };
+  hardware.nvidia-container-toolkit.enable = true;
+  hardware.nvidia.open = false;
+  virtualisation.containers.cdi.dynamic.nvidia.enable = true;
 
   services.printing = {
     enable = true;
@@ -107,8 +110,6 @@ in
   boot.kernelParams = [
     "quiet"
     "nouveau.modeset=0"
-    # workaround for nvidia docker
-    "systemd.unified_cgroup_hierarchy=false"
     # allow PCI device pass through
     "amd_iommu=on" "iommu=pt"
     "acpi_enforce_resources=lax"
