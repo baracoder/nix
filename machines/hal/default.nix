@@ -121,6 +121,7 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
+  programs.alvr.enable = true;
   programs.coolercontrol.enable = true;
   systemd.services.coolercontrold = {
     path = [ nvidiaPackage pkgs.bash pkgs.libglvnd nvidiaPackage.settings ];
