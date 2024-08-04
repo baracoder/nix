@@ -16,7 +16,7 @@ in
   boot.loader.timeout = null;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
-  boot.extraModulePackages = with linuxPackages; [ asus-wmi-sensors v4l2loopback nct6687d ];
+  boot.extraModulePackages = with linuxPackages; [ v4l2loopback nct6687d ];
   boot.initrd.kernelModules = [ "amdgpu" ];
   boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
   boot.kernelModules = [ "btrfs" "v4l2loopback" "nct6687" ];
