@@ -339,6 +339,9 @@
   };
 
   programs.nix-ld.enable = true;
+  programs.nix-ld.libraries = with pkgs; [
+    icu
+  ];
 
   # raise limit to avoid steamplay problems
   systemd.extraConfig = "DefaultLimitNOFILE=1048576";
