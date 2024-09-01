@@ -1,9 +1,8 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.ny.url = "git+ssh://git@git.nyris.io:10022/nyris/ny?ref=main";
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
-  outputs = { self, nixpkgs, ny, nixos-hardware } @ inputs: {
+  outputs = { self, nixpkgs, nixos-hardware } @ inputs: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hex = nixpkgs.lib.nixosSystem rec {
@@ -19,7 +18,6 @@
                 })
                 nixos-hardware.nixosModules.framework-11th-gen-intel
                 #nixos-hardware.nixosModules.dell-xps-13-9380
-                ny.nixosModules.x86_64-linux.ny
                 ./modules/common.nix
                 ./machines/hex
                 nixpkgs.nixosModules.notDetected
@@ -38,7 +36,6 @@
                     environment.systemPackages = [
                     ];
                 })
-                ny.nixosModules.x86_64-linux.ny
                 ./modules/common.nix
                 ./machines/hal
                 nixpkgs.nixosModules.notDetected
