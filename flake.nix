@@ -41,6 +41,13 @@
                 nixpkgs.nixosModules.notDetected
             ];
         };
+        iso-minimal = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+                "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal-new-kernel-no-zfs.nix"
+                ./machines/iso-minimal
+            ];
+        };
       };
   };
 }

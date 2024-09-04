@@ -17,17 +17,23 @@ To update nixpkgs input to latest unstable:
 nix flake update --update-input nixpkgs
 ```
 
+
 # Install on new machine
 
-This repo uses `flakes` which is an experimental feature at this point and not supported by the default nix version.
+## Prepare install media
 
-* Boot from NixoOS 20.09 install media
-* Enter a shell with git and an updated nix version `nix-shell -p git nixFlakes
-* Clone the repo to some directory on newly created `/mnt/` partition
-* Copy a machine file `cp machines/hex.nix machines/new-host.nix`
-* Modify new file
-    * `filesystem`
-    * Kernel modules & video drivers
-* Add new entry to `flake.nix`
-* Create a commit or at least `git add` the new machine file
+Create a minimal install media with all required tools and kernel modules using the following command:
+```
+nix build .\#nixosConfigurations.iso-minimal.config.system.build.isoImage
+```
+
+Write the resulting iso to a USB stick:
+```
+sudo dd bs=4M conv=fsync oflag=direct status=progress if=result/iso/*.iso of=/dev/sdX
+```
+
+## Install
+
+* Boot prepared install media
+* Clone the repo to some directory
 * Run the installation `nixos-install --flake /path/to/repo#-new-host`
