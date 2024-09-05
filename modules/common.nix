@@ -167,6 +167,7 @@
     aspell
     aspellDicts.de
     aspellDicts.en
+    ausweisapp
     avahi
     cifs-utils
     curl
