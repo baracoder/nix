@@ -207,7 +207,6 @@
     k9s
     lazygit
     hdparm
-    hyprpaper
     btop
     htop
     imagemagick
