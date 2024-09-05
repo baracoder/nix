@@ -185,7 +185,6 @@
     evince
     direnv
     distrobox
-    delta
     dmenu
     dogdns
     file
@@ -241,7 +240,7 @@
     ripgrep
     robo3t
     source-code-pro
-    gnome.gnome-boxes
+    gnome-boxes
     ghex
     skopeo
     spice-gtk
@@ -298,7 +297,6 @@
     gnome-browser-connector.enable = true;
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
-    gnome-online-miners.enable = true;
     #gnome-user-share.enable = true;
     tracker-miners.enable = true;
     tracker.enable = true;
