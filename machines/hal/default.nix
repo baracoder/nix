@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_zen;
+let linuxPackages = pkgs.linuxPackages_latest;
     nvidiaPackage = linuxPackages.nvidiaPackages.beta;
     nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
         export __NV_PRIME_RENDER_OFFLOAD=1
@@ -20,18 +20,10 @@ in
   boot.initrd.kernelModules = [ "amdgpu" ];
   boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
   boot.kernelModules = [ "btrfs" "v4l2loopback" "nct6687" ];
-  boot.kernelPatches = [ {
-    # Workaround for PAT conflicts: "conflicting memory types write-combining<->uncached-minus"
-    # see https://gitlab.freedesktop.org/drm/amd/-/issues/2794
-    # and https://nixos.wiki/wiki/Linux_kernel#Custom_configuration
-    name = "workaround-pat-errors";
-    patch = null;
-    extraConfig = "HSA_AMD_SVM n";
-  } ];
   boot.plymouth.enable = true;
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/4B1E-8899";
+    { device = "/dev/disk/by-label/EFI";
       fsType = "vfat";
       options = [ "relatime" ];
     };
@@ -123,10 +115,6 @@ in
   programs.xwayland.enable = true;
   programs.alvr.enable = true;
   programs.coolercontrol.enable = true;
-  systemd.services.coolercontrold = {
-    path = [ nvidiaPackage pkgs.bash pkgs.libglvnd nvidiaPackage.settings ];
-    environment.LD_LIBRARY_PATH = "${pkgs.libglvnd}/lib";
-  };
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
@@ -137,7 +125,6 @@ in
 
 
   environment.systemPackages = with pkgs; [
-    openrgb
     protontricks
     steam.run
     vulkan-tools
@@ -151,10 +138,6 @@ in
     gnomeExtensions.dual-shock-4-battery-percentage
   ];
 
-  services.udev.packages = with pkgs; [
-    liquidctl
-    openrgb
-  ];
   services.udev.extraRules = ''
     # x52 joystick
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0762", MODE="0666"
@@ -166,7 +149,7 @@ in
     # NZXT RGB & Fan Controller (3+6 channels)
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", ATTRS{idProduct}=="2019", TAG+="uaccess"
 
-    # preferred GPU
+    # preferred GPU for gnome
     ENV{ID_PATH}=="pci-0000:0c:00.0", TAG+="mutter-device-preferred-primary"
     ENV{ID_PATH}=="pci-0000:01:00.0", TAG+="mutter-device-ignore"
   '';
@@ -180,7 +163,4 @@ in
     };
   };
   services.switcherooControl.enable = true;
-
-  programs.haguichi.enable = true;
-  services.logmein-hamachi.enable = true;
 }
