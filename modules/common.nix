@@ -30,6 +30,7 @@
 
   hardware.ksm.enable = true;
 
+  boot.kernel.sysctl."kernel.dmesg_restrict" = 0;
   boot.loader.systemd-boot.memtest86.enable = true;
   boot.extraModprobeConfig = ''
     # exclusive_caps: Skype, Zoom, Teams etc. will only show device when actually streaming
