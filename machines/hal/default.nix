@@ -128,7 +128,6 @@ in
     steam.run
     vulkan-tools
     libva-utils
-    psensor
     orca-slicer
     liquidctl
     looking-glass-client

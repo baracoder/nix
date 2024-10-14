@@ -1,9 +1,5 @@
 self: super:
 {
-    psensor = super.psensor.overrideAttrs (a: {
-        patches = [ ../pkgs/psensor.diff ];
-    });
-
     immersed-vr = super.immersed-vr.overrideAttrs (a: {
         version = "10.0";
         src = super.fetchurl {
