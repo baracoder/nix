@@ -133,6 +133,7 @@ in
     looking-glass-client
     nvidia-offload
     virtiofsd
+    ptouch-print
     gnomeExtensions.dual-shock-4-battery-percentage
   ];
 
@@ -146,6 +147,9 @@ in
 
     # NZXT RGB & Fan Controller (3+6 channels)
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="1e71", ATTRS{idProduct}=="2019", TAG+="uaccess"
+
+    # Borther P-Touch printers
+    SUBSYSTEMS=="usb", ATTRS{idVendor}=="04f9", MODE="0666"
 
     # preferred GPU for gnome
     ENV{ID_PATH}=="pci-0000:0c:00.0", TAG+="mutter-device-preferred-primary"
