@@ -206,6 +206,7 @@
     gsmartcontrol
     keepass
     k9s
+    kubectl
     lazygit
     hdparm
     btop
