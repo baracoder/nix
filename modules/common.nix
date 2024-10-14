@@ -341,6 +341,8 @@
   programs.nix-ld.enable = true;
   programs.nix-ld.libraries = with pkgs; [
     icu
+    icu75
+
   ];
 
   # raise limit to avoid steamplay problems
