@@ -37,3 +37,14 @@ sudo dd bs=4M conv=fsync oflag=direct status=progress if=result/iso/*.iso of=/de
 * Boot prepared install media
 * Clone the repo to some directory
 * Run the installation `nixos-install --flake /path/to/repo#-new-host`
+
+## Darwin
+
+For the initial install
+```
+nix run nix-darwin -- switch --flake .
+```
+Afer that, just
+```
+darwin-rebuild switch --flake .
+```
