@@ -45,7 +45,7 @@
     btop
     htop
     imagemagick
-    immersed-vr
+    immersed
     lsof
     meld
     ncdu
