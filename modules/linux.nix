@@ -77,13 +77,6 @@
   };
   users.extraGroups.bara.gid = 1000;
 
-  services.udev.packages = with pkgs; [ ];
-
-  hardware.openrazer = {
-    enable = false;
-    users = [ "bara" ];
-  };
-
   services.gvfs.enable = true;
   services.fwupd.enable = true;
   services.gnome = {
@@ -195,7 +188,6 @@
   hardware.usb-modeswitch.enable = true;
 
 
-
   programs.nix-index.enable = true;
   programs.nix-index.enableZshIntegration = true;
   programs.command-not-found.enable = false;
@@ -216,11 +208,7 @@
     avahi
     cifs-utils
     espeak
-    emote
     evince
-    foot
-    distrobox
-    dmenu
     gitg
     gnome-console
     gnome-usage
