@@ -87,6 +87,9 @@
         sdk_8_0
       ]
     ))
+    jq
+    yq-go
+    kube-score
   ];
 
   # directly run the missing commands via nix-shell (without installing anything)
