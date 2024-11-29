@@ -19,6 +19,15 @@
     go_1_22
     kubernetes-helm
     kustomize
+    tfswitch
+    remmina
+    wireshark
+    kaf
+    kcat
+    valkey
+    yarn
+    jujutsu
+    lazyjj
   ];
 
   system.stateVersion = 5;
