@@ -38,6 +38,13 @@
             nixos-hardware.nixosModules.common-hidpi
           ];
         };
+        glados-nixos-vm = nixpkgs.lib.nixosSystem {
+            system = "aarch64-linux";
+            modules = [
+                ./machines/glados-nixos-vm
+            ];
+        };
+
         iso-minimal = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [

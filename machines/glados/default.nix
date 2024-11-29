@@ -2,6 +2,9 @@
 
 {
   nixpkgs.hostPlatform = "aarch64-darwin";
+
+  nix.linux-builder.enable = true;
+
   environment.systemPackages = with pkgs; [
     kubectl
     meld

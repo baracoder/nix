@@ -48,3 +48,7 @@ Afer that, just
 ```
 darwin-rebuild switch --flake .
 ```
+
+### Darwin NixOS VM
+
+Bootstrap using the [darwin builder](https://nixos.org/manual/nixpkgs/unstable/#sec-darwin-builder)
