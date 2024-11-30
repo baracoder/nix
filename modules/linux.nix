@@ -239,6 +239,8 @@
     wireguard-tools
     xpra
     zed-editor
+    alsa-utils
+    show-midi
 
     (callPackage ../pkgs/vscode.nix {})
     vscode-fhs
