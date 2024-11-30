@@ -19,7 +19,7 @@ GUEST_NAME=$1
 ACTION=$2
 STATE_NAME=$3
 
-if [ $GUEST_NAME != "$GUEST_NAME" ]; then
+if [ "win10" != "$GUEST_NAME" ]; then
     echo "guest name does not match: $GUEST_NAME"
     exit 0
 fi
