@@ -13,7 +13,7 @@ let linuxPackages = pkgs.linuxPackages_latest;
 in
 {
   boot.loader.systemd-boot.enable = true;
-  boot.loader.timeout = null;
+  boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [ nct6687d ];
