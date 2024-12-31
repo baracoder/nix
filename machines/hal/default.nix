@@ -139,6 +139,8 @@ in
     freecad
   ];
 
+  programs.haguichi.enable = true;
+
   services.udev.extraRules = ''
     # x52 joystick
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0762", MODE="0666"
