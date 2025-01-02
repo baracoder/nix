@@ -75,7 +75,7 @@
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "dialout" "scanner" "avahi" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" ];
+    extraGroups = [ "dialout" "scanner" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" ];
     createHome = true;
     shell = pkgs.zsh;
   };
@@ -98,10 +98,6 @@
 
   services = {
     flatpak.enable = true;
-    avahi = {
-      enable = true;
-      nssmdns4 = true;
-    };
     resolved = {
       enable = true;
       fallbackDns = [ "" ];
