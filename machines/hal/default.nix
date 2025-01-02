@@ -154,8 +154,8 @@ in
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="04f9", MODE="0666"
 
     # preferred GPU for gnome
-    ENV{ID_PATH}=="pci-0000:0c:00.0", TAG+="mutter-device-preferred-primary"
-    ENV{ID_PATH}=="pci-0000:01:00.0", TAG+="mutter-device-ignore"
+    ATTRS{vendor}=="0x1002", TAG+="mutter-device-preferred-primary"
+    ATTRS{vendor}=="0x10de", TAG+="mutter-device-ignore"
   '';
   services.displayManager.defaultSession = lib.mkForce "gnome";
 
