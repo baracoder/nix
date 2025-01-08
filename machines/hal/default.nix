@@ -105,7 +105,8 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
-  programs.alvr.enable = true;
+  #programs.alvr.enable = true;
+  programs.alvr.openFirewall = true;
   programs.coolercontrol.enable = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
