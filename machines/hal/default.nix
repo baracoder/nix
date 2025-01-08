@@ -123,7 +123,8 @@ in
     steam.run
     vulkan-tools
     libva-utils
-    orca-slicer
+    # broken https://github.com/NixOS/nixpkgs/issues/369571
+    # orca-slicer
     liquidctl
     looking-glass-client
     nvidia-offload
