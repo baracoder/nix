@@ -74,8 +74,6 @@
     nix-tree
     vulnix
     yaml-language-server
-    # Broken https://github.com/NixOS/nixpkgs/pull/172335
-    (callPackage ../pkgs/dotnetSdk.nix {})
     (callPackage ../pkgs/vim.nix {})
   ];
 

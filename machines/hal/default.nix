@@ -131,7 +131,6 @@ in
     virtiofsd
     ptouch-print
     gnomeExtensions.dual-shock-4-battery-percentage
-    jetbrains.rider
     freecad
   ];
 
