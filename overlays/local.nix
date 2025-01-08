@@ -4,4 +4,6 @@ self: super:
 
     drata-agent = super.callPackage ../pkgs/drata-agent.nix { };
 
+    offload-game = super.callPackage ../pkgs/offload-game { };
+
 }

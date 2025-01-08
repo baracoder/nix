@@ -132,6 +132,7 @@ in
     ptouch-print
     gnomeExtensions.dual-shock-4-battery-percentage
     freecad
+    offload-game
   ];
 
   programs.haguichi.enable = true;
