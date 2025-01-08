@@ -37,16 +37,9 @@ in
       fsType = "btrfs";
       options = [ "discard=async" "relatime" "subvol=home" "compress=lzo" ];
     };
-  fileSystems."/crypt-media" =
-    { device = "/dev/disk/by-uuid/99cb6b39-6d94-4cf9-8360-44e90e0e7036";
-      fsType = "ext4";
-      options = [ "discard" "relatime" ];
-    };
 
   boot.initrd.luks.devices."crypt-ssd".device = "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
-  boot.initrd.luks.devices."crypt-media".device = "/dev/disk/by-uuid/ac1082d4-1ce1-48e4-a314-cb8612e45db5";
-  boot.initrd.luks.devices."crypt-media".allowDiscards = true;
   boot.initrd.systemd.enable = true;
 
   boot.blacklistedKernelModules = [ "nouveau" ];
