@@ -83,8 +83,8 @@
     gnome-keyring.enable = true;
     gnome-online-accounts.enable = true;
     #gnome-user-share.enable = true;
-    tracker-miners.enable = true;
-    tracker.enable = true;
+    localsearch.enable = true;
+    tinysparql.enable = true;
     sushi.enable = true;
     at-spi2-core.enable = true;
   };
