@@ -118,6 +118,7 @@ in
 
 
   environment.systemPackages = with pkgs; [
+    discord-canary
     protontricks
     steam.run
     vulkan-tools
