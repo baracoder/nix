@@ -93,6 +93,8 @@ in
 
   networking.hostName = "hal";
   networking.firewall.enable = false;
+  services.fprintd.enable = true;
+
 
   system.stateVersion = "19.09";
 
