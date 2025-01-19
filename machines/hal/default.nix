@@ -58,6 +58,14 @@ in
   hardware.bluetooth.enable = true;
   hardware.steam-hardware.enable = true;
 
+  services.handheld-daemon = {
+    enable = true;
+    ui.enable = true;
+    user = "bara";
+  };
+
+
+
   powerManagement.enable = true;
   powerManagement.cpuFreqGovernor = "ondemand";
 
