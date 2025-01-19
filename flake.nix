@@ -43,6 +43,9 @@
                 ./modules/linux.nix
                 ./machines/hal
                 nixpkgs.nixosModules.notDetected
+                nixos-hardware.nixosModules.common-pc-laptop
+                nixos-hardware.nixosModules.common-pc-laptop-ssd
+                nixos-hardware.nixosModules.common-hidpi
             ];
         };
         iso-minimal = nixpkgs.lib.nixosSystem {
