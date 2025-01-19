@@ -119,6 +119,7 @@
 
       desktopManager.gnome = {
         enable = true;
+        extraGSettingsOverridePackages = [pkgs.mutter];
         extraGSettingsOverrides = ''
           [org.gnome.desktop.input-sources]
           sources=[('xkb', '${xkbVariant}')]
@@ -204,6 +205,7 @@
     cifs-utils
     espeak
     evince
+    dconf-editor
     gitg
     gnome-console
     gnome-usage
