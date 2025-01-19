@@ -42,6 +42,7 @@
     k9s
     kubectl
     lazygit
+    lnav
     btop
     htop
     imagemagick
@@ -63,6 +64,7 @@
     renameutils
     ripgrep
     skopeo
+    seagoat
     sqlite
     wget
     fzf
