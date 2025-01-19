@@ -42,7 +42,7 @@ in
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   boot.initrd.systemd.enable = true;
 
-  boot.blacklistedKernelModules = [ "nouveau" ];
+  boot.blacklistedKernelModules = [ "nouveau" "bmi160_spi" "bmi160_i2c" "bmi160_core" ];
 
   swapDevices = [
     {
@@ -144,6 +144,8 @@ in
   ];
 
   programs.haguichi.enable = true;
+
+  hardware.sensor.iio.enable = true;
 
   services.udev.extraRules = ''
     # x52 joystick
