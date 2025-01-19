@@ -148,6 +148,10 @@ in
   hardware.sensor.iio.enable = true;
 
   services.udev.extraRules = ''
+    # Avoid wake-up from i2c devices on GPD Win Max 2
+    SUBSYSTEM=="i2c", KERNEL=="i2c-PNP0C50:00", ATTR{power/wakeup}="disabled"
+    SUBSYSTEM=="i2c", KERNEL=="i2c-GXTP7385:00", ATTR{power/wakeup}="disabled"
+
     # x52 joystick
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0762", MODE="0666"
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0255", MODE="0666"
