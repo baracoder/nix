@@ -1,0 +1,68 @@
+#!/run/current-system/sw/bin/bash
+
+# Debugging
+date
+
+ACTION=$1
+
+f_eject() {
+    # make sure gnome remote desktop is also stopped
+    runuser -l bara -c 'systemctl --user stop gnome-remote-desktop.service'
+
+    # this will try to reload the modules
+    systemctl stop coolercontrold.service
+
+    # Unload NVIDIA kernel modules
+    while true; do
+        modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia
+        lsmod | grep -q nvidia || break
+        sleep 0.5
+    done
+
+    echo "Unplug now, then press enter"
+    read x
+    systemctl start coolercontrold.service
+    exit 0
+}
+
+f_attach() {
+    # Load NVIDIA kernel modules
+    modprobe -a nvidia_drm nvidia_modeset nvidia_uvm nvidia
+
+    # Avoid race condition
+    sleep 1
+
+    # reinitialize coolercontrold to query gpu temp
+    systemctl restart coolercontrold.service
+    exit 0
+}
+
+f_auto() {
+    if lspci |grep -q GeForce; then
+        f_eject
+    else
+        f_attach
+    fi
+}
+
+
+if [[ $EUID -ne 0 ]]; then
+    exec pkexec /run/current-system/sw/bin/bash "`realpath $0`" "$@"
+fi   
+
+case "$ACTION" in
+    attach)
+        f_attach
+        ;;
+    eject)
+        f_eject
+        ;;
+    "")
+        f_auto
+        ;;
+    *)
+        echo "Invalid action: $ACTION"
+        echo "Usage: $0 attach|eject"
+        exit 1
+        ;;
+esac

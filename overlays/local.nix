@@ -5,6 +5,9 @@ self: super:
     drata-agent = super.callPackage ../pkgs/drata-agent.nix { };
 
     offload-game = super.callPackage ../pkgs/offload-game { };
+
+    egpu = super.callPackage ../pkgs/egpu { };
+
     pywincontrols = super.callPackage ../pkgs/pywincontrols { };
 
     google-chrome = super.google-chrome.override { commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation"; };

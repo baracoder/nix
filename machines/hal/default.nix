@@ -1,15 +1,6 @@
 { config, pkgs, lib, ... }:
 let linuxPackages = pkgs.linuxPackages_latest;
     nvidiaPackage = linuxPackages.nvidiaPackages.beta;
-    nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
-        export __NV_PRIME_RENDER_OFFLOAD=1
-        #export VK_ICD_FILENAMES=/var/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json
-        #export _EGL_VENDOR_LIBRARY_FILENAMES=/var/run/opengl-driver/share/glvnd/egl_vendor.d/10_nvidia.json
-        export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-        export __GLX_VENDOR_LIBRARY_NAME=nvidia
-        export __VK_LAYER_NV_optimus=NVIDIA_only
-        exec "$@"
-    '';
 in
 {
   boot.loader.systemd-boot.enable = true;
@@ -137,12 +128,12 @@ in
     # orca-slicer
     liquidctl
     looking-glass-client
-    nvidia-offload
     virtiofsd
     ptouch-print
     gnomeExtensions.dual-shock-4-battery-percentage
     freecad
     offload-game
+    egpu
     pywincontrols
   ];
 
