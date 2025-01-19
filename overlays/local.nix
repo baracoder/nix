@@ -6,6 +6,7 @@ self: super:
 
     offload-game = super.callPackage ../pkgs/offload-game { };
 
+    google-chrome = super.google-chrome.override { commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation"; };
 
     libfprint = super.libfprint.overrideAttrs (oldAttrs: {
         version = "git";
