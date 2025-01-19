@@ -143,6 +143,7 @@ in
     gnomeExtensions.dual-shock-4-battery-percentage
     freecad
     offload-game
+    pywincontrols
   ];
 
   programs.haguichi.enable = true;
