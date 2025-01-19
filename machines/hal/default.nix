@@ -160,6 +160,10 @@ in
     # preferred GPU for gnome
     ATTRS{vendor}=="0x1002", TAG+="mutter-device-preferred-primary"
     ATTRS{vendor}=="0x10de", TAG+="mutter-device-ignore"
+
+    # Set power limits
+    SUBSYSTEM=="power_supply", KERNEL=="ADP1", ATTR{online}=="1", RUN+="${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit 28000 --fast-limit 35000 --slow-limit 32000 --tctl-temp=90"
+    SUBSYSTEM=="power_supply", KERNEL=="ADP1", ATTR{online}=="0", RUN+="${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit 15000 --fast-limit 18000 --slow-limit 15000 --tctl-temp=90"
   '';
   services.displayManager.defaultSession = lib.mkForce "gnome";
 
