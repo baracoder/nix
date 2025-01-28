@@ -5,7 +5,7 @@ https://www.tweag.io/blog/2020-07-31-nixos-flakes/
 
 
 ```
-sudo nixos-rebuild switch --flake .#hostname
+nh os switch --flake .#hostname
 ```
 
 `#host-name` is optional `sudo nixos-rebuild --flake .` will use the current name of the host.
