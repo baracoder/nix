@@ -1,5 +1,5 @@
 self: super:
-{
+rec {
     appimageTools = super.callPackage ../pkgs/appimage { };
 
     drata-agent = super.callPackage ../pkgs/drata-agent.nix { };
@@ -7,6 +7,8 @@ self: super:
     offload-game = super.callPackage ../pkgs/offload-game { };
 
     egpu = super.callPackage ../pkgs/egpu { };
+
+    adjustor = super.callPackage ../pkgs/adjustor { };
 
     pywincontrols = super.callPackage ../pkgs/pywincontrols { };
 
