@@ -134,7 +134,6 @@ in
     looking-glass-client
     virtiofsd
     ptouch-print
-    gnomeExtensions.dual-shock-4-battery-percentage
     freecad
     offload-game
     egpu

@@ -157,16 +157,14 @@
   };
   services.pcscd.enable = true;
 
-  programs.kdeconnect = {
-    package = pkgs.gnomeExtensions.gsconnect;
-    enable = true;
-  };
   programs.adb.enable = true;
 
   programs.nix-ld.enable = true;
   programs.nix-ld.libraries = with pkgs; [
     icu
     icu75
+    xorg.libX11
+    xorg.libXext
   ];
 
   # raise limit to avoid steamplay problems
@@ -199,7 +197,7 @@
     aspell
     aspellDicts.de
     aspellDicts.en
-    appimage-run
+    #appimage-run
     ausweisapp
     avahi
     cifs-utils
@@ -246,11 +244,12 @@
     appindicator
     bing-wallpaper-changer
     bluetooth-quick-connect
-    system-monitor-next
+    astra-monitor
     tiling-assistant
-    pop-shell
-    blur-my-shell
     weeks-start-on-monday-again
+    battery-time-2
+    steal-my-focus-window
+    notification-timeout
   ] ++ [
     (gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
       postInstall = ''
