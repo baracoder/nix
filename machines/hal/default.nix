@@ -1,16 +1,17 @@
 { config, pkgs, lib, ... }:
 let linuxPackages = pkgs.linuxPackages_latest;
     nvidiaPackage = linuxPackages.nvidiaPackages.beta;
+    gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan {};
 in
 {
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
-  boot.extraModulePackages = with linuxPackages; [ nct6687d ];
+  boot.extraModulePackages = with linuxPackages; [ acpi_call gpd-fan ];
   boot.initrd.kernelModules = [ "amdgpu" ];
   boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
-  boot.kernelModules = [ "btrfs" "nct6687" ];
+  boot.kernelModules = [ "btrfs" "acpi_call" "gpd_fan" ];
   boot.plymouth.enable = true;
 
   fileSystems."/boot" =
