@@ -16,7 +16,10 @@ f_eject() {
     while true; do
         modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia
         lsmod | grep -q nvidia || break
-        sleep 0.5
+        echo "Modules still in use. Open device files:"
+        lsof /dev|egrep '(nvidia|D129)'
+        sleep 2
+
     done
 
     echo "Unplug now, then press enter"
