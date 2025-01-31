@@ -149,7 +149,9 @@ in
     egpu
     nebula
     pywincontrols
+    nh
     hifiscan
+    fprintd
   ];
 
   programs.haguichi.enable = true;
