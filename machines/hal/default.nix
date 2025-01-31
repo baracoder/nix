@@ -132,6 +132,7 @@ in
     };
 
   environment.systemPackages = with pkgs; [
+    easyeffects
     discord-canary
     protontricks
     steam.run
@@ -147,6 +148,7 @@ in
     offload-game
     egpu
     pywincontrols
+    hifiscan
   ];
 
   programs.haguichi.enable = true;
