@@ -136,8 +136,9 @@ in
     };
 
   environment.systemPackages = with pkgs; [
+    helix
     easyeffects
-    discord-canary
+    discord
     protontricks
     steam.run
     vulkan-tools
@@ -156,6 +157,7 @@ in
     nh
     hifiscan
     fprintd
+    vial
   ];
 
   programs.haguichi.enable = true;
