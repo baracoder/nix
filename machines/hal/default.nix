@@ -161,6 +161,10 @@ in
   ];
 
   programs.haguichi.enable = true;
+  programs.steam.enable = true;
+  programs.gamescope.enable = true;
+  programs.steam.gamescopeSession.enable = true;
+  programs.alvr.enable = true;
 
   hardware.sensor.iio.enable = true;
 
@@ -184,6 +188,9 @@ in
     ATTRS{vendor}=="0x1002", TAG+="mutter-device-preferred-primary"
     ATTRS{vendor}=="0x10de", TAG+="mutter-device-ignore"
   '';
+  services.udev.packages = [
+    pkgs.vial
+  ];
   services.displayManager.defaultSession = lib.mkForce "gnome";
 
   systemd.tmpfiles.settings."10-looking-glass" = {
