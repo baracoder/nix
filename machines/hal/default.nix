@@ -13,6 +13,9 @@ in
   boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
   boot.kernelModules = [ "btrfs" "acpi_call" "gpd_fan" ];
   boot.plymouth.enable = true;
+  boot.plymouth.extraConfig = ''
+    DeviceScale=2
+  '';
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-label/EFI";
