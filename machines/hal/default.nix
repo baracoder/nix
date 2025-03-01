@@ -115,6 +115,7 @@ in
     # allow PCI device pass through
     "amd_iommu=on" "iommu=pt"
     "acpi_enforce_resources=lax"
+    "bluetooth.disable_ertm=1" # bluetooth gamepad compatibility
   ];
 
   services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
