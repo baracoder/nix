@@ -126,7 +126,7 @@ in
   };
   programs.xwayland.enable = true;
   services.wivrn.enable = true;
-  programs.alvr.openFirewall = true;
+  programs.coolercontrol.enable = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
