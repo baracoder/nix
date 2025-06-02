@@ -71,6 +71,7 @@
     nix-tree
     yaml-language-server
     (callPackage ../pkgs/vim.nix {})
+    (dotnetCorePackages.combinePackages (with dotnetCorePackages; [sdk_9_0 sdk_8_0]))
   ];
 
 
