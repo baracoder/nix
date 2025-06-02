@@ -1,0 +1,6 @@
+#!/bin/sh
+set -ex
+myloc=$(dirname "$(realpath $0)")
+cp $myloc/offloadgame ~/.var/app/info.beyondallreason.bar/data
+sed -i '1 s@.*@#!/bin/sh@' "$HOME/.var/app/info.beyondallreason.bar/data/offloadgame"
+SET_GPU_ENV=true exec flatpak run --command=bash info.beyondallreason.bar -c "$HOME/.var/app/info.beyondallreason.bar/data/offloadgame /app/bin/run.sh"

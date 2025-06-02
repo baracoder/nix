@@ -1,16 +1,23 @@
 #!/bin/sh
 
 if lspci | grep -q GeForce; then
-    export __NV_PRIME_RENDER_OFFLOAD=1
-    export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-    export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export __VK_LAYER_NV_optimus=NVIDIA_only
 
-    if [ "$container" = "flatpak" ]; then
-        export VK_ICD_FILENAMES=/usr/lib/x86_64-linux-gnu/GL/vulkan/icd.d/nvidia_icd.json
-    else
-	export VK_ICD_FILENAMES=/var/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json
+    if [ "$SET_GPU_ENV" = "true" ]; then
+        export __NV_PRIME_RENDER_OFFLOAD=1
+        export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+        export __GLX_VENDOR_LIBRARY_NAME=nvidia
+        export __VK_LAYER_NV_optimus=NVIDIA_only
+
+        #if [ "$container" = "flatpak" ]; then
+        #    export VK_ICD_FILENAMES=/usr/lib/x86_64-linux-gnu/GL/vulkan/icd.d/nvidia_icd.json
+        #else
+        #    export VK_ICD_FILENAMES=/var/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.x86_64.json:/var/run/opengl-driver-32/share/vulkan/icd.d/nvidia_icd.i686.json
+        #fi
     fi
+    exec "$@"
 fi
 
-exec "$@"
+# https://github.com/ValveSoftware/gamescope/issues/1115
+export DRI_PRIME=""
+
+exec  gamescope -w 1280 -h 800 --scaler integer -f $GAMESCOPE_ARGS -- "$@"
