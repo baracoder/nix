@@ -35,9 +35,7 @@
     file
     gimp
     gitAndTools.gitFull
-    gitflow
     git-lfs
-    glab
     gnumake
     k9s
     kubectl
@@ -52,11 +50,8 @@
     ncdu
     nixd
     nmap
-    nodejs-18_x
     nvd
     octave
-    pass
-    #peek
     pdfgrep
     pre-commit
     pwgen
@@ -64,7 +59,6 @@
     renameutils
     ripgrep
     skopeo
-    seagoat
     sqlite
     wget
     fzf
@@ -74,7 +68,6 @@
     samba
     wireshark
     nix-tree
-    vulnix
     yaml-language-server
     (callPackage ../pkgs/vim.nix {})
   ];
