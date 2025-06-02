@@ -9,9 +9,6 @@ f_eject() {
     # make sure gnome remote desktop is also stopped
     runuser -l bara -c 'systemctl --user stop gnome-remote-desktop.service'
 
-    # this will try to reload the modules
-    systemctl stop coolercontrold.service
-
     # Unload NVIDIA kernel modules
     while true; do
         modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia
@@ -22,21 +19,13 @@ f_eject() {
 
     done
 
-    echo "Unplug now, then press enter"
-    read x
-    systemctl start coolercontrold.service
+    echo "Unplug now"
     exit 0
 }
 
 f_attach() {
     # Load NVIDIA kernel modules
     modprobe -a nvidia_drm nvidia_modeset nvidia_uvm nvidia
-
-    # Avoid race condition
-    sleep 1
-
-    # reinitialize coolercontrold to query gpu temp
-    systemctl restart coolercontrold.service
     exit 0
 }
 
