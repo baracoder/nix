@@ -38,6 +38,9 @@ in
   boot.initrd.systemd.enable = true;
 
   boot.blacklistedKernelModules = [ "nouveau" "bmi160_spi" "bmi160_i2c" "bmi160_core" ];
+  boot.extraModprobeConfig = ''
+    options bluetooth disable_ertm=1
+  '';
 
   swapDevices = [
     {
