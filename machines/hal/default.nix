@@ -82,12 +82,11 @@ in
     listenOptions = [ "/run/docker.sock" "0.0.0.0:2375" ];
 
   };
-  hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia.open = true;
 
   services.printing = {
     enable = true;
-    drivers = [ pkgs.hplip ];
+    drivers = [ pkgs.brlaser ];
   };
 
   services.ollama = {
