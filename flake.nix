@@ -4,35 +4,15 @@
   inputs.nix-darwin.url = "github:LnL7/nix-darwin";
   inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, nixos-hardware, nix-darwin } @ inputs: {
+  outputs = { nixpkgs, nixos-hardware, nix-darwin, ... } @ inputs: {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
-        hex = nixpkgs.lib.nixosSystem rec {
-            system = "x86_64-linux";
-            specialArgs = { inherit inputs; };
-            modules = [
-                ({pkgs, ...}: {
-                    nixpkgs.overlays = [
-                        (import ./overlays/local.nix )
-                    ];
-                    environment.systemPackages = [
-                    ];
-                })
-                nixos-hardware.nixosModules.framework-11th-gen-intel
-                #nixos-hardware.nixosModules.dell-xps-13-9380
-                ./modules/common.nix
-                ./modules/linux.nix
-                ./machines/hex
-                nixpkgs.nixosModules.notDetected
-
-            ];
-        };
         hal = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             specialArgs = { inherit inputs; };
 
             modules = [
-                ({pkgs, ...}: {
+                ({...}: {
                     nixpkgs.overlays = [
                         (import ./overlays/local.nix )
                     ];
