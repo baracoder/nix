@@ -1,5 +1,8 @@
 {pkgs, config, lib, ...}:
 
+let xkbVariant = "altgr-intl"; # no dead keys
+    xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
+in
 {
   hardware.graphics.enable32Bit = true;
 
@@ -109,13 +112,8 @@
       };
       defaultSession = "gnome";
     };
-    xserver =
-    let xkbVariant = "altgr-intl"; # no dead keys
-        xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
-    in {
       displayManager.gdm.enable = true;
-      enable = true;
-      exportConfiguration = true;
+    xserver.enable = true;
 
       desktopManager.gnome = {
         enable = true;
@@ -125,7 +123,6 @@
           sources=[('xkb', '${xkbVariant}')]
           xkb-options=['${xkbOptions}']
         '';
-      };
     };
   };
 
@@ -233,7 +230,6 @@
     vlc
     wireguard-tools
     xpra
-    zed-editor
     alsa-utils
     show-midi
 
