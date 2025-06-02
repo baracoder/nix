@@ -1,6 +1,6 @@
 self: super:
 rec {
-    appimageTools = super.callPackage ../pkgs/appimage { };
+    google-chrome = super.google-chrome.override { commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation"; };
 
     drata-agent = super.callPackage ../pkgs/drata-agent.nix { };
 
