@@ -125,7 +125,7 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
-  #programs.alvr.enable = true;
+  services.wivrn.enable = true;
   programs.alvr.openFirewall = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
