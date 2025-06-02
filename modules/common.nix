@@ -46,6 +46,7 @@
     imagemagick
     immersed
     lsof
+    jetbrains.rider
     meld
     ncdu
     nixd
