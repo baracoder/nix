@@ -139,6 +139,7 @@ in
 
   environment.systemPackages = with pkgs; [
     helix
+    beyond-all-reason
     easyeffects
     discord
     protontricks
