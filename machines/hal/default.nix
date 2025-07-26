@@ -104,7 +104,10 @@ in
 
   networking.hostName = "hal";
   networking.firewall.enable = false;
-  services.fprintd.enable = true;
+  services.fprintd.enable = false;
+  #systemd.services.fprintd = {
+  #  conflicts = [ "sleep.target" "suspend.target" "hybernante.target" ];
+  #};
 
 
   system.stateVersion = "19.09";
@@ -175,6 +178,9 @@ in
     # Avoid wake-up from i2c devices on GPD Win Max 2
     SUBSYSTEM=="i2c", KERNEL=="i2c-PNP0C50:00", ATTR{power/wakeup}="disabled"
     SUBSYSTEM=="i2c", KERNEL=="i2c-GXTP7385:00", ATTR{power/wakeup}="disabled"
+
+    # Disable fprint scanner
+    SUBSYSTEM=="usb", ATTR{idVendor}=="2541", ATTR{idProduct}=="9711", ATTR{remove}="1"
 
     # x52 joystick
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0762", MODE="0666"
