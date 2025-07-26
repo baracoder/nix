@@ -101,7 +101,7 @@ in
   services = {
     flatpak.enable = true;
     resolved = {
-      enable = true;
+      enable = false;
       fallbackDns = [ "" ];
     };
     openssh.enable = true;
@@ -116,17 +116,17 @@ in
       };
       defaultSession = "gnome";
     };
-      displayManager.gdm.enable = true;
+    displayManager.gdm.enable = true;
     xserver.enable = true;
 
-      desktopManager.gnome = {
-        enable = true;
-        extraGSettingsOverridePackages = [pkgs.mutter];
-        extraGSettingsOverrides = ''
-          [org.gnome.desktop.input-sources]
-          sources=[('xkb', '${xkbVariant}')]
-          xkb-options=['${xkbOptions}']
-        '';
+    desktopManager.gnome = {
+      enable = true;
+      extraGSettingsOverridePackages = [pkgs.mutter];
+      extraGSettingsOverrides = ''
+        [org.gnome.desktop.input-sources]
+        sources=[('xkb', '${xkbVariant}')]
+        xkb-options=['${xkbOptions}']
+      '';
     };
   };
 
