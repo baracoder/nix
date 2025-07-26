@@ -4,6 +4,10 @@ let xkbVariant = "altgr-intl"; # no dead keys
     xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
 in
 {
+  networking.extraHosts = ''
+    192.168.98.3 wau
+  '';
+
   hardware.graphics.enable32Bit = true;
 
   hardware.ksm.enable = true;
