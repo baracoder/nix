@@ -138,6 +138,25 @@ in
   hardware.graphics = {
       extraPackages = with pkgs; [ libvdpau-va-gl ];
       extraPackages32 = with pkgs; [ libvdpau-va-gl ];
+  };
+
+  # Workaround for LG Ultrawide stuttering on playback resume
+  services.pipewire.wireplumber.extraConfig = {
+    "hdmi-screen" = {
+      "monitor.alsa.rules" = [
+        {
+          matches = [
+            {
+              "node.name" = "~alsa_output.*hdmi*";
+            }
+          ];
+          actions = {
+            update-props = {
+              "session.suspend-timeout-seconds" = 0;
+            };
+          };
+        }
+      ];
     };
 
   environment.systemPackages = with pkgs; [
