@@ -196,6 +196,9 @@ in
     syntaxHighlighting.enable = true;
   };
 
+  services.avahi.enable = true;
+  services.avahi.nssmdns4 = true;
+
   environment.systemPackages = with pkgs; [
     aspell
     aspellDicts.de
