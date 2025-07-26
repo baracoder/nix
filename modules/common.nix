@@ -50,6 +50,7 @@
     meld
     ncdu
     nixd
+    nixfmt
     nmap
     nvd
     octave
