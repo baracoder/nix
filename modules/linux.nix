@@ -166,6 +166,8 @@ in
     icu75
     xorg.libX11
     xorg.libXext
+    libgbm
+    libusb1
   ];
 
   # raise limit to avoid steamplay problems
