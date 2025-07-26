@@ -1,7 +1,13 @@
-{pkgs, config, lib, ...}:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 
-let xkbVariant = "altgr-intl"; # no dead keys
-    xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
+let
+  xkbVariant = "altgr-intl"; # no dead keys
+  xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
 in
 {
   networking.extraHosts = ''
@@ -22,7 +28,6 @@ in
     "de_DE.UTF-8/UTF-8"
   ];
 
-
   hardware.sane.enable = true;
   hardware.sane.disabledDefaultBackends = [ "v4l" ];
 
@@ -35,9 +40,7 @@ in
     options v4l2loopback exclusive_caps=1 card_label="Virtual Camera" video_nr=7
   '';
 
-
   time.timeZone = "Europe/Berlin";
-
 
   fonts = {
     enableDefaultPackages = true;
@@ -77,7 +80,22 @@ in
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "dialout" "scanner" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" "networkmanager" ];
+    extraGroups = [
+      "dialout"
+      "scanner"
+      "users"
+      "video"
+      "wheel"
+      "adm"
+      "audio"
+      "docker"
+      "input"
+      "vboxusers"
+      "adbusers"
+      "libvirtd"
+      "plugdev"
+      "networkmanager"
+    ];
     createHome = true;
     shell = pkgs.zsh;
   };
@@ -108,7 +126,13 @@ in
     openssh.settings.X11Forwarding = true;
     udisks2.enable = true;
     printing.enable = true;
-    printing.drivers = with pkgs; [ gutenprint brlaser brgenml1lpr brgenml1cupswrapper hplip ];
+    printing.drivers = with pkgs; [
+      gutenprint
+      brlaser
+      brgenml1lpr
+      brgenml1cupswrapper
+      hplip
+    ];
     displayManager = {
       autoLogin = {
         enable = false;
@@ -121,7 +145,7 @@ in
 
     desktopManager.gnome = {
       enable = true;
-      extraGSettingsOverridePackages = [pkgs.mutter];
+      extraGSettingsOverridePackages = [ pkgs.mutter ];
       extraGSettingsOverrides = ''
         [org.gnome.desktop.input-sources]
         sources=[('xkb', '${xkbVariant}')]
@@ -130,11 +154,10 @@ in
     };
   };
 
-
   services.envfs.enable = true;
   services.envfs.extraFallbackPathCommands = ''
-  ln -s ${pkgs.bash}/bin/bash $out/bash
-  ln -s ${pkgs.coreutils}/bin/uname $out/uname
+    ln -s ${pkgs.bash}/bin/bash $out/bash
+    ln -s ${pkgs.coreutils}/bin/uname $out/uname
   '';
 
   security.rtkit.enable = true;
@@ -149,7 +172,10 @@ in
   programs.immersed.enable = true;
   programs.firefox = {
     enable = true;
-    languagePacks = [ "en-US" "de" ];
+    languagePacks = [
+      "en-US"
+      "de"
+    ];
   };
   programs.gnome-terminal.enable = true;
   programs.gnome-disks.enable = true;
@@ -184,7 +210,6 @@ in
   hardware.logitech.wireless.enableGraphical = true;
   hardware.usb-modeswitch.enable = true;
 
-
   programs.nix-index.enable = true;
   programs.nix-index.enableZshIntegration = true;
   programs.command-not-found.enable = false;
@@ -199,69 +224,76 @@ in
   services.avahi.enable = true;
   services.avahi.nssmdns4 = true;
 
-  environment.systemPackages = with pkgs; [
-    aspell
-    aspellDicts.de
-    aspellDicts.en
-    #appimage-run
-    ausweisapp
-    avahi
-    blackbox-terminal
-    cifs-utils
-    espeak
-    evince
-    dconf-editor
-    gitg
-    gnome-console
-    gnome-usage
-    google-chrome
-    gnome-tweaks
-    gsmartcontrol
-    hdparm
-    lm_sensors
-    iotop
-    keepass
-    mtools
-    mumble
-    ntfs3g
-    nvme-cli
-    pamixer
-    pciutils
-    pavucontrol
-    qjackctl
-    remmina
-    gnome-boxes
-    ghex
-    spice-gtk
-    speechd
-    sshfs-fuse
-    usbutils
-    virt-manager
-    vlc
-    wireguard-tools
-    xpra
-    alsa-utils
-    show-midi
+  environment.systemPackages =
+    with pkgs;
+    [
+      aspell
+      aspellDicts.de
+      aspellDicts.en
+      #appimage-run
+      ausweisapp
+      avahi
+      blackbox-terminal
+      cifs-utils
+      espeak
+      evince
+      dconf-editor
+      gitg
+      gnome-console
+      gnome-usage
+      google-chrome
+      gnome-tweaks
+      gsmartcontrol
+      hdparm
+      lm_sensors
+      iotop
+      keepass
+      mtools
+      mumble
+      ntfs3g
+      nvme-cli
+      pamixer
+      pciutils
+      pavucontrol
+      qjackctl
+      remmina
+      gnome-boxes
+      ghex
+      spice-gtk
+      speechd
+      sshfs-fuse
+      usbutils
+      virt-manager
+      vlc
+      wireguard-tools
+      xpra
+      alsa-utils
+      show-midi
 
-    (callPackage ../pkgs/vscode.nix {})
-    vscode-fhs
-  ] ++ (with gnomeExtensions; [
-    quick-settings-audio-devices-hider
-    appindicator
-    bing-wallpaper-changer
-    bluetooth-quick-connect
-    astra-monitor
-    tiling-assistant
-    weeks-start-on-monday-again
-    battery-time-2
-    steal-my-focus-window
-    notification-timeout
-    voluble
-  ] ++ [
-    (gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
-      postInstall = ''
-        sed -i 's/"42"/"47"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
-      '';
-    }))
-  ]);
+      (callPackage ../pkgs/vscode.nix { })
+      vscode-fhs
+    ]
+    ++ (
+      with gnomeExtensions;
+      [
+        quick-settings-audio-devices-hider
+        appindicator
+        bing-wallpaper-changer
+        bluetooth-quick-connect
+        astra-monitor
+        tiling-assistant
+        weeks-start-on-monday-again
+        battery-time-2
+        steal-my-focus-window
+        notification-timeout
+        voluble
+      ]
+      ++ [
+        (gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
+          postInstall = ''
+            sed -i 's/"42"/"47"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
+          '';
+        }))
+      ]
+    );
 }

@@ -1,11 +1,19 @@
-{ config, pkgs, inputs, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 {
 
   nix = {
     package = pkgs.nixVersions.latest;
     settings = {
       experimental-features = "nix-command flakes";
-      trusted-users = [ "root" "@wheel" ];
+      trusted-users = [
+        "root"
+        "@wheel"
+      ];
       substituters = [
         "https://cache.nixos.org/"
       ];
@@ -20,9 +28,7 @@
   };
   nixpkgs.config.allowUnfree = true;
 
-
   #documentation.man.generateCaches = false;
-
 
   environment.systemPackages = with pkgs; [
     curl
@@ -71,14 +77,17 @@
     wireshark
     nix-tree
     yaml-language-server
-    (callPackage ../pkgs/vim.nix {})
-    (dotnetCorePackages.combinePackages (with dotnetCorePackages; [sdk_9_0 sdk_8_0]))
+    (callPackage ../pkgs/vim.nix { })
+    (dotnetCorePackages.combinePackages (
+      with dotnetCorePackages;
+      [
+        sdk_9_0
+        sdk_8_0
+      ]
+    ))
   ];
-
-
 
   # directly run the missing commands via nix-shell (without installing anything)
   environment.variables.NIX_AUTO_RUN = "1";
-
 
 }

@@ -1,7 +1,15 @@
-{ config, pkgs, inputs, lib, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  lib,
+  ...
+}:
 
-let cfg = config.myHyprland;
-in {
+let
+  cfg = config.myHyprland;
+in
+{
 
   options.myHyprland = {
     enable = lib.mkEnableOption "Enable configuration for using hyprland";
@@ -58,7 +66,6 @@ in {
       swayosd
     ];
 
-
     programs.dconf.enable = true;
     services.blueman.enable = true;
     programs.hyprland = {
@@ -66,7 +73,7 @@ in {
       package = inputs.hyprland.packages.${pkgs.system}.hyprland;
     };
     networking.networkmanager.enable = true;
-    security.pam.services.gtklock = {};
+    security.pam.services.gtklock = { };
     qt.style = "adwaita-dark";
     environment.etc = {
       "xdg/gtk-3.0/settings.ini".text = ''

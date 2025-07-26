@@ -1,43 +1,82 @@
-{ config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_zen;
-    nvidiaPackage = linuxPackages.nvidiaPackages.beta;
-    gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan {};
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+let
+  linuxPackages = pkgs.linuxPackages_zen;
+  nvidiaPackage = linuxPackages.nvidiaPackages.beta;
+  gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan { };
 in
 {
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
-  boot.extraModulePackages = with linuxPackages; [ acpi_call gpd-fan ];
+  boot.extraModulePackages = with linuxPackages; [
+    acpi_call
+    gpd-fan
+  ];
   boot.initrd.kernelModules = [ "amdgpu" ];
-  boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" "nvidia" ];
-  boot.kernelModules = [ "btrfs" "acpi_call" "gpd_fan" ];
+  boot.initrd.availableKernelModules = [
+    "amdgpu"
+    "xhci_pci"
+    "ehci_pci"
+    "ahci"
+    "usbhid"
+    "sd_mod"
+    "nvme"
+    "nvme_core"
+    "nvidia"
+  ];
+  boot.kernelModules = [
+    "btrfs"
+    "acpi_call"
+    "gpd_fan"
+  ];
   boot.plymouth.enable = true;
   boot.plymouth.extraConfig = ''
     DeviceScale=2
   '';
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-label/EFI";
-      fsType = "vfat";
-      options = [ "relatime" ];
-    };
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
-      fsType = "btrfs";
-      options = [ "discard=async" "relatime" "subvol=root" "compress=lzo" ];
-    };
-  fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
-      fsType = "btrfs";
-      options = [ "discard=async" "relatime" "subvol=home" "compress=lzo" ];
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/EFI";
+    fsType = "vfat";
+    options = [ "relatime" ];
+  };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
+    fsType = "btrfs";
+    options = [
+      "discard=async"
+      "relatime"
+      "subvol=root"
+      "compress=lzo"
+    ];
+  };
+  fileSystems."/home" = {
+    device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
+    fsType = "btrfs";
+    options = [
+      "discard=async"
+      "relatime"
+      "subvol=home"
+      "compress=lzo"
+    ];
+  };
 
-  boot.initrd.luks.devices."crypt-ssd".device = "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
+  boot.initrd.luks.devices."crypt-ssd".device =
+    "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   boot.initrd.systemd.enable = true;
 
-  boot.blacklistedKernelModules = [ "nouveau" "bmi160_spi" "bmi160_i2c" "bmi160_core" ];
+  boot.blacklistedKernelModules = [
+    "nouveau"
+    "bmi160_spi"
+    "bmi160_i2c"
+    "bmi160_core"
+  ];
   boot.extraModprobeConfig = ''
     options bluetooth disable_ertm=1
   '';
@@ -51,7 +90,6 @@ in
   systemd.units."dev-sdc2.swap".enable = false;
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
 
-
   hardware.cpu.amd.updateMicrocode = true;
   hardware.bluetooth.enable = true;
   hardware.steam-hardware.enable = true;
@@ -60,14 +98,14 @@ in
     enable = true;
     ui.enable = true;
     user = "bara";
-    package = with pkgs; handheld-daemon.overrideAttrs (oldAttrs: {
-      propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
-        pkgs.adjustor
-      ];
-    });
+    package =
+      with pkgs;
+      handheld-daemon.overrideAttrs (oldAttrs: {
+        propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
+          pkgs.adjustor
+        ];
+      });
   };
-
-
 
   services.power-profiles-daemon.enable = true; # Power management is handled by handheld-daemon adjustor
   powerManagement.cpuFreqGovernor = "ondemand";
@@ -79,7 +117,10 @@ in
     enable = true;
     enableOnBoot = false;
     storageDriver = "overlay2";
-    listenOptions = [ "/run/docker.sock" "0.0.0.0:2375" ];
+    listenOptions = [
+      "/run/docker.sock"
+      "0.0.0.0:2375"
+    ];
 
   };
   hardware.nvidia.open = true;
@@ -96,10 +137,8 @@ in
   services.open-webui.enable = true;
   services.open-webui.host = "0.0.0.0";
 
-
-
   services.logind.extraConfig = ''
-  HandlePowerKey=suspend
+    HandlePowerKey=suspend
   '';
 
   networking.hostName = "hal";
@@ -109,7 +148,6 @@ in
   #  conflicts = [ "sleep.target" "suspend.target" "hybernante.target" ];
   #};
 
-
   system.stateVersion = "19.09";
 
   environment.sessionVariables.WLR_NO_HARDWARE_CURSORS = "1";
@@ -118,12 +156,16 @@ in
     "quiet"
     "nouveau.modeset=0"
     # allow PCI device pass through
-    "amd_iommu=on" "iommu=pt"
+    "amd_iommu=on"
+    "iommu=pt"
     "acpi_enforce_resources=lax"
     "bluetooth.disable_ertm=1" # bluetooth gamepad compatibility
   ];
 
-  services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
+  services.xserver.videoDrivers = [
+    "nvidia"
+    "amdgpu"
+  ];
   hardware.nvidia = {
     modesetting.enable = true;
     package = nvidiaPackage;
@@ -136,8 +178,8 @@ in
   nix.settings.max-jobs = lib.mkDefault 8;
 
   hardware.graphics = {
-      extraPackages = with pkgs; [ libvdpau-va-gl ];
-      extraPackages32 = with pkgs; [ libvdpau-va-gl ];
+    extraPackages = with pkgs; [ libvdpau-va-gl ];
+    extraPackages32 = with pkgs; [ libvdpau-va-gl ];
   };
 
   # Workaround for LG Ultrawide stuttering on playback resume
@@ -233,24 +275,41 @@ in
   };
   services.switcherooControl.enable = true;
 
-  systemd.services.systemd-vconsole-setup.unitConfig.After="local-fs.target";
-
+  systemd.services.systemd-vconsole-setup.unitConfig.After = "local-fs.target";
 
   services.nebula.networks.mesh = {
     enable = true;
     cert = "/etc/nebula/hal.crt";
     key = "/etc/nebula/hal.key";
     ca = "/etc/nebula/ca.crt";
-    lighthouses = [ "192.168.98.2" "192.168.98.3" ];
+    lighthouses = [
+      "192.168.98.2"
+      "192.168.98.3"
+    ];
     staticHostMap = {
       "192.168.98.3" = [ "me.notho.me:4242" ];
       "192.168.98.2" = [ "zebar.de:4242" ];
     };
     firewall = {
-      outbound = [ { port = "any"; proto = "any"; host = "any"; } ];
-      inbound = [ { port = "any"; proto = "any"; host = "any"; } ];
+      outbound = [
+        {
+          port = "any";
+          proto = "any";
+          host = "any";
+        }
+      ];
+      inbound = [
+        {
+          port = "any";
+          proto = "any";
+          host = "any";
+        }
+      ];
     };
-    relays = [ "192.168.98.2" "192.168.98.3" ];
+    relays = [
+      "192.168.98.2"
+      "192.168.98.3"
+    ];
     settings = {
       punchy = {
         punch = true;
