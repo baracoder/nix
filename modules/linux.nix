@@ -77,7 +77,7 @@ in
     isNormalUser = true;
     uid = 1000;
     group = "bara";
-    extraGroups = [ "dialout" "scanner" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" ];
+    extraGroups = [ "dialout" "scanner" "users" "video" "wheel" "adm" "audio" "docker" "input" "vboxusers" "adbusers" "libvirtd" "plugdev" "networkmanager" ];
     createHome = true;
     shell = pkgs.zsh;
   };
