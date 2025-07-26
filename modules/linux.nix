@@ -256,6 +256,7 @@ in
     battery-time-2
     steal-my-focus-window
     notification-timeout
+    voluble
   ] ++ [
     (gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
       postInstall = ''
