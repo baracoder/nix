@@ -10,7 +10,7 @@ in
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [ acpi_call gpd-fan ];
   boot.initrd.kernelModules = [ "amdgpu" ];
-  boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" ];
+  boot.initrd.availableKernelModules = [ "amdgpu" "xhci_pci" "ehci_pci" "ahci" "usbhid" "sd_mod"  "nvme" "nvme_core" "nvidia" ];
   boot.kernelModules = [ "btrfs" "acpi_call" "gpd_fan" ];
   boot.plymouth.enable = true;
   boot.plymouth.extraConfig = ''
