@@ -206,6 +206,7 @@ in
     #appimage-run
     ausweisapp
     avahi
+    blackbox-terminal
     cifs-utils
     espeak
     evince
