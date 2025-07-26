@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let linuxPackages = pkgs.linuxPackages_latest;
+let linuxPackages = pkgs.linuxPackages_zen;
     nvidiaPackage = linuxPackages.nvidiaPackages.beta;
     gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan {};
 in
