@@ -158,8 +158,10 @@ in
         }
       ];
     };
+  };
 
   environment.systemPackages = with pkgs; [
+    piper-tts
     helix
     beyond-all-reason
     easyeffects
@@ -183,9 +185,10 @@ in
     hifiscan
     fprintd
     vial
+    vivaldi
+    arduino-ide
   ];
 
-  programs.haguichi.enable = true;
   programs.steam.enable = true;
   programs.gamescope.enable = true;
   programs.steam.gamescopeSession.enable = true;
