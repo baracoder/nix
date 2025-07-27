@@ -60,6 +60,7 @@
     nmap
     nvd
     octave
+    omnisharp-roslyn
     pdfgrep
     pre-commit
     pwgen
