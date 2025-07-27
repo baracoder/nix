@@ -57,6 +57,7 @@
     ncdu
     nixd
     nixfmt
+    netcoredbg
     nmap
     nvd
     octave
