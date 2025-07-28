@@ -19,7 +19,6 @@
     colima
     eksctl
     k9s
-    go_1_22
     kubernetes-helm
     kustomize
     tfswitch
