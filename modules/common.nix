@@ -31,6 +31,7 @@
   #documentation.man.generateCaches = false;
 
   environment.systemPackages = with pkgs; [
+    codebook
     curl
     docker
     docker-compose
