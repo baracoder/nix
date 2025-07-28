@@ -8,7 +8,7 @@
   environment.systemPackages = with pkgs; [
     kubectl
     meld
-    _1password
+    _1password-cli
     gh
     gitFull
     awscli2
