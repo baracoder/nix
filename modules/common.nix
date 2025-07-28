@@ -43,6 +43,7 @@
     gitAndTools.gitFull
     git-lfs
     gnumake
+    grpcurl
     k9s
     kubectl
     lazygit
