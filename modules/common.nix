@@ -48,6 +48,7 @@
     lazygit
     lnav
     btop
+    helix
     htop
     imagemagick
     immersed

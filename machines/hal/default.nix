@@ -204,7 +204,6 @@ in
 
   environment.systemPackages = with pkgs; [
     piper-tts
-    helix
     beyond-all-reason
     easyeffects
     discord
