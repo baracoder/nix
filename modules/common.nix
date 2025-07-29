@@ -49,6 +49,7 @@
     kubectl
     lazygit
     lnav
+    lsp-ai
     btop
     helix
     htop
