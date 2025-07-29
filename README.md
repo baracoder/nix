@@ -44,7 +44,7 @@ For the initial install
 ```
 nix run nix-darwin -- switch --flake .
 ```
-Afer that, just
+After that, just
 ```
 darwin-rebuild switch --flake .
 ```
