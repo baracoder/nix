@@ -1,7 +1,5 @@
 {
-  config,
   pkgs,
-  inputs,
   ...
 }:
 {
@@ -32,6 +30,7 @@
 
   environment.systemPackages = with pkgs; [
     codebook
+    copilot-language-server
     curl
     docker
     docker-compose
