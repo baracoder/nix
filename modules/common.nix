@@ -51,6 +51,7 @@
     lsp-ai
     btop
     helix
+    helix-gpt
     htop
     imagemagick
     immersed
