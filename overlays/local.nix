@@ -14,5 +14,6 @@ self: super: rec {
   wivrn = (super.wivrn.override { cudaSupport = true; });
 
   handheld-daemon-ui = super.callPackage ../pkgs/hhd-ui.nix { };
+  pyroveil = super.callPackage ../pkgs/pyroveil/package.nix { };
 
 }

@@ -225,6 +225,7 @@ in
     nh
     hifiscan
     fprintd
+    pyroveil
     vial
     vivaldi
     arduino-ide
