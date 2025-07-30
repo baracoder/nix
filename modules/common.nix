@@ -63,6 +63,7 @@
     nixfmt
     netcoredbg
     nmap
+    nnn
     nvd
     octave
     omnisharp-roslyn
