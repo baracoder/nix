@@ -31,6 +31,7 @@
   environment.systemPackages =
     with pkgs;
     [
+      bash-language-server
       btop
       codebook
       copilot-language-server
