@@ -28,74 +28,80 @@
 
   #documentation.man.generateCaches = false;
 
-  environment.systemPackages = with pkgs; [
-    codebook
-    copilot-language-server
-    curl
-    docker
-    docker-compose
-    dosfstools
-    unzip
-    direnv
-    dogdns
-    file
-    gimp
-    gitAndTools.gitFull
-    git-lfs
-    gnumake
-    grpcurl
-    k9s
-    kubectl
-    lazygit
-    lnav
-    lsp-ai
-    btop
-    helix
-    helix-gpt
-    htop
-    imagemagick
-    immersed
-    lsof
-    jetbrains.rider
-    meld
-    ncdu
-    nixd
-    nixfmt
-    netcoredbg
-    nmap
-    nnn
-    nvd
-    octave
-    omnisharp-roslyn
-    pdfgrep
-    pre-commit
-    pwgen
-    python3
-    renameutils
-    ripgrep
-    skopeo
-    sqlite
-    wget
-    fzf
-    fd
-    tldr
-    zsh
-    samba
-    wireshark
-    nix-tree
-    yaml-language-server
-    (callPackage ../pkgs/vim.nix { })
-    (dotnetCorePackages.combinePackages (
-      with dotnetCorePackages;
-      [
-        sdk_9_0
-        sdk_8_0
-      ]
-    ))
-    jq
-    yq-go
-    kube-score
-  ];
+  environment.systemPackages =
+    with pkgs;
+    [
+      btop
+      codebook
+      copilot-language-server
+      curl
+      direnv
+      docker
+      docker-compose
+      dogdns
+      dosfstools
+      fd
+      file
+      fzf
+      gimp
+      git-lfs
+      gitAndTools.gitFull
+      gnumake
+      grpcurl
+      helix
+      helix-gpt
+      htop
+      imagemagick
+      immersed
+      jetbrains.rider
+      jq
+      k9s
+      kube-score
+      kubectl
+      lazygit
+      lnav
+      lsof
+      lsp-ai
+      meld
+      ncdu
+      netcoredbg
+      nix-tree
+      nixd
+      nixfmt
+      nmap
+      nnn
+      nvd
+      octave
+      omnisharp-roslyn
+      pdfgrep
+      pre-commit
+      pwgen
+      python3
+      renameutils
+      ripgrep
+      samba
+      skopeo
+      sqlite
+      tldr
+      unzip
+      wget
+      wireshark
+      yaml-language-server
+      yazi
+      yq-go
+      zellij
+      zsh
+    ]
+    ++ [
+      (callPackage ../pkgs/vim.nix { })
+      (dotnetCorePackages.combinePackages (
+        with dotnetCorePackages;
+        [
+          sdk_9_0
+          sdk_8_0
+        ]
+      ))
+    ];
 
   # directly run the missing commands via nix-shell (without installing anything)
   environment.variables.NIX_AUTO_RUN = "1";
