@@ -61,6 +61,7 @@
       kube-score
       kubectl
       lazygit
+      lazyjj
       lnav
       lsof
       lsp-ai
