@@ -51,6 +51,7 @@
       grpcurl
       helix
       helix-gpt
+      helm-ls
       htop
       imagemagick
       immersed
@@ -83,8 +84,11 @@
       samba
       skopeo
       sqlite
+      terraform-ls
       tldr
+      typescript-language-server
       unzip
+      vscode-json-languageserver
       wget
       wireshark
       yaml-language-server
