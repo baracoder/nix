@@ -88,6 +88,7 @@
       terraform-ls
       tldr
       typescript-language-server
+      typos-lsp
       unzip
       vscode-json-languageserver
       wget
