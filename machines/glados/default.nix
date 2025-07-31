@@ -22,7 +22,6 @@
     kubernetes-helm
     kustomize
     tfswitch
-    remmina
     wireshark
     kaf
     kcat
