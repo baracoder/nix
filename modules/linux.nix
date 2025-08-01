@@ -1,7 +1,5 @@
 {
   pkgs,
-  config,
-  lib,
   ...
 }:
 
@@ -197,8 +195,7 @@ in
   ];
 
   # raise limit to avoid steamplay problems
-  systemd.extraConfig = "DefaultLimitNOFILE=1048576";
-
+  systemd.settings.Manager.DefaultLimitNOFILE = 1048576;
   programs.fuse.userAllowOther = true;
 
   virtualisation.spiceUSBRedirection.enable = true;
