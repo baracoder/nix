@@ -49,6 +49,7 @@
       gitAndTools.gitFull
       gnumake
       grpcurl
+      harper
       helix
       helix-gpt
       helm-ls
