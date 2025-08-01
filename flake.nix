@@ -39,10 +39,21 @@
           ];
         };
         glados-nixos-vm = nixpkgs.lib.nixosSystem {
-            system = "aarch64-linux";
-            modules = [
-                ./machines/glados-nixos-vm
-            ];
+          system = "aarch64-linux";
+          modules = [
+            ./machines/glados-nixos-vm
+          ];
+        };
+
+        killswitch = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ./modules/common.nix
+            ./modules/linux.nix
+            ./machines/killswitch
+            nixos-hardware.nixosModules.lenovo-thinkpad-x1-11th-gen
+          ];
+
         };
 
         iso-minimal = nixpkgs.lib.nixosSystem {
