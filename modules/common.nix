@@ -36,6 +36,7 @@
       codebook
       copilot-language-server
       curl
+      csharp-ls
       direnv
       docker
       docker-compose
