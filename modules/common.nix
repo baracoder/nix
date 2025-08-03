@@ -69,6 +69,7 @@
       lsp-ai
       meld
       ncdu
+      newelle
       netcoredbg
       nix-tree
       nixd
