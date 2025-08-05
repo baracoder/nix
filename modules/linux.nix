@@ -3,10 +3,6 @@
   ...
 }:
 
-let
-  xkbVariant = "altgr-intl"; # no dead keys
-  xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
-in
 {
   networking.extraHosts = ''
     192.168.98.3 wau
@@ -101,16 +97,6 @@ in
 
   services.gvfs.enable = true;
   services.fwupd.enable = true;
-  services.gnome = {
-    gnome-browser-connector.enable = true;
-    gnome-keyring.enable = true;
-    gnome-online-accounts.enable = true;
-    #gnome-user-share.enable = true;
-    localsearch.enable = true;
-    tinysparql.enable = true;
-    sushi.enable = true;
-    at-spi2-core.enable = true;
-  };
 
   services.earlyoom.enable = true;
 
@@ -141,15 +127,6 @@ in
     displayManager.gdm.enable = true;
     xserver.enable = true;
 
-    desktopManager.gnome = {
-      enable = true;
-      extraGSettingsOverridePackages = [ pkgs.mutter ];
-      extraGSettingsOverrides = ''
-        [org.gnome.desktop.input-sources]
-        sources=[('xkb', '${xkbVariant}')]
-        xkb-options=['${xkbOptions}']
-      '';
-    };
   };
 
   services.envfs.enable = true;
@@ -175,8 +152,6 @@ in
       "de"
     ];
   };
-  programs.gnome-terminal.enable = true;
-  programs.gnome-disks.enable = true;
   programs.gnupg.agent = {
     enable = true;
   };
@@ -203,9 +178,6 @@ in
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
   hardware.bluetooth.enable = true;
-  hardware.logitech.wireless.enable = true;
-  hardware.logitech.wireless.enableGraphical = true;
-  hardware.usb-modeswitch.enable = true;
 
   programs.nix-index.enable = true;
   programs.nix-index.enableZshIntegration = true;
@@ -221,76 +193,51 @@ in
   services.avahi.enable = true;
   services.avahi.nssmdns4 = true;
 
-  environment.systemPackages =
-    with pkgs;
-    [
-      aspell
-      aspellDicts.de
-      aspellDicts.en
-      #appimage-run
-      ausweisapp
-      avahi
-      blackbox-terminal
-      cifs-utils
-      espeak
-      evince
-      dconf-editor
-      gitg
-      gnome-console
-      gnome-usage
-      google-chrome
-      gnome-tweaks
-      gsmartcontrol
-      hdparm
-      lm_sensors
-      iotop
-      keepass
-      mtools
-      mumble
-      ntfs3g
-      nvme-cli
-      pamixer
-      pciutils
-      pavucontrol
-      qjackctl
-      remmina
-      gnome-boxes
-      ghex
-      spice-gtk
-      speechd
-      sshfs-fuse
-      usbutils
-      virt-manager
-      vlc
-      wireguard-tools
-      xpra
-      alsa-utils
-      show-midi
+  environment.systemPackages = with pkgs; [
+    aspell
+    aspellDicts.de
+    aspellDicts.en
+    #appimage-run
+    ausweisapp
+    avahi
+    blackbox-terminal
+    cifs-utils
+    espeak
+    evince
+    dconf-editor
+    gitg
+    gnome-console
+    gnome-usage
+    google-chrome
+    gnome-tweaks
+    gsmartcontrol
+    hdparm
+    lm_sensors
+    iotop
+    keepass
+    mtools
+    mumble
+    ntfs3g
+    nvme-cli
+    pamixer
+    pciutils
+    pavucontrol
+    qjackctl
+    remmina
+    gnome-boxes
+    ghex
+    spice-gtk
+    speechd
+    sshfs-fuse
+    usbutils
+    virt-manager
+    vlc
+    wireguard-tools
+    xpra
+    alsa-utils
+    show-midi
 
-      (callPackage ../pkgs/vscode.nix { })
-      vscode-fhs
-    ]
-    ++ (
-      with gnomeExtensions;
-      [
-        quick-settings-audio-devices-hider
-        appindicator
-        bing-wallpaper-changer
-        bluetooth-quick-connect
-        astra-monitor
-        tiling-assistant
-        weeks-start-on-monday-again
-        battery-time-2
-        steal-my-focus-window
-        notification-timeout
-        voluble
-      ]
-      ++ [
-        (gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
-          postInstall = ''
-            sed -i 's/"42"/"47"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
-          '';
-        }))
-      ]
-    );
+    (callPackage ../pkgs/vscode.nix { })
+    vscode-fhs
+  ];
 }

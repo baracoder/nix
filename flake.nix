@@ -31,6 +31,8 @@
             )
             ./modules/common.nix
             ./modules/linux.nix
+            ./modules/common-packages
+            ./modules/gnome
             ./machines/hal
             nixpkgs.nixosModules.notDetected
             nixos-hardware.nixosModules.common-pc-laptop
@@ -50,6 +52,8 @@
           modules = [
             ./modules/common.nix
             ./modules/linux.nix
+            ./modules/common-packages
+            ./modules/gnome
             ./machines/killswitch
             nixos-hardware.nixosModules.lenovo-thinkpad-x1-11th-gen
           ];
@@ -67,6 +71,7 @@
       darwinConfigurations.glados = nix-darwin.lib.darwinSystem {
         modules = [
           ./modules/common.nix
+          ./modules/common-packages
           ./machines/glados
         ];
       };

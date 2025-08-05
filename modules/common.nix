@@ -28,90 +28,16 @@
 
   #documentation.man.generateCaches = false;
 
-  environment.systemPackages =
-    with pkgs;
-    [
-      bash-language-server
-      btop
-      codebook
-      copilot-language-server
-      curl
-      csharp-ls
-      direnv
-      docker
-      docker-compose
-      dogdns
-      dosfstools
-      fd
-      file
-      fzf
-      gimp
-      git-lfs
-      gitAndTools.gitFull
-      gnumake
-      grpcurl
-      harper
-      helix
-      helix-gpt
-      helm-ls
-      htop
-      imagemagick
-      immersed
-      jetbrains.rider
-      jq
-      k9s
-      kube-score
-      kubectl
-      lazygit
-      lazyjj
-      lnav
-      lsof
-      lsp-ai
-      meld
-      ncdu
-      newelle
-      netcoredbg
-      nix-tree
-      nixd
-      nixfmt
-      nmap
-      nnn
-      nvd
-      octave
-      omnisharp-roslyn
-      pdfgrep
-      pre-commit
-      pwgen
-      python3
-      renameutils
-      ripgrep
-      samba
-      skopeo
-      sqlite
-      terraform-ls
-      tldr
-      typescript-language-server
-      typos-lsp
-      unzip
-      vscode-json-languageserver
-      wget
-      wireshark
-      yaml-language-server
-      yazi
-      yq-go
-      zellij
-      zsh
-    ]
-    ++ [
-      (callPackage ../pkgs/vim.nix { })
-      (dotnetCorePackages.combinePackages (
-        with dotnetCorePackages;
-        [
-          sdk_9_0
-          sdk_8_0
-        ]
-      ))
-    ];
+  environment.systemPackages = [
+    (pkgs.callPackage ../pkgs/vim.nix { })
+    (pkgs.dotnetCorePackages.combinePackages (
+      with pkgs.dotnetCorePackages;
+      [
+        sdk_9_0
+        sdk_8_0
+      ]
+    ))
+  ];
 
   # directly run the missing commands via nix-shell (without installing anything)
   environment.variables.NIX_AUTO_RUN = "1";
