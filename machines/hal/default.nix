@@ -10,6 +10,11 @@ let
   gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan { };
 in
 {
+  imports = [
+    ./filesystems.nix
+    ./nebula.nix
+  ];
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -40,35 +45,6 @@ in
     DeviceScale=2
   '';
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/EFI";
-    fsType = "vfat";
-    options = [ "relatime" ];
-  };
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
-    fsType = "btrfs";
-    options = [
-      "discard=async"
-      "relatime"
-      "subvol=root"
-      "compress=lzo"
-    ];
-  };
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/65de6b98-348e-454f-a57a-d100cf19bd28";
-    fsType = "btrfs";
-    options = [
-      "discard=async"
-      "relatime"
-      "subvol=home"
-      "compress=lzo"
-    ];
-  };
-
-  boot.initrd.luks.devices."crypt-ssd".device =
-    "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
-  boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
   boot.initrd.systemd.enable = true;
 
   boot.blacklistedKernelModules = [
@@ -81,13 +57,6 @@ in
     options bluetooth disable_ertm=1
   '';
 
-  swapDevices = [
-    {
-      device = "/dev/disk/by-partlabel/crypt-swap";
-      randomEncryption.enable = true;
-    }
-  ];
-  systemd.units."dev-sdc2.swap".enable = false;
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
 
   hardware.cpu.amd.updateMicrocode = true;
@@ -172,7 +141,6 @@ in
     powerManagement.enable = true;
   };
   programs.xwayland.enable = true;
-  services.wivrn.enable = true;
   programs.coolercontrol.enable = true;
 
   nix.settings.max-jobs = lib.mkDefault 8;
@@ -204,11 +172,9 @@ in
 
   environment.systemPackages = with pkgs; [
     piper-tts
-    beyond-all-reason
     easyeffects
     discord
-    protontricks
-    steam.run
+    freecad
     vulkan-tools
     libva-utils
     # broken https://github.com/NixOS/nixpkgs/issues/369571
@@ -217,9 +183,6 @@ in
     looking-glass-client
     virtiofsd
     ptouch-print
-    freecad
-    offload-game
-    egpu
     nebula
     pywincontrols
     nh
@@ -230,11 +193,6 @@ in
     vivaldi
     arduino-ide
   ];
-
-  programs.steam.enable = true;
-  programs.gamescope.enable = true;
-  programs.steam.gamescopeSession.enable = true;
-  programs.alvr.enable = true;
 
   hardware.sensor.iio.enable = true;
   hardware.enableRedistributableFirmware = true;
@@ -274,51 +232,7 @@ in
       mode = "0660";
     };
   };
-  services.switcherooControl.enable = true;
 
   systemd.services.systemd-vconsole-setup.unitConfig.After = "local-fs.target";
-
-  services.nebula.networks.mesh = {
-    enable = true;
-    cert = "/etc/nebula/hal.crt";
-    key = "/etc/nebula/hal.key";
-    ca = "/etc/nebula/ca.crt";
-    lighthouses = [
-      "192.168.98.2"
-      "192.168.98.3"
-    ];
-    staticHostMap = {
-      "192.168.98.3" = [ "me.notho.me:4242" ];
-      "192.168.98.2" = [ "zebar.de:4242" ];
-    };
-    firewall = {
-      outbound = [
-        {
-          port = "any";
-          proto = "any";
-          host = "any";
-        }
-      ];
-      inbound = [
-        {
-          port = "any";
-          proto = "any";
-          host = "any";
-        }
-      ];
-    };
-    relays = [
-      "192.168.98.2"
-      "192.168.98.3"
-    ];
-    settings = {
-      punchy = {
-        punch = true;
-        delay = "1s";
-        respond = true;
-        respond_delay = "5s";
-      };
-    };
-  };
 
 }

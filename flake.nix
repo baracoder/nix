@@ -33,6 +33,7 @@
             ./modules/linux.nix
             ./modules/common-packages
             ./modules/gnome
+            ./modules/gaming
             ./machines/hal
             nixpkgs.nixosModules.notDetected
             nixos-hardware.nixosModules.common-pc-laptop
