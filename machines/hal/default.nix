@@ -237,6 +237,7 @@ in
   programs.alvr.enable = true;
 
   hardware.sensor.iio.enable = true;
+  hardware.enableRedistributableFirmware = true;
 
   services.udev.extraRules = ''
     # Avoid wake-up from i2c devices on GPD Win Max 2
