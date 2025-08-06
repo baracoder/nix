@@ -228,6 +228,7 @@
     ghostty
     gnome-boxes
     ghex
+    ptyxis
     spice-gtk
     speechd
     sshfs-fuse
