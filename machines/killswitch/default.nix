@@ -14,12 +14,12 @@
   boot.plymouth.enable = true;
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-label/EFI";
+    device = "/dev/disk/by-uuid/49F6-64A7";
     fsType = "vfat";
     options = [ "relatime" ];
   };
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/??";
+    device = "/dev/disk/by-uuid/f5e1e485-0f60-49af-bebc-1028d7f1029c";
     fsType = "btrfs";
     options = [
       "discard=async"
@@ -29,7 +29,7 @@
     ];
   };
   fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/??";
+    device = "/dev/disk/by-uuid/f5e1e485-0f60-49af-bebc-1028d7f1029c";
     fsType = "btrfs";
     options = [
       "discard=async"
@@ -39,14 +39,22 @@
     ];
   };
 
-  boot.initrd.luks.devices."crypt-ssd".device =
-    "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
-  boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
+  boot.initrd.luks.devices."crypt-ssd" = {
+    device = "/dev/disk/by-uuid/de560dc1-9178-4ba0-8ac9-bf4fa40a7ed8";
+    allowDiscards = true;
+  };
+  boot.initrd.luks.devices."crypt-swap" = {
+    device = "/dev/disk/by-uuid/afca4682-64fe-490e-bf7b-2b532f2a437e";
+  };
   boot.initrd.systemd.enable = true;
 
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
 
   hardware.bluetooth.enable = true;
+  hardware.enableRedistributableFirmware = true;
+  hardware.firmware = [ pkgs.sof-firmware ];
+
+  services.xserver.videoDrivers = [ "intel" ];
 
   powerManagement.cpuFreqGovernor = "ondemand";
 
@@ -97,13 +105,18 @@
     };
   };
 
+  services.cloudflare-warp.enable = true;
+  services.fprintd.enable = true;
+
   environment.systemPackages = with pkgs; [
     _1password-cli
+    _1password-gui
     awscli2
     colima
     direnv
     easyeffects
     eksctl
+    fprintd
     fzf
     gh
     gitFull
@@ -121,6 +134,7 @@
     meld
     nebula
     nh
+    slack
     tfswitch
     valkey
     vial
