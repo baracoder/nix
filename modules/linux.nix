@@ -225,6 +225,7 @@
     pavucontrol
     qjackctl
     remmina
+    ghostty
     gnome-boxes
     ghex
     spice-gtk
