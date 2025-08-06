@@ -9,6 +9,7 @@
   '';
 
   hardware.graphics.enable32Bit = true;
+  hardware.graphics.enable = true;
 
   hardware.ksm.enable = true;
 
