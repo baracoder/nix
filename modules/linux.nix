@@ -190,6 +190,7 @@
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
   };
+  programs.zoxide.enable = true;
 
   services.avahi.enable = true;
   services.avahi.nssmdns4 = true;
