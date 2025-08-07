@@ -83,6 +83,10 @@
 
   programs.xwayland.enable = true;
 
+  programs._1password.enable = true;
+  programs._1password-gui.enable = true;
+  programs._1password-gui.polkitPolicyOwners = [ "bara" ];
+
   nix.settings.max-jobs = lib.mkDefault 8;
 
   # Workaround for LG Ultrawide stuttering on playback resume
@@ -109,8 +113,6 @@
   services.fprintd.enable = true;
 
   environment.systemPackages = with pkgs; [
-    _1password-cli
-    _1password-gui
     awscli2
     colima
     direnv
