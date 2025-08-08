@@ -2,6 +2,7 @@
 {
   environment.systemPackages = with pkgs; [
     bash-language-server
+    bruno
     btop
     codebook
     copilot-language-server
@@ -50,6 +51,7 @@
     nvd
     octave
     omnisharp-roslyn
+    piper-tts
     pdfgrep
     pre-commit
     pwgen

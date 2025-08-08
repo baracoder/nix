@@ -26,6 +26,10 @@
   };
   nixpkgs.config.allowUnfree = true;
 
+  nixpkgs.overlays = [
+    (import ./../overlays/local.nix)
+  ];
+
   #documentation.man.generateCaches = false;
 
   environment.systemPackages = [

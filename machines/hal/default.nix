@@ -171,7 +171,6 @@ in
   };
 
   environment.systemPackages = with pkgs; [
-    piper-tts
     easyeffects
     discord
     freecad
