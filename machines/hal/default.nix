@@ -173,12 +173,10 @@ in
   environment.systemPackages = with pkgs; [
     easyeffects
     discord
-    freecad
     vulkan-tools
     libva-utils
     # broken https://github.com/NixOS/nixpkgs/issues/369571
     # orca-slicer
-    liquidctl
     looking-glass-client
     virtiofsd
     ptouch-print
