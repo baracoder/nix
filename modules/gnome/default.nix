@@ -1,10 +1,15 @@
 {
   pkgs,
+  lib,
   ...
 }:
 let
-  xkbVariant = "altgr-intl"; # no dead keys
-  xkbOptions = "eurosign:e,compose:menu,lv3:caps_switch";
+  xkbVariant = "us+altgr-intl"; # no dead keys
+  xkbOptions = [
+    "eurosign:e"
+    "compose:menu"
+    "lv3:caps_switch"
+  ];
 in
 {
   services.gnome = {
@@ -23,7 +28,7 @@ in
     extraGSettingsOverrides = ''
       [org.gnome.desktop.input-sources]
       sources=[('xkb', '${xkbVariant}')]
-      xkb-options=['${xkbOptions}']
+      xkb-options=['${lib.concatStringsSep "', '" xkbOptions}']
     '';
   };
 
