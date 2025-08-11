@@ -2,6 +2,7 @@
 {
   environment.systemPackages = with pkgs; [
     bash-language-server
+    bpftools
     bruno
     btop
     codebook
@@ -37,6 +38,7 @@
     lazygit
     lazyjj
     lnav
+    lshw
     lsof
     lsp-ai
     meld

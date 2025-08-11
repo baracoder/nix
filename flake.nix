@@ -55,6 +55,7 @@
             ./modules/linux.nix
             ./modules/common-packages
             ./modules/gnome
+            ./modules/falcon-sensor
             ./machines/killswitch
             nixos-hardware.nixosModules.lenovo-thinkpad-x1-11th-gen
           ];
