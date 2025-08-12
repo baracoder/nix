@@ -202,6 +202,7 @@
     #appimage-run
     ausweisapp
     avahi
+    bitwarden
     blackbox-terminal
     cifs-utils
     espeak
