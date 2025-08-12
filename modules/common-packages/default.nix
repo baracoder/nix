@@ -58,6 +58,7 @@
     pre-commit
     pwgen
     python3
+    python3Packages.py3langid
     renameutils
     ripgrep
     samba
