@@ -65,6 +65,7 @@
     sqlite
     terraform-ls
     tldr
+    tmux
     typescript-language-server
     typos-lsp
     unzip
