@@ -38,6 +38,11 @@
       "compress=lzo"
     ];
   };
+  swapDevices = [
+    {
+      device = "/dev/mapper/crypt-swap";
+    }
+  ];
 
   boot.initrd.luks.devices."crypt-ssd" = {
     device = "/dev/disk/by-uuid/de560dc1-9178-4ba0-8ac9-bf4fa40a7ed8";
