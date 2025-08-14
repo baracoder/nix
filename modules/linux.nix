@@ -104,7 +104,7 @@
   services = {
     flatpak.enable = true;
     resolved = {
-      enable = false;
+      enable = true;
       fallbackDns = [ "" ];
     };
     openssh.enable = true;
