@@ -9,14 +9,14 @@
 }:
 python3Packages.buildPythonPackage rec {
   pname = "adjustor";
-  version = "3.9.1";
+  version = "3.11.1";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "hhd-dev";
     repo = "adjustor";
     rev = "refs/tags/v${version}";
-    hash = "sha256-hE3P3bQQmwD5BelLeUZBJle/Pk/kafZBaMcVUlAnZx4=";
+    hash = "sha256-ppmBIHQX8XfU07F9GkAKSSZYcG1jF3UfBW45B8ROtyY=";
   };
 
   # This package relies on several programs expected to be on the user's PATH.

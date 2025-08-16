@@ -67,13 +67,6 @@ in
     enable = true;
     ui.enable = true;
     user = "bara";
-    package =
-      with pkgs;
-      handheld-daemon.overrideAttrs (oldAttrs: {
-        propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
-          pkgs.adjustor
-        ];
-      });
   };
 
   services.power-profiles-daemon.enable = true; # Power management is handled by handheld-daemon adjustor
@@ -92,6 +85,8 @@ in
     ];
 
   };
+
+  hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia.open = true;
 
   services.printing = {

@@ -19,16 +19,6 @@
           specialArgs = { inherit inputs; };
 
           modules = [
-            (
-              { ... }:
-              {
-                nixpkgs.overlays = [
-                  (import ./overlays/local.nix)
-                ];
-                environment.systemPackages = [
-                ];
-              }
-            )
             ./modules/common.nix
             ./modules/linux.nix
             ./modules/common-packages
