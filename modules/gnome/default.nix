@@ -38,17 +38,18 @@ in
   environment.systemPackages =
     with pkgs.gnomeExtensions;
     [
-      quick-settings-audio-devices-hider
       appindicator
-      bing-wallpaper-changer
-      bluetooth-quick-connect
       astra-monitor
-      tiling-assistant
-      weeks-start-on-monday-again
       battery-time-2
-      steal-my-focus-window
+      bing-wallpaper-changer
+      bluetooth-battery-meter
       notification-timeout
+      quick-settings-audio-devices-hider
+      steal-my-focus-window
+      steal-my-focus-window
+      tiling-assistant
       voluble
+      weeks-start-on-monday-again
     ]
     ++ [
       (pkgs.gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
