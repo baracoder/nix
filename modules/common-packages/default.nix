@@ -64,6 +64,7 @@
     samba
     skopeo
     sqlite
+    taplo
     terraform-ls
     tldr
     tmux
