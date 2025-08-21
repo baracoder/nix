@@ -42,6 +42,7 @@
     lsof
     lsp-ai
     meld
+    mono
     ncdu
     newelle
     netcoredbg
