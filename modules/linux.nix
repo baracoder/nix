@@ -179,6 +179,7 @@
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
   hardware.bluetooth.enable = true;
+  hardware.usb-modeswitch.enable = true;
 
   programs.nix-index.enable = true;
   programs.nix-index.enableZshIntegration = true;
