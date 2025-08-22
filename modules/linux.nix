@@ -25,6 +25,7 @@
 
   hardware.sane.enable = true;
   hardware.sane.disabledDefaultBackends = [ "v4l" ];
+  hardware.logitech.wireless.enable = true;
 
   boot.kernel.sysctl."kernel.dmesg_restrict" = 0;
   boot.loader.systemd-boot.memtest86.enable = true;
