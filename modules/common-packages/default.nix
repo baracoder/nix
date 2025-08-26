@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   environment.systemPackages = with pkgs; [
     bash-language-server
@@ -43,7 +43,7 @@
     meld
     mono
     ncdu
-    newelle
+    (lib.trace "newelle broken, maybe https://nixpk.gs/pr-tracker.html?pr=436656" bash)
     netcoredbg
     nix-tree
     nixd
