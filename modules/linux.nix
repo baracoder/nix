@@ -241,7 +241,6 @@
     vlc
     wireguard-tools
     wl-clipboard
-    xpra
     alsa-utils
     show-midi
 
