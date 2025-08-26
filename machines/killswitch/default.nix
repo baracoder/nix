@@ -78,9 +78,7 @@
     enable = true;
   };
 
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend
-  '';
+  services.logind.settings.Login.HandlePowerKey = "suspend";
 
   networking.hostName = "killswitch";
 

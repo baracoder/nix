@@ -101,9 +101,7 @@ in
   #services.open-webui.enable = true;
   #services.open-webui.host = "0.0.0.0";
 
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend
-  '';
+  services.logind.settings.Login.HandlePowerKey = "suspend";
 
   networking.hostName = "hal";
   networking.firewall.enable = false;
