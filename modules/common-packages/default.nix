@@ -29,7 +29,6 @@
     helm-ls
     htop
     imagemagick
-    immersed
     jetbrains.rider
     jq
     k9s
