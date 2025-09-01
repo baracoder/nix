@@ -147,7 +147,7 @@
     enable = true;
   };
 
-  programs.immersed.enable = lib.trace "Broken v4l2loopback https://github.com/NixOS/nixpkgs/pull/436682" false;
+  programs.immersed.enable = true;
   programs.firefox = {
     enable = true;
     languagePacks = [

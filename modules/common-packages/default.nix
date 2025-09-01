@@ -43,7 +43,7 @@
     meld
     mono
     ncdu
-    (lib.trace "newelle broken, maybe https://nixpk.gs/pr-tracker.html?pr=436656" bash)
+    newelle
     netcoredbg
     nix-tree
     nixd
