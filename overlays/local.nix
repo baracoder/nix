@@ -13,7 +13,12 @@ final: prev: {
 
   wivrn = (prev.wivrn.override { cudaSupport = true; });
 
-  handheld-daemon-ui = final.callPackage ../pkgs/hhd-ui.nix { };
+  handheld-daemon = prev.handheld-daemon.overrideAttrs (oldAttrs: {
+    propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
+      final.adjustor
+    ];
+  });
+
   pyroveil = final.callPackage ../pkgs/pyroveil/package.nix { };
 
 }
