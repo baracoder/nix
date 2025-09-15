@@ -135,7 +135,6 @@
     kubectl
     kubernetes-helm
     kustomize
-    lazyjj
     meld
     nebula
     nh
