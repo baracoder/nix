@@ -49,8 +49,14 @@ in
       steal-my-focus-window
       steal-my-focus-window
       tiling-assistant
-      voluble
       weeks-start-on-monday-again
+      (voluble.overrideAttrs (a: {
+        # Mute notifications by default
+        postInstall = ''
+          sed -i 's/unmuted = true/unmuted = false/g' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/extension.js
+        '';
+
+      }))
     ]
     ++ [
       (pkgs.gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
