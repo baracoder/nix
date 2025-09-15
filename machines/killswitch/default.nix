@@ -7,7 +7,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages_zen;
+  boot.kernelPackages = pkgs.linuxPackages_6_12;
   boot.kernelModules = [
     "btrfs"
   ];
