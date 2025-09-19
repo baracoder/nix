@@ -1,6 +1,5 @@
 {
   pkgs,
-  lib,
   ...
 }:
 
@@ -230,7 +229,6 @@
     pavucontrol
     qjackctl
     remmina
-    ghostty
     gnome-boxes
     ghex
     ptyxis
@@ -244,6 +242,7 @@
     wl-clipboard
     alsa-utils
     show-midi
+    zed-editor
 
     (callPackage ../pkgs/vscode.nix { })
     vscode-fhs
