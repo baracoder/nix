@@ -16,5 +16,6 @@
     offload-game
     protontricks
     steam.run
+    wlx-overlay-s
   ];
 }
