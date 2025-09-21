@@ -1,15 +1,12 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-  inputs.nix-darwin.url = "github:LnL7/nix-darwin";
-  inputs.nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
 
   outputs =
     {
       nixpkgs,
       nixos-hardware,
-      nix-darwin,
       nixpkgs-xr,
       ...
     }@inputs:
@@ -34,12 +31,6 @@
             nixpkgs-xr.nixosModules.nixpkgs-xr
           ];
         };
-        glados-nixos-vm = nixpkgs.lib.nixosSystem {
-          system = "aarch64-linux";
-          modules = [
-            ./machines/glados-nixos-vm
-          ];
-        };
 
         killswitch = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -62,13 +53,6 @@
             ./machines/iso-minimal
           ];
         };
-      };
-      darwinConfigurations.glados = nix-darwin.lib.darwinSystem {
-        modules = [
-          ./modules/common.nix
-          ./modules/common-packages
-          ./machines/glados
-        ];
       };
     };
 }
