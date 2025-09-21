@@ -198,53 +198,55 @@
   services.avahi.nssmdns4 = true;
 
   environment.systemPackages = with pkgs; [
+    alsa-utils
+    #appimage-run
     aspell
     aspellDicts.de
     aspellDicts.en
-    #appimage-run
     ausweisapp
     avahi
+    binutils
     bitwarden
     blackbox-terminal
     cifs-utils
+    dconf-editor
     espeak
     evince
-    dconf-editor
+    ghex
     gitg
+    gnome-boxes
     gnome-console
+    gnome-tweaks
     gnome-usage
     google-chrome
-    gnome-tweaks
     gsmartcontrol
     hdparm
-    lm_sensors
     iotop
     keepass
+    lm_sensors
     mtools
     mumble
     ntfs3g
     nvme-cli
     pamixer
-    pciutils
     pavucontrol
+    pciutils
+    pdfarranger
+    ptyxis
     qjackctl
     remmina
-    gnome-boxes
-    ghex
-    ptyxis
-    spice-gtk
+    show-midi
     speechd
+    spice-gtk
     sshfs-fuse
     usbutils
     virt-manager
     vlc
+    vscode-fhs
     wireguard-tools
     wl-clipboard
-    alsa-utils
-    show-midi
     zed-editor
 
     (callPackage ../pkgs/vscode.nix { })
-    vscode-fhs
   ];
 }
