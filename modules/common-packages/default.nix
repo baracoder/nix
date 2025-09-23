@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
     bash-language-server
@@ -65,6 +65,7 @@
     skopeo
     sqlite
     taplo
+    treefmt
     terraform-ls
     tldr
     tmux
