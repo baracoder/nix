@@ -2,12 +2,14 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
+  inputs.helix.url = "github:helix-editor/helix";
 
   outputs =
     {
       nixpkgs,
       nixos-hardware,
       nixpkgs-xr,
+      helix,
       ...
     }@inputs:
     {
@@ -29,6 +31,11 @@
             nixos-hardware.nixosModules.common-pc-laptop-ssd
             nixos-hardware.nixosModules.common-hidpi
             nixpkgs-xr.nixosModules.nixpkgs-xr
+            {
+              nixpkgs.overlays = [
+                helix.overlays.helix
+              ];
+            }
           ];
         };
 
@@ -42,6 +49,11 @@
             ./modules/falcon-sensor
             ./machines/killswitch
             nixos-hardware.nixosModules.lenovo-thinkpad-x1-11th-gen
+            {
+              nixpkgs.overlays = [
+                helix.overlays.helix
+              ];
+            }
           ];
 
         };
