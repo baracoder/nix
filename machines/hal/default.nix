@@ -6,7 +6,6 @@
 }:
 let
   linuxPackages = pkgs.linuxPackages_zen;
-  nvidiaPackage = linuxPackages.nvidiaPackages.beta;
   gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan { };
 in
 {
@@ -33,7 +32,6 @@ in
     "sd_mod"
     "nvme"
     "nvme_core"
-    "nvidia"
   ];
   boot.kernelModules = [
     "btrfs"
@@ -86,9 +84,6 @@ in
 
   };
 
-  hardware.nvidia-container-toolkit.enable = true;
-  hardware.nvidia.open = true;
-
   services.printing = {
     enable = true;
     drivers = [ pkgs.brlaser ];
@@ -98,8 +93,6 @@ in
     enable = true;
     #acceleration = "rocm";
   };
-  #services.open-webui.enable = true;
-  #services.open-webui.host = "0.0.0.0";
 
   services.logind.settings.Login.HandlePowerKey = "suspend";
 
@@ -124,15 +117,7 @@ in
     "bluetooth.disable_ertm=1" # bluetooth gamepad compatibility
   ];
 
-  services.xserver.videoDrivers = [
-    "nvidia"
-    "amdgpu"
-  ];
-  hardware.nvidia = {
-    modesetting.enable = true;
-    package = nvidiaPackage;
-    powerManagement.enable = true;
-  };
+  services.xserver.videoDrivers = [ "amdgpu" ];
   programs.xwayland.enable = true;
   programs.coolercontrol.enable = true;
 
@@ -164,6 +149,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    amdgpu_top
     easyeffects
     discord
     vulkan-tools
@@ -178,7 +164,6 @@ in
     nh
     hifiscan
     fprintd
-    pyroveil
     vial
     vivaldi
     arduino-ide
@@ -225,4 +210,5 @@ in
 
   systemd.services.systemd-vconsole-setup.unitConfig.After = "local-fs.target";
 
+  systemd.services.NetworkManager-wait-online.enable = false;
 }

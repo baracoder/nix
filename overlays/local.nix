@@ -3,6 +3,10 @@ final: prev: {
     commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation";
   };
 
+  vivaldi = prev.vivaldi.override {
+    commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation";
+  };
+
   offload-game = final.callPackage ../pkgs/offload-game { };
 
   egpu = final.callPackage ../pkgs/egpu { };
@@ -11,14 +15,21 @@ final: prev: {
 
   pywincontrols = final.callPackage ../pkgs/pywincontrols { };
 
-  wivrn = (prev.wivrn.override { cudaSupport = true; });
-
   handheld-daemon = prev.handheld-daemon.overrideAttrs (oldAttrs: {
     propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
       final.adjustor
     ];
   });
 
-  pyroveil = final.callPackage ../pkgs/pyroveil/package.nix { };
+  xrizer = prev.xrizer.overrideAttrs {
+    version = "main";
+    src = final.fetchFromGitHub {
+      owner = "Supreeeme";
+      repo = "xrizer";
+      #ref = "elite-dangerous-fixes";
+      rev = "6a095264566114b5a7f480aefc5efb1f2b30b2af";
+      sha256 = "";
+    };
+  };
 
 }
