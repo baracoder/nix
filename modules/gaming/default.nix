@@ -13,6 +13,7 @@
   environment.systemPackages = with pkgs; [
     beyond-all-reason
     egpu
+    min-ed-launcher
     offload-game
     protontricks
     steam.run
