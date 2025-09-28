@@ -211,4 +211,7 @@ in
   systemd.services.systemd-vconsole-setup.unitConfig.After = "local-fs.target";
 
   systemd.services.NetworkManager-wait-online.enable = false;
+  # amdgpu tinkering
+  hardware.amdgpu.overdrive.enable = true;
+  services.lact.enable = true;
 }
