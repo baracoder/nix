@@ -42,6 +42,7 @@
     lsp-ai
     meld
     mono
+    mtr-gui
     ncdu
     newelle
     netcoredbg
