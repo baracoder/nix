@@ -20,16 +20,4 @@ final: prev: {
       final.adjustor
     ];
   });
-
-  xrizer = prev.xrizer.overrideAttrs {
-    version = "main";
-    src = final.fetchFromGitHub {
-      owner = "Supreeeme";
-      repo = "xrizer";
-      #ref = "elite-dangerous-fixes";
-      rev = "6a095264566114b5a7f480aefc5efb1f2b30b2af";
-      sha256 = "";
-    };
-  };
-
 }
