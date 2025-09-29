@@ -12,6 +12,7 @@
 
   environment.systemPackages = with pkgs; [
     beyond-all-reason
+    bs-manager
     egpu
     min-ed-launcher
     offload-game
