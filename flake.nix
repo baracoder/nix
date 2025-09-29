@@ -12,8 +12,11 @@
       helix,
       ...
     }@inputs:
-    {
+    let
       legacyPackages = nixpkgs.legacyPackages;
+    in
+    {
+      inherit legacyPackages;
       nixosConfigurations = {
         hal = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -30,10 +33,14 @@
             nixos-hardware.nixosModules.common-pc-laptop
             nixos-hardware.nixosModules.common-pc-laptop-ssd
             nixos-hardware.nixosModules.common-hidpi
-            nixpkgs-xr.nixosModules.nixpkgs-xr
+            #nixpkgs-xr.nixosModules.nixpkgs-xr
             {
               nixpkgs.overlays = [
                 helix.overlays.helix
+                (final: prev: {
+                  xrizer = nixpkgs-xr.packages.x86_64-linux.xrizer;
+                  wlx-overlay-s = nixpkgs-xr.packages.x86_64-linux.wlx-overlay-s;
+                })
               ];
             }
           ];
