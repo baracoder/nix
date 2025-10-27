@@ -146,7 +146,7 @@
     enable = true;
   };
 
-  programs.immersed.enable = true;
+  # programs.immersed.enable = true;
   programs.firefox = {
     enable = true;
     languagePacks = [
