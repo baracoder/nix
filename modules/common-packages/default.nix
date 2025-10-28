@@ -29,6 +29,7 @@
     helm-ls
     htop
     imagemagick
+    jetbrains.datagrip
     jetbrains.rider
     jq
     k9s
