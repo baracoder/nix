@@ -84,11 +84,6 @@ in
 
   };
 
-  services.printing = {
-    enable = true;
-    drivers = [ pkgs.brlaser ];
-  };
-
   services.ollama = {
     enable = true;
     #acceleration = "rocm";
@@ -97,7 +92,7 @@ in
   services.logind.settings.Login.HandlePowerKey = "suspend";
 
   networking.hostName = "hal";
-  networking.firewall.enable = false;
+  networking.firewall.enable = true;
   services.fprintd.enable = false;
   #systemd.services.fprintd = {
   #  conflicts = [ "sleep.target" "suspend.target" "hybernante.target" ];
@@ -211,6 +206,30 @@ in
   systemd.services.systemd-vconsole-setup.unitConfig.After = "local-fs.target";
 
   systemd.services.NetworkManager-wait-online.enable = false;
+
+  networking.networkmanager.dispatcherScripts = [
+    {
+      source = pkgs.writers.writeBash "70-toggle-wifi-on-ethernet" ''
+        export LC_ALL=C
+
+        enable_disable_wifi() {
+            result=$(nmcli dev | grep "ethernet" | grep -w "connected")
+            if [ -n "$result" ]; then
+                nmcli radio wifi off
+            else
+                nmcli radio wifi on
+            fi
+        }
+
+        # The script gets two arguments: the interface name and the action.
+        # We want to run the logic on network changes.
+        if [[ "$2" == "up" ]] || [[ "$2" == "down" ]]; then
+            enable_disable_wifi
+        fi
+      '';
+    }
+  ];
+
   # amdgpu tinkering
   hardware.amdgpu.overdrive.enable = true;
   services.lact.enable = true;

@@ -69,11 +69,6 @@
     storageDriver = "overlay2";
   };
 
-  services.printing = {
-    enable = true;
-    drivers = [ pkgs.brlaser ];
-  };
-
   services.ollama = {
     enable = true;
   };
