@@ -36,8 +36,6 @@
     options v4l2loopback exclusive_caps=1 card_label="Virtual Camera" video_nr=7
   '';
 
-  time.timeZone = "Europe/Berlin";
-
   fonts = {
     enableDefaultPackages = true;
     fontDir.enable = true;
@@ -99,7 +97,7 @@
 
   services.gvfs.enable = true;
   services.fwupd.enable = true;
-
+  services.tzupdate.enable = true;
   services.earlyoom.enable = true;
 
   services = {
