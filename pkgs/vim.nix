@@ -1,8 +1,8 @@
-{vim_configurable, vimPlugins}:
+{ vim-full, vimPlugins }:
 
-vim_configurable.customize {
-    name = "vim";
-    vimrcConfig.customRC = ''
+vim-full.customize {
+  name = "vim";
+  vimrcConfig.customRC = ''
     syntax enable
     set smartindent
     set smartcase
@@ -12,9 +12,9 @@ vim_configurable.customize {
     set incsearch
     set ruler
     set backspace=indent,eol,start
-    '';
-    vimrcConfig.packages.myVimPackage = with vimPlugins; {
-        start = [ vim-nix ];
+  '';
+  vimrcConfig.packages.myVimPackage = with vimPlugins; {
+    start = [ vim-nix ];
 
-    };
+  };
 }

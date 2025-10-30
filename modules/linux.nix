@@ -49,7 +49,7 @@
       terminus_font_ttf
       corefonts
       inconsolata
-      ubuntu_font_family
+      ubuntu-classic
       unifont
       twemoji-color-font
       #nerd-fonts.source-code-pro
@@ -204,7 +204,7 @@
     ausweisapp
     avahi
     binutils
-    bitwarden
+    bitwarden-desktop
     blackbox-terminal
     cifs-utils
     dconf-editor

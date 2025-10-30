@@ -20,7 +20,7 @@
     fzf
     gimp
     git-lfs
-    gitAndTools.gitFull
+    git
     gnumake
     grpcurl
     harper
@@ -31,6 +31,7 @@
     imagemagick
     jetbrains.datagrip
     jetbrains.rider
+    python3Packages.jedi-language-server
     jq
     k9s
     kube-score
