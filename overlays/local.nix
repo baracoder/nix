@@ -11,13 +11,6 @@ final: prev: {
 
   egpu = final.callPackage ../pkgs/egpu { };
 
-  adjustor = final.callPackage ../pkgs/adjustor { };
-
   pywincontrols = final.callPackage ../pkgs/pywincontrols { };
 
-  handheld-daemon = prev.handheld-daemon.overrideAttrs (oldAttrs: {
-    propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
-      final.adjustor
-    ];
-  });
 }

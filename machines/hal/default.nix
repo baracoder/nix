@@ -65,6 +65,7 @@ in
     enable = true;
     ui.enable = true;
     user = "bara";
+    adjustor.enable = true;
   };
 
   services.power-profiles-daemon.enable = true; # Power management is handled by handheld-daemon adjustor
