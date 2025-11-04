@@ -9,6 +9,7 @@
     copilot-language-server
     curl
     csharp-ls
+    csharp-language-server
     csharpier
     direnv
     docker

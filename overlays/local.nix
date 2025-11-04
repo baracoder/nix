@@ -13,4 +13,5 @@ final: prev: {
 
   pywincontrols = final.callPackage ../pkgs/pywincontrols { };
 
+  csharp-language-server = final.callPackage ../pkgs/csharp-language-server/package.nix { };
 }
