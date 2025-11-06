@@ -167,6 +167,7 @@
     xorg.libXext
     libgbm
     libusb1
+    stdenv.cc.cc.lib
   ];
 
   # raise limit to avoid steamplay problems
