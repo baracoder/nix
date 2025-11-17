@@ -69,6 +69,7 @@
     skopeo
     sqlite
     taplo
+    tcpdump
     treefmt
     terraform-ls
     tldr
