@@ -38,6 +38,7 @@
               nixpkgs.overlays = [
                 helix.overlays.helix
                 (final: prev: {
+                  wivrn = nixpkgs-xr.packages.x86_64-linux.wivrn;
                   xrizer = nixpkgs-xr.packages.x86_64-linux.xrizer;
                   wlx-overlay-s = nixpkgs-xr.packages.x86_64-linux.wlx-overlay-s;
                 })
