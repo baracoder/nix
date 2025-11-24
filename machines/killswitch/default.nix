@@ -108,6 +108,7 @@
   };
 
   services.cloudflare-warp.enable = true;
+  services.resolved.enable = false;
   services.fprintd.enable = true;
 
   environment.systemPackages = with pkgs; [
