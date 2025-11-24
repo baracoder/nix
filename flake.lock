@@ -86,6 +86,33 @@
         "type": "github"
       }
     },
+    "nixpkgs-patch-dotnet-sdk": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-JW3ThcCfiwga2d6XfOfXybk9kphzJ6KmoR+MB7DyBMk=",
+        "type": "file",
+        "url": "https://github.com/NixOS/nixpkgs/pull/463584.diff"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/NixOS/nixpkgs/pull/463584.diff"
+      }
+    },
+    "nixpkgs-patcher": {
+      "locked": {
+        "lastModified": 1762257953,
+        "narHash": "sha256-k5nRdIiYlOXCKaHwL8lnNW6Q7VcOsHNQzE8Oo/Q0e4w=",
+        "owner": "gepbird",
+        "repo": "nixpkgs-patcher",
+        "rev": "2ca07dcc1204b25757cf2f0e5a9335d9b36b2298",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gepbird",
+        "repo": "nixpkgs-patcher",
+        "type": "github"
+      }
+    },
     "nixpkgs-xr": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -145,6 +172,8 @@
         "helix": "helix",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-patch-dotnet-sdk": "nixpkgs-patch-dotnet-sdk",
+        "nixpkgs-patcher": "nixpkgs-patcher",
         "nixpkgs-xr": "nixpkgs-xr"
       }
     },

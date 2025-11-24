@@ -3,6 +3,11 @@
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
   inputs.helix.url = "github:helix-editor/helix";
+  inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
+  inputs.nixpkgs-patch-dotnet-sdk = {
+    url = "https://github.com/NixOS/nixpkgs/pull/463584.diff";
+    flake = false;
+  };
 
   outputs =
     {
@@ -10,6 +15,7 @@
       nixos-hardware,
       nixpkgs-xr,
       helix,
+      nixpkgs-patcher,
       ...
     }@inputs:
     let
@@ -47,7 +53,8 @@
           ];
         };
 
-        killswitch = nixpkgs.lib.nixosSystem {
+        killswitch = nixpkgs-patcher.lib.nixosSystem {
+          specialArgs = inputs;
           system = "x86_64-linux";
           modules = [
             ./modules/common.nix
