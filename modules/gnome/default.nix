@@ -51,8 +51,9 @@ in
       tiling-assistant
       weeks-start-on-monday-again
       (voluble.overrideAttrs (a: {
-        # Mute notifications by default
         postInstall = ''
+          sed -i 's/"46"/"49"/' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/metadata.json
+          # Mute notifications by default
           sed -i 's/unmuted = true/unmuted = false/g' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/extension.js
         '';
 
