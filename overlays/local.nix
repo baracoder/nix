@@ -14,4 +14,14 @@ final: prev: {
   pywincontrols = final.callPackage ../pkgs/pywincontrols { };
 
   csharp-language-server = final.callPackage ../pkgs/csharp-language-server/package.nix { };
+
+  helix = prev.helix.overrideAttrs (a: {
+    patches = [
+      # Completion for gitignored files in typed commands
+      (final.fetchpatch {
+        url = "https://github.com/helix-editor/helix/pull/12729.patch";
+        hash = "sha256-bdIWGkA9s/ltdN9D8lxOauQx8LhOettuagJGFyJxDRw=";
+      })
+    ];
+  });
 }
