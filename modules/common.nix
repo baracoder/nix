@@ -32,8 +32,14 @@
 
   #documentation.man.generateCaches = false;
 
+  programs.neovim = {
+    enable = true;
+    vimAlias = true;
+  };
+
   environment.systemPackages = [
-    (pkgs.callPackage ../pkgs/vim.nix { })
+    pkgs.lunarvim
+    # (pkgs.callPackage ../pkgs/vim.nix { })
     (pkgs.dotnetCorePackages.combinePackages (
       with pkgs.dotnetCorePackages;
       [
