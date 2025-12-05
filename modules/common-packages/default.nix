@@ -78,6 +78,7 @@
     typos-lsp
     unzip
     vscode-json-languageserver
+    vue-language-server
     wget
     wireshark
     yaml-language-server
