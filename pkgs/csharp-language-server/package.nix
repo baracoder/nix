@@ -5,10 +5,10 @@
 
 stdenvNoCC.mkDerivation rec {
   pname = "csharp-language-server";
-  version = "5.1.0-1.25501.2";
+  version = "5.3.0-2.25557.9";
   src = fetchurl {
     url = "https://github.com/SofusA/${pname}/releases/download/${version}/${pname}-x86_64-unknown-linux-gnu.tar.gz";
-    sha256 = "sha256-8oRvcY2+OS9QV583udn0L7FVjHdDrKrJ63vmygfMWbk=";
+    sha256 = "sha256-ooZVz6VCMZpEjgC7hhrRSZ0ZBmWhpR+n0ulRMtTesko=";
   };
   sourceRoot = ".";
 
