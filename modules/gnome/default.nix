@@ -50,6 +50,7 @@ in
       steal-my-focus-window
       tiling-assistant
       weeks-start-on-monday-again
+      windownavigator
       (voluble.overrideAttrs (a: {
         postInstall = ''
           sed -i 's/"46"/"49"/' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/metadata.json
