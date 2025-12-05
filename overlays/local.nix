@@ -22,6 +22,11 @@ final: prev: {
         url = "https://github.com/helix-editor/helix/pull/12729.patch";
         hash = "sha256-bdIWGkA9s/ltdN9D8lxOauQx8LhOettuagJGFyJxDRw=";
       })
+      # Clickable tabs
+      (final.fetchpatch {
+        url = "https://github.com/helix-editor/helix/pull/12173.patch";
+        hash = "sha256-DMSyp5k9H7JOMvFdY7YXDiMqARaTDbifZb6EWmQNDJQ=";
+      })
     ];
   });
 }
