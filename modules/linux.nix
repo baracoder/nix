@@ -180,6 +180,17 @@
   hardware.bluetooth.enable = true;
   hardware.usb-modeswitch.enable = true;
 
+  programs.direnv = {
+    package = pkgs.direnv;
+    silent = false;
+    loadInNixShell = true;
+    direnvrcExtra = "";
+    nix-direnv = {
+      enable = true;
+      package = pkgs.nix-direnv;
+    };
+  };
+
   programs.nix-index.enable = true;
   programs.nix-index.enableZshIntegration = true;
   programs.command-not-found.enable = false;
@@ -241,6 +252,7 @@
     virt-manager
     vlc
     vscode-fhs
+    winboat
     wireguard-tools
     wl-clipboard
     zed-editor
