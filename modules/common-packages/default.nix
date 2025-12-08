@@ -66,6 +66,7 @@
     renameutils
     ripgrep
     samba
+    scooter
     skopeo
     sqlite
     taplo
