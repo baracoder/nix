@@ -57,6 +57,7 @@
     nvd
     octave
     omnisharp-roslyn
+    opencode
     piper-tts
     pdfgrep
     pre-commit
