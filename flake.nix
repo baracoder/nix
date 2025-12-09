@@ -18,11 +18,8 @@
       nixpkgs-patcher,
       ...
     }@inputs:
-    let
-      legacyPackages = nixpkgs.legacyPackages;
-    in
     {
-      inherit legacyPackages;
+      legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hal = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
