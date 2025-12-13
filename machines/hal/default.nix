@@ -150,6 +150,8 @@ in
     amdgpu_top
     easyeffects
     discord
+    ffmpeg
+    mediathekview
     vulkan-tools
     libva-utils
     # broken https://github.com/NixOS/nixpkgs/issues/369571
