@@ -4,10 +4,6 @@
   inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
   inputs.helix.url = "github:helix-editor/helix";
   inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
-  inputs.nixpkgs-patch-dotnet-sdk = {
-    url = "https://github.com/NixOS/nixpkgs/pull/463584.diff";
-    flake = false;
-  };
 
   outputs =
     {
