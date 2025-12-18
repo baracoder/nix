@@ -46,6 +46,7 @@
     meld
     mono
     mtr-gui
+    fnm
     ncdu
     newelle
     netcoredbg
