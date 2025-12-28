@@ -17,9 +17,9 @@
     {
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
-        hal = nixpkgs.lib.nixosSystem {
+        hal = nixpkgs-patcher.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = { inherit inputs; };
+          specialArgs = inputs;
 
           modules = [
             ./modules/common.nix
@@ -32,6 +32,9 @@
             nixos-hardware.nixosModules.common-pc-laptop
             nixos-hardware.nixosModules.common-pc-laptop-ssd
             nixos-hardware.nixosModules.common-hidpi
+            nixos-hardware.nixosModules.common-cpu-amd
+            nixos-hardware.nixosModules.common-cpu-amd-pstate
+            nixos-hardware.nixosModules.common-gpu-amd
             #nixpkgs-xr.nixosModules.nixpkgs-xr
             {
               nixpkgs.overlays = [
