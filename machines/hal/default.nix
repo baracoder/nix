@@ -44,6 +44,7 @@ in
   '';
 
   boot.initrd.systemd.enable = true;
+  boot.initrd.systemd.network.wait-online.enable = false;
 
   boot.blacklistedKernelModules = [
     "nouveau"
@@ -148,6 +149,7 @@ in
 
   environment.systemPackages = with pkgs; [
     amdgpu_top
+    audacity
     easyeffects
     discord
     ffmpeg
