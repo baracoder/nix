@@ -41,11 +41,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1766874357,
-        "narHash": "sha256-JSW4I0pV1+b9hiWzzHIKBZPDqonDs3yqFpd2W6l+vUQ=",
+        "lastModified": 1767104824,
+        "narHash": "sha256-B/5myvheUJGXwNkeGIS5xgeZisxR5lELi4YqhXykFa4=",
         "owner": "helix-editor",
         "repo": "helix",
-        "rev": "341ae9a0102bb55147f5c584e4856d6e9e277410",
+        "rev": "496f0e1b41e6735873c1376ac10a6a722767f328",
         "type": "github"
       },
       "original": {
@@ -56,11 +56,11 @@
     },
     "nixos-hardware": {
       "locked": {
-        "lastModified": 1766568855,
-        "narHash": "sha256-UXVtN77D7pzKmzOotFTStgZBqpOcf8cO95FcupWp4Zo=",
+        "lastModified": 1767070591,
+        "narHash": "sha256-b0aM3221Pw6vbACFqZrVzZjMNqXVPi1dvgLr8QTbajc=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "c5db9569ac9cc70929c268ac461f4003e3e5ca80",
+        "rev": "9b3c38bf6c260d0e88154ef07fa833fa845bfd14",
         "type": "github"
       },
       "original": {
@@ -84,6 +84,18 @@
         "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
+      }
+    },
+    "nixpkgs-patch-add-amd-debug-tools": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-kIcu1FcRTLh6Pobw8CHAyr2scYPbfIw7eHheAd+ZLaI=",
+        "type": "file",
+        "url": "https://github.com/NixOS/nixpkgs/pull/436966.diff"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/NixOS/nixpkgs/pull/436966.diff"
       }
     },
     "nixpkgs-patcher": {
@@ -111,11 +123,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1767009828,
-        "narHash": "sha256-Io/kwhM4ImImCPXcD2QML70lsCFj45xGDiInR7t61X4=",
+        "lastModified": 1767089517,
+        "narHash": "sha256-HcvHHrlUxabSMJ2sQy72NUV+sfyW4DU+MWA5JP1mVd8=",
         "owner": "nix-community",
         "repo": "nixpkgs-xr",
-        "rev": "e7a3f91bcfac7ebf7a625201b64aab195006adb6",
+        "rev": "dda868288aa72c10129c0b67756f61b358f4acde",
         "type": "github"
       },
       "original": {
@@ -191,6 +203,7 @@
         "helix": "helix",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-patch-add-amd-debug-tools": "nixpkgs-patch-add-amd-debug-tools",
         "nixpkgs-patcher": "nixpkgs-patcher",
         "nixpkgs-xr": "nixpkgs-xr"
       }
