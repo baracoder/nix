@@ -148,6 +148,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    amd-debug-tools
     amdgpu_top
     audacity
     easyeffects

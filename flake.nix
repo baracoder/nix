@@ -5,6 +5,11 @@
   inputs.helix.url = "github:helix-editor/helix";
   inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
 
+  inputs.nixpkgs-patch-add-amd-debug-tools = {
+    url = "https://github.com/NixOS/nixpkgs/pull/436966.diff";
+    flake = false;
+  };
+
   outputs =
     {
       nixpkgs,
