@@ -22,6 +22,7 @@ in
     acpi_call
     gpd-fan
   ];
+  boot.initrd.prepend = [ "${./dsdt/acpi_override}" ];
   boot.initrd.kernelModules = [ "amdgpu" ];
   boot.initrd.availableKernelModules = [
     "amdgpu"
@@ -237,8 +238,4 @@ in
       '';
     }
   ];
-
-  # amdgpu tinkering
-  hardware.amdgpu.overdrive.enable = true;
-  services.lact.enable = true;
 }
