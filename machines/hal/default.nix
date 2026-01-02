@@ -14,6 +14,19 @@ in
     ./nebula.nix
   ];
 
+  nixpkgs.overlays = [
+    (final: prev: {
+      gdm = prev.gdm.overrideAttrs (a: {
+        patches = a.patches ++ [
+          (final.fetchpatch {
+            url = "https://gitlab.gnome.org/GNOME/gdm/-/merge_requests/343.diff";
+            hash = "sha256-48QhxuBo9QOVhy9R1yfgT0ggeOaDqYrLz3UNKhDEsh0=";
+          })
+        ];
+      });
+    })
+  ];
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -115,6 +128,8 @@ in
     "iommu=pt"
     "acpi_enforce_resources=lax"
     "bluetooth.disable_ertm=1" # bluetooth gamepad compatibility
+    "pcie_hp=1"
+    "pci=realloc"
   ];
 
   services.xserver.videoDrivers = [ "amdgpu" ];
@@ -178,11 +193,11 @@ in
 
   services.udev.extraRules = ''
     # Avoid wake-up from i2c devices on GPD Win Max 2
-    SUBSYSTEM=="i2c", KERNEL=="i2c-PNP0C50:00", ATTR{power/wakeup}="disabled"
+    # SUBSYSTEM=="i2c", KERNEL=="i2c-PNP0C50:00", ATTR{power/wakeup}="disabled"
     SUBSYSTEM=="i2c", KERNEL=="i2c-GXTP7385:00", ATTR{power/wakeup}="disabled"
 
     # Disable fprint scanner
-    SUBSYSTEM=="usb", ATTR{idVendor}=="2541", ATTR{idProduct}=="9711", ATTR{remove}="1"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="2541", ATTRS{idProduct}=="9711", ATTR{remove}="1"
 
     # x52 joystick
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="06a3", ATTRS{idProduct}=="0762", MODE="0666"
