@@ -42,7 +42,6 @@
     lnav
     lshw
     lsof
-    lsp-ai
     meld
     mono
     mtr-gui
