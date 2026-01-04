@@ -43,6 +43,7 @@
     lshw
     lsof
     meld
+    mission-center
     mono
     mtr-gui
     fnm
