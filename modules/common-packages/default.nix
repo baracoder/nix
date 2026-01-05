@@ -14,14 +14,14 @@
     direnv
     docker
     docker-compose
-    dogdns
+    doggo
     dosfstools
     fd
     file
     fzf
     gimp
     git-lfs
-    git
+    gitFull
     gnumake
     grpcurl
     harper
