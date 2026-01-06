@@ -41,11 +41,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1767631809,
-        "narHash": "sha256-0gpG7eQ0n2lp9kr9/KvZ9vkCxdEYlHa7bu4xJ1X1yno=",
+        "lastModified": 1767713307,
+        "narHash": "sha256-WimCNqXCJPRIw1wz5UNMzyXqqCELFujyroYlOQME0Xc=",
         "owner": "helix-editor",
         "repo": "helix",
-        "rev": "43345d24debec5a17b25f8c29994f5d363d46bad",
+        "rev": "bc8a392b34b19b400476312904b22ce58ddb968d",
         "type": "github"
       },
       "original": {
@@ -84,18 +84,6 @@
         "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
-      }
-    },
-    "nixpkgs-patch-add-amd-debug-tools": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-kIcu1FcRTLh6Pobw8CHAyr2scYPbfIw7eHheAd+ZLaI=",
-        "type": "file",
-        "url": "https://github.com/NixOS/nixpkgs/pull/436966.diff"
-      },
-      "original": {
-        "type": "file",
-        "url": "https://github.com/NixOS/nixpkgs/pull/436966.diff"
       }
     },
     "nixpkgs-patcher": {
@@ -138,11 +126,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1767379071,
-        "narHash": "sha256-EgE0pxsrW9jp9YFMkHL9JMXxcqi/OoumPJYwf+Okucw=",
+        "lastModified": 1767640445,
+        "narHash": "sha256-UWYqmD7JFBEDBHWYcqE6s6c77pWdcU/i+bwD6XxMb8A=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fb7944c166a3b630f177938e478f0378e64ce108",
+        "rev": "9f0c42f8bc7151b8e7e5840fb3bd454ad850d8c5",
         "type": "github"
       },
       "original": {
@@ -203,7 +191,6 @@
         "helix": "helix",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
-        "nixpkgs-patch-add-amd-debug-tools": "nixpkgs-patch-add-amd-debug-tools",
         "nixpkgs-patcher": "nixpkgs-patcher",
         "nixpkgs-xr": "nixpkgs-xr"
       }
