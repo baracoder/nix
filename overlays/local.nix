@@ -15,8 +15,6 @@ final: prev: {
 
   csharp-language-server = final.callPackage ../pkgs/csharp-language-server/package.nix { };
 
-  amd-debug-tools = final.callPackage ../pkgs/amd-debug-tools/package.nix { };
-
   helix = prev.helix.overrideAttrs (a: {
     patches = [
       # Completion for gitignored files in typed commands
