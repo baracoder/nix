@@ -10,6 +10,7 @@
   # vr
   programs.alvr.enable = true;
   services.wivrn.enable = true;
+  services.wivrn.openFirewall = true;
 
   environment.systemPackages = with pkgs; [
     beyond-all-reason
