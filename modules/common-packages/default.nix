@@ -5,6 +5,7 @@
     bpftools
     bruno
     btop
+    cachix
     codebook
     copilot-language-server
     curl
