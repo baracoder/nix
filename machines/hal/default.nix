@@ -1,12 +1,11 @@
 {
-  config,
   pkgs,
   lib,
   ...
 }:
 let
-  linuxPackages = pkgs.linuxPackages_zen;
-  gpd-fan = config.boot.kernelPackages.callPackage ../../pkgs/gpd-fan { };
+  # linuxPackages = pkgs.linuxPackages_zen;
+  linuxPackages = pkgs.linuxPackages_latest;
 in
 {
   imports = [
@@ -33,7 +32,6 @@ in
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [
     acpi_call
-    gpd-fan
   ];
   boot.initrd.prepend = [ "${./dsdt/acpi_override}" ];
   boot.initrd.kernelModules = [ "amdgpu" ];
