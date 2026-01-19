@@ -43,6 +43,7 @@ in
       battery-time-2
       bing-wallpaper-changer
       bluetooth-battery-meter
+      caffeine
       notification-timeout
       quick-settings-audio-devices-hider
       quick-settings-audio-devices-renamer
