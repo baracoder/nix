@@ -109,6 +109,7 @@ in
 
   networking.hostName = "hal";
   networking.firewall.enable = true;
+  networking.firewall.logRefusedConnections = false;
   services.fprintd.enable = false;
   #systemd.services.fprintd = {
   #  conflicts = [ "sleep.target" "suspend.target" "hybernante.target" ];
