@@ -7,6 +7,7 @@
   networking.extraHosts = ''
     192.168.98.3 wau
   '';
+  networking.networkmanager.wifi.backend = "iwd";
 
   hardware.graphics.enable32Bit = true;
   hardware.graphics.enable = true;
