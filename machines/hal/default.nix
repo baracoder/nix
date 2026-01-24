@@ -81,6 +81,30 @@ in
     adjustor.enable = true;
   };
 
+  # Auto-adjust TDP based on power state at startup
+  systemd.services.tdp-auto-adjust = {
+    wantedBy = [ "multi-user.target" ];
+    after = [ "handheld-daemon.service" ];
+    requires = [ "handheld-daemon.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = false;
+      ExecStart = pkgs.writeShellScript "tdp-auto-adjust" ''
+        # Check if AC adapter is online (1=AC, 0=battery)
+        if [ -f /sys/class/power_supply/ADP1/online ]; then
+          AC_STATUS=$(cat /sys/class/power_supply/ADP1/online)
+          if [ "$AC_STATUS" = "1" ]; then
+            # On AC power - set TDP to 26
+            ${pkgs.handheld-daemon}/bin/hhdctl set tdp.qam.tdp=26
+          else
+            # On battery - set TDP to 14
+            ${pkgs.handheld-daemon}/bin/hhdctl set tdp.qam.tdp=14
+          fi
+        fi
+      '';
+    };
+  };
+
   services.resolved.enable = true;
 
   services.power-profiles-daemon.enable = true; # Power management is handled by handheld-daemon adjustor
