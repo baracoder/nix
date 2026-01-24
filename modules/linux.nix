@@ -103,9 +103,7 @@
 
   services = {
     flatpak.enable = true;
-    resolved = {
-      fallbackDns = [ "" ];
-    };
+    resolved.settings.Resolve.FallbackDNS = [ "" ];
     openssh.enable = true;
     openssh.settings.X11Forwarding = true;
     udisks2.enable = true;
