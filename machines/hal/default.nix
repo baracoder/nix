@@ -232,24 +232,32 @@ in
 
   networking.networkmanager.dispatcherScripts = [
     {
-      source = pkgs.writers.writeBash "70-toggle-wifi-on-ethernet" ''
-        export LC_ALL=C
+      source =
+        pkgs.writers.writeBash "70-toggle-wifi-on-ethernet"
+          {
+            makeWrapperArgs = [
+              "--prefix"
+              "PATH"
+              ":"
+              "${lib.makeBinPath [ pkgs.networkmanager ]}"
+            ];
+          }
+          ''
+            export LC_ALL=C
+            enable_disable_wifi() {
+                if nmcli dev | grep "ethernet" | grep -w "connected"; then
+                    nmcli radio wifi off
+                else
+                    nmcli radio wifi on
+                fi
+            }
 
-        enable_disable_wifi() {
-            result=$(nmcli dev | grep "ethernet" | grep -w "connected")
-            if [ -n "$result" ]; then
-                nmcli radio wifi off
-            else
-                nmcli radio wifi on
-            fi
-        }
-
-        # The script gets two arguments: the interface name and the action.
-        # We want to run the logic on network changes.
-        if [[ "$2" == "up" ]] || [[ "$2" == "down" ]]; then
-            enable_disable_wifi
-        fi
-      '';
+            case "$2" in
+              up|down|connectivity-change)
+                  enable_disable_wifi
+                  ;;
+            esac
+          '';
     }
   ];
 }
