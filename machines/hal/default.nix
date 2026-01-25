@@ -86,23 +86,16 @@ in
     wantedBy = [ "multi-user.target" ];
     after = [ "handheld-daemon.service" ];
     requires = [ "handheld-daemon.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = false;
-      ExecStart = pkgs.writeShellScript "tdp-auto-adjust" ''
-        # Check if AC adapter is online (1=AC, 0=battery)
-        if [ -f /sys/class/power_supply/ADP1/online ]; then
-          AC_STATUS=$(cat /sys/class/power_supply/ADP1/online)
-          if [ "$AC_STATUS" = "1" ]; then
-            # On AC power - set TDP to 26
-            ${pkgs.handheld-daemon}/bin/hhdctl set tdp.qam.tdp=26
-          else
-            # On battery - set TDP to 14
-            ${pkgs.handheld-daemon}/bin/hhdctl set tdp.qam.tdp=14
-          fi
-        fi
-      '';
-    };
+    path = [ pkgs.handheld-daemon ];
+    script = ''
+      # Check if AC adapter is online (1=AC, 0=battery)
+      if /sys/class/power_supply/ADP1/online|grep -q 1; then
+        hhdctl set tdp.qam.tdp=25
+      else
+        hhdctl set tdp.qam.tdp=14
+      fi
+    '';
+    serviceConfig.Type = "oneshot";
   };
 
   services.resolved.enable = true;
