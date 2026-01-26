@@ -88,14 +88,18 @@ in
     requires = [ "handheld-daemon.service" ];
     path = [ pkgs.handheld-daemon ];
     script = ''
+      until [ -e "/sys/class/power_supply/ADP1/online" -a -e "/run/hhd/api" ]; do
+        sleep 1
+      done
       # Check if AC adapter is online (1=AC, 0=battery)
-      if /sys/class/power_supply/ADP1/online|grep -q 1; then
+      if grep -q 1 /sys/class/power_supply/ADP1/online; then
         hhdctl set tdp.qam.tdp=25
       else
         hhdctl set tdp.qam.tdp=14
       fi
     '';
     serviceConfig.Type = "oneshot";
+    serviceConfig.TimeoutSec = 20;
   };
 
   services.resolved.enable = true;
