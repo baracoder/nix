@@ -12,7 +12,7 @@
       "discard=async"
       "relatime"
       "subvol=root"
-      "compress=lzo"
+      "compress=zstd:1"
     ];
   };
   fileSystems."/home" = {
@@ -22,7 +22,7 @@
       "discard=async"
       "relatime"
       "subvol=home"
-      "compress=lzo"
+      "compress=zstd:1"
     ];
   };
   fileSystems."/home/bara/steamlibrary" = {
@@ -33,7 +33,7 @@
       "relatime"
       "nofail"
       "subvol=steamlibrary"
-      "compress=lzo"
+      "compress=zstd:1"
     ];
   };
 
