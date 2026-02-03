@@ -40,14 +40,14 @@
             nixos-hardware.nixosModules.common-cpu-amd
             nixos-hardware.nixosModules.common-cpu-amd-pstate
             nixos-hardware.nixosModules.common-gpu-amd
-            #nixpkgs-xr.nixosModules.nixpkgs-xr
             {
               nixpkgs.overlays = [
                 helix.overlays.helix
                 (final: prev: {
+                  # Currently all are recent enough
                   # wivrn = nixpkgs-xr.packages.x86_64-linux.wivrn;
-                  xrizer = nixpkgs-xr.packages.x86_64-linux.xrizer;
-                  wlx-overlay-s = nixpkgs-xr.packages.x86_64-linux.wlx-overlay-s;
+                  # xrizer = nixpkgs-xr.packages.x86_64-linux.xrizer;
+                  # wlx-overlay-s = nixpkgs-xr.packages.x86_64-linux.wlx-overlay-s;
                 })
               ];
             }
