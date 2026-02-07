@@ -35,37 +35,27 @@ in
   programs.gnome-terminal.enable = true;
   programs.gnome-disks.enable = true;
 
-  environment.systemPackages =
-    with pkgs.gnomeExtensions;
-    [
-      appindicator
-      astra-monitor
-      battery-time-2
-      bing-wallpaper-changer
-      bluetooth-battery-meter
-      caffeine
-      notification-timeout
-      quick-settings-audio-devices-hider
-      quick-settings-audio-devices-renamer
-      steal-my-focus-window
-      steal-my-focus-window
-      tiling-assistant
-      weeks-start-on-monday-again
-      windownavigator
-      (voluble.overrideAttrs (a: {
-        postInstall = ''
-          sed -i 's/"46"/"49"/' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/metadata.json
-          # Mute notifications by default
-          sed -i 's/unmuted = true/unmuted = false/g' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/extension.js
-        '';
-
-      }))
-    ]
-    ++ [
-      (pkgs.gnome44Extensions."gestureImprovements@gestures".overrideAttrs (a: {
-        postInstall = ''
-          sed -i 's/"42"/"47"/' $out/share/gnome-shell/extensions/gestureImprovements@gestures/metadata.json
-        '';
-      }))
-    ];
+  environment.systemPackages = with pkgs.gnomeExtensions; [
+    appindicator
+    astra-monitor
+    battery-time-2
+    bing-wallpaper-changer
+    bluetooth-battery-meter
+    caffeine
+    notification-timeout
+    quick-settings-audio-devices-hider
+    quick-settings-audio-devices-renamer
+    steal-my-focus-window
+    steal-my-focus-window
+    tiling-assistant
+    weeks-start-on-monday-again
+    windownavigator
+    (voluble.overrideAttrs (a: {
+      postInstall = ''
+        sed -i 's/"46"/"49"/' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/metadata.json
+        # Mute notifications by default
+        sed -i 's/unmuted = true/unmuted = false/g' $out/share/gnome-shell/extensions/voluble@quantiusbenignus.local/extension.js
+      '';
+    }))
+  ];
 }
