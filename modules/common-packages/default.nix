@@ -66,6 +66,7 @@
     pwgen
     python3
     python3Packages.py3langid
+    resources
     renameutils
     ripgrep
     samba
