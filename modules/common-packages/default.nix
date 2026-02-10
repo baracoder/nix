@@ -27,7 +27,6 @@
     grpcurl
     harper
     helix
-    helix-gpt
     helm-ls
     htop
     imagemagick
@@ -42,6 +41,7 @@
     lazyjj
     lnav
     lshw
+    lsp-ai
     lsof
     meld
     mission-center
