@@ -159,8 +159,14 @@ in
   nix.settings.max-jobs = lib.mkDefault 8;
 
   hardware.graphics = {
-    extraPackages = with pkgs; [ libvdpau-va-gl ];
-    extraPackages32 = with pkgs; [ libvdpau-va-gl ];
+    extraPackages = with pkgs; [
+      libva-vdpau-driver
+      libvdpau-va-gl
+    ];
+    extraPackages32 = with pkgs; [
+      libva-vdpau-driver
+      libvdpau-va-gl
+    ];
   };
 
   # Workaround for LG Ultrawide stuttering on playback resume
