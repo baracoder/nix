@@ -49,7 +49,6 @@
     mtr-gui
     fnm
     ncdu
-    newelle
     netcoredbg
     nix-tree
     nixd
@@ -66,7 +65,6 @@
     pwgen
     python3
     python3Packages.py3langid
-    resources
     renameutils
     ripgrep
     samba
