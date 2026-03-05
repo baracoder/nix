@@ -159,8 +159,8 @@
   programs.nix-ld.libraries = with pkgs; [
     icu
     icu75
-    xorg.libX11
-    xorg.libXext
+    libX11
+    libXext
     libgbm
     libusb1
     stdenv.cc.cc.lib
