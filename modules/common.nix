@@ -38,8 +38,7 @@
   };
 
   environment.systemPackages = [
-    pkgs.lunarvim
-    # (pkgs.callPackage ../pkgs/vim.nix { })
+    (pkgs.callPackage ../pkgs/vim.nix { })
     (pkgs.dotnetCorePackages.combinePackages (
       with pkgs.dotnetCorePackages;
       [
