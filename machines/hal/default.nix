@@ -4,8 +4,7 @@
   ...
 }:
 let
-  # linuxPackages = pkgs.linuxPackages_zen;
-  linuxPackages = pkgs.linuxPackages_latest;
+  linuxPackages = pkgs.linuxPackages_zen;
 in
 {
   imports = [
