@@ -12,6 +12,8 @@
     csharp-ls
     csharp-language-server
     csharpier
+    delta
+    diffnav
     direnv
     docker
     docker-compose
@@ -20,6 +22,7 @@
     fd
     file
     fzf
+    gh-dash
     gimp
     git-lfs
     gitFull
