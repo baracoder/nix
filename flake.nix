@@ -1,7 +1,7 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-  inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
+  # inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
   inputs.helix.url = "github:helix-editor/helix";
   inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
 
@@ -14,7 +14,7 @@
     {
       nixpkgs,
       nixos-hardware,
-      nixpkgs-xr,
+      # nixpkgs-xr,
       helix,
       nixpkgs-patcher,
       ...
