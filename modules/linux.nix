@@ -249,7 +249,7 @@
     virt-manager
     vlc
     vscode-fhs
-    winboat
+    # winboat
     wireguard-tools
     wl-clipboard
     zed-editor
