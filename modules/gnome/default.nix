@@ -38,6 +38,7 @@ in
   environment.systemPackages = with pkgs.gnomeExtensions; [
     appindicator
     astra-monitor
+    auto-move-windows
     battery-time-2
     bing-wallpaper-changer
     bluetooth-battery-meter
