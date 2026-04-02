@@ -91,6 +91,7 @@
     yazi
     yq-go
     zellij
+    zip
     zsh
   ];
 }
