@@ -4,7 +4,7 @@
   ...
 }:
 let
-  linuxPackages = pkgs.linuxPackages_latest;
+  linuxPackages = pkgs.linuxPackages_zen;
 in
 {
   imports = [
@@ -204,6 +204,7 @@ in
     virtiofsd
     ptouch-print
     nebula
+    newelle
     pywincontrols
     nh
     hifiscan
