@@ -287,4 +287,15 @@ in
           '';
     }
   ];
+
+  services.netbird.clients.gr = {
+    environment.NB_MANAGEMENT_URL = "https://net.gr.zebar.de";
+
+    port = 51821;
+    ui.enable = true;
+    openFirewall = true;
+    openInternalFirewall = true;
+
+  };
+
 }
