@@ -9,7 +9,6 @@ in
 {
   imports = [
     ./filesystems.nix
-    ./nebula.nix
   ];
 
   nixpkgs.overlays = [
