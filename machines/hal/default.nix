@@ -206,7 +206,6 @@ in
     newelle
     pywincontrols
     nh
-    hifiscan
     fprintd
     vial
     vivaldi

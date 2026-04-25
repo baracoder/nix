@@ -121,7 +121,6 @@
     fzf
     gh
     gitFull
-    hifiscan
     htop
     jq
     jujutsu
