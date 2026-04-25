@@ -6,3 +6,6 @@ update:
 
 update-packages:
 	nix-update --flake nixosConfigurations.killswitch.pkgs.csharp-language-server
+
+switch:
+	nh os switch .
