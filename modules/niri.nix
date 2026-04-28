@@ -1,5 +1,6 @@
 {
   pkgs,
+  vibepanel,
   ...
 }:
 {
@@ -13,7 +14,9 @@
     # dms-shell
     # quickshell
     walker
+    anyrun
     fnott
+    vibepanel.packages.${stdenv.hostPlatform.system}.default
   ];
 
   programs.niri.enable = true;
