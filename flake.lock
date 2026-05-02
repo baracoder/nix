@@ -101,11 +101,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1777268161,
-        "narHash": "sha256-bxrdOn8SCOv8tN4JbTF/TXq7kjo9ag4M+C8yzzIRYbE=",
+        "lastModified": 1777578337,
+        "narHash": "sha256-Ad49moKWeXtKBJNy2ebiTQUEgdLyvGmTeykAQ9xM+Z4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1c3fe55ad329cbcb28471bb30f05c9827f724c76",
+        "rev": "15f4ee454b1dce334612fa6843b3e05cf546efab",
         "type": "github"
       },
       "original": {
@@ -205,11 +205,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1777561488,
-        "narHash": "sha256-anCDJw8sKkSB7ulxM+u3Fx6AH3SOGjLWLUI/7KP12u0=",
+        "lastModified": 1777726297,
+        "narHash": "sha256-B1jax+sIYW5NkOO4X/rzOZJ6ivc0/VyHS4VM0Sw9TwY=",
         "owner": "prankstr",
         "repo": "vibepanel",
-        "rev": "ee4f7ad3d06b1ed90876a13b4ec2656a1670838e",
+        "rev": "c67f6e13108a09ac5af5ee2f552bff1bb7e762f0",
         "type": "github"
       },
       "original": {
