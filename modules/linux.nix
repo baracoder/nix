@@ -80,6 +80,7 @@
       "scanner"
       "users"
       "video"
+      "render"
       "wheel"
       "adm"
       "audio"
