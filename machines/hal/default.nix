@@ -89,6 +89,7 @@ in
       until [ -e "/sys/class/power_supply/ADP1/online" -a -e "/run/hhd/api" ]; do
         sleep 1
       done
+      sleep 5
       # Check if AC adapter is online (1=AC, 0=battery)
       if grep -q 1 /sys/class/power_supply/ADP1/online; then
         hhdctl set tdp.qam.tdp=25
@@ -97,7 +98,7 @@ in
       fi
     '';
     serviceConfig.Type = "oneshot";
-    serviceConfig.TimeoutSec = 20;
+    serviceConfig.TimeoutSec = 60;
   };
 
   services.resolved.enable = true;
@@ -153,6 +154,7 @@ in
   services.xserver.videoDrivers = [ "amdgpu" ];
   programs.xwayland.enable = true;
   programs.coolercontrol.enable = true;
+  systemd.services.coolercontrold.preStart = "${pkgs.coreutils}/bin/sleep 15";
 
   nix.settings.max-jobs = lib.mkDefault 8;
 
