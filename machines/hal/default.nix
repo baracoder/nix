@@ -251,6 +251,16 @@ in
     };
   };
 
+  # disable touch on lid closed
+  systemd.services.lid-touch-toggle = {
+    wantedBy = [ "multi-user.target" ];
+    path = with pkgs; [
+      gawk
+      dbus
+    ];
+    script = builtins.readFile ./toggle-touch-on-lid.sh;
+  };
+
   systemd.services.systemd-vconsole-setup.unitConfig.After = "local-fs.target";
 
   systemd.services.NetworkManager-wait-online.enable = false;
