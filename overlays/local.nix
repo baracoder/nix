@@ -25,7 +25,7 @@ final: prev: {
       # Clickable tabs
       (final.fetchpatch {
         url = "https://github.com/helix-editor/helix/pull/12173.patch";
-        hash = "sha256-DMSyp5k9H7JOMvFdY7YXDiMqARaTDbifZb6EWmQNDJQ=";
+        hash = "sha256-TJYrAHCfTAXscW6AeJsg0KNHVme4UMVtUE3B37q/qpM=";
       })
     ];
   });
