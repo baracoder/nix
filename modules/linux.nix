@@ -128,6 +128,11 @@
 
   };
 
+  # Use my monitor config
+  systemd.tmpfiles.rules = [
+    "L+ /run/gdm/.config/monitors.xml - - - - /home/bara/.config/monitors.xml"
+  ];
+
   services.envfs.enable = true;
   services.envfs.extraFallbackPathCommands = ''
     ln -s ${pkgs.bash}/bin/bash $out/bash
@@ -276,7 +281,7 @@
                   label = "noise_suppressor_mono";
                   control = {
                     "VAD Threshold (%)" = 50.0;
-                    "VAD Grace Period (ms)" = 50;
+                    "VAD Grace Period (ms)" = 200;
                     "Retroactive VAD Grace (ms)" = 0;
                   };
                 }
