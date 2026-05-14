@@ -257,4 +257,53 @@
 
     (callPackage ../pkgs/vscode.nix { })
   ];
+
+  services.pipewire = {
+    extraLadspaPackages = with pkgs; [ rnnoise-plugin ];
+    extraConfig.pipewire."99-input-denoising.conf" = {
+      "context.modules" = [
+        {
+          name = "libpipewire-module-filter-chain";
+          args = {
+            "node.description" = "Noise Canceling source";
+            "media.name" = "Noise Canceling source";
+            "filter.graph" = {
+              nodes = [
+                {
+                  type = "ladspa";
+                  name = "rnnoise";
+                  plugin = "librnnoise_ladspa";
+                  label = "noise_suppressor_mono";
+                  control = {
+                    "VAD Threshold (%)" = 50.0;
+                    "VAD Grace Period (ms)" = 50;
+                    "Retroactive VAD Grace (ms)" = 0;
+                  };
+                }
+              ];
+            };
+            "capture.props" = {
+              "node.name" = "capture.rnnoise_source";
+              "node.passive" = true;
+              "node.virtual" = true;
+              "node.pause-on-idle" = true;
+              "node.always-process" = false;
+              "audio.rate" = 48000;
+              "filter.smart" = true;
+              "filter.smart.name" = "rnnoise-filter";
+            };
+            "playback.props" = {
+              "node.name" = "rnnoise_source";
+              "media.class" = "Audio/Source";
+              "node.virtual" = true;
+              "audio.rate" = 48000;
+              "filter.smart" = true;
+              "filter.smart.name" = "rnnoise-filter";
+            };
+          };
+        }
+      ];
+    };
+  };
+
 }
