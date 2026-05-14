@@ -1,0 +1,52 @@
+diff --git a/js/ui/status/volume.js b/js/ui/status/volume.js
+index b8f8d8fb4..f59645a33 100644
+--- a/js/ui/status/volume.js
++++ b/js/ui/status/volume.js
+@@ -372,6 +372,7 @@ class InputStreamSlider extends StreamSlider {
+             'active-input-update', (c, id) => this._setActiveDevice(id),
+             'stream-added', () => this._maybeShowInput(),
+             'stream-removed', () => this._maybeShowInput(),
++            'stream-changed', () => this._maybeShowInput(),
+             this);
+ 
+         this.iconName = 'audio-input-microphone-symbolic';
+@@ -410,8 +411,11 @@ class InputStreamSlider extends StreamSlider {
+                 'org.PulseAudio.pavucontrol',
+             ];
+ 
+-            showInput = this._control.get_source_outputs().some(
+-                output => !skippedApps.includes(output.get_application_id()));
++            showInput = this._control.get_source_outputs().some(output => {
++                if (skippedApps.includes(output.get_application_id()))
++                    return false;
++                return output.get_state() === Gvc.MixerStreamState.RUNNING;
++            });
+         }
+ 
+         this._showInput = showInput;
+diff --git a/subprojects/gvc/gvc-mixer-control.c b/subprojects/gvc/gvc-mixer-control.c
+index 4576484..ed9ff5e 100644
+--- a/subprojects/gvc/gvc-mixer-control.c
++++ b/subprojects/gvc/gvc-mixer-control.c
+@@ -1469,6 +1469,13 @@ translate_pa_state (pa_sink_state_t state) {
+         }
+ }
+ 
++static GvcMixerStreamState
++translate_pa_source_output_state (int corked) {
++        if (corked)
++                return GVC_STREAM_STATE_IDLE;
++        return GVC_STREAM_STATE_RUNNING;
++}
++
+ static gboolean
+ is_bluetooth (const pa_proplist *proplist)
+ {
+@@ -1876,6 +1883,7 @@ update_source_output (GvcMixerControl             *control,
+         gvc_mixer_stream_set_volume (stream, (guint)max_volume);
+         gvc_mixer_stream_set_is_muted (stream, info->mute);
+         set_icon_name_from_proplist (stream, info->proplist, "audio-input-microphone");
++        gvc_mixer_stream_set_state (stream, translate_pa_source_output_state (info->corked));
+ 
+         if (is_new) {
+                 g_hash_table_insert (control->priv->source_outputs,

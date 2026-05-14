@@ -59,4 +59,17 @@ in
       '';
     }))
   ];
+
+  # Workaround for recording indicator
+  #  until https://gitlab.gnome.org/GNOME/gnome-shell/-/work_items/7217 is resolved
+  nixpkgs.overlays = [
+    (final: prev: {
+      gnome-shell = prev.gnome-shell.overrideAttrs (a: {
+        patches = a.patches ++ [
+          ./0001-volume-only-show-mic-indicator-for-running-streams.patch
+        ];
+      });
+    })
+  ];
+
 }
