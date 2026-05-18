@@ -234,7 +234,7 @@
     gsmartcontrol
     hdparm
     iotop
-    keepass
+    keepassxc
     lm_sensors
     mtools
     mumble
