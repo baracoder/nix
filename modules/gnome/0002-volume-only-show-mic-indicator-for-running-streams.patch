@@ -1,0 +1,80 @@
+diff --git a/js/ui/status/volume.js b/js/ui/status/volume.js
+index 82dacb296..fc49cb9ef 100644
+--- a/js/ui/status/volume.js
++++ b/js/ui/status/volume.js
+@@ -415,11 +415,10 @@ class InputStreamSlider extends StreamSlider {
+                 'org.PulseAudio.pavucontrol',
+             ];
+ 
+-            showInput = this._control.get_source_outputs().some(output => {
+-                if (skippedApps.includes(output.get_application_id()))
+-                    return false;
+-                return output.get_state() === Gvc.MixerStreamState.RUNNING;
+-            });
++            showInput =
++                this._control.get_sources().some(source => source.state === Gvc.MixerStreamState.RUNNING) &&
++                this._control.get_source_outputs().some(output =>
++                    !skippedApps.includes(output.get_application_id()));
+         }
+ 
+         this._showInput = showInput;
+diff --git a/subprojects/gvc/gvc-mixer-control.c b/subprojects/gvc/gvc-mixer-control.c
+index 59432a4..099b8d9 100644
+--- a/subprojects/gvc/gvc-mixer-control.c
++++ b/subprojects/gvc/gvc-mixer-control.c
+@@ -1454,7 +1454,7 @@ set_icon_name_from_proplist (GvcMixerStream *stream,
+ }
+ 
+ static GvcMixerStreamState
+-translate_pa_state (pa_sink_state_t state) {
++translate_pa_sink_state (pa_sink_state_t state) {
+         switch (state) {
+         case PA_SINK_RUNNING:
+                 return GVC_STREAM_STATE_RUNNING;
+@@ -1471,10 +1471,18 @@ translate_pa_state (pa_sink_state_t state) {
+ }
+ 
+ static GvcMixerStreamState
+-translate_pa_source_output_state (int corked) {
+-        if (corked)
++translate_pa_source_state (pa_source_state_t state) {
++        switch (state) {
++        case PA_SOURCE_RUNNING:
++                return GVC_STREAM_STATE_RUNNING;
++        case PA_SOURCE_IDLE:
+                 return GVC_STREAM_STATE_IDLE;
+-        return GVC_STREAM_STATE_RUNNING;
++        case PA_SOURCE_SUSPENDED:
++                return GVC_STREAM_STATE_SUSPENDED;
++        case PA_SOURCE_INVALID_STATE:
++        default:
++                return GVC_STREAM_STATE_INVALID;
++        }
+ }
+ 
+ static gboolean
+@@ -1558,7 +1566,7 @@ update_sink (GvcMixerControl    *control,
+         gvc_mixer_stream_set_is_muted (stream, info->mute);
+         gvc_mixer_stream_set_can_decibel (stream, !!(info->flags & PA_SINK_DECIBEL_VOLUME));
+         gvc_mixer_stream_set_base_volume (stream, (guint32) info->base_volume);
+-        gvc_mixer_stream_set_state (stream, translate_pa_state (info->state));
++        gvc_mixer_stream_set_state (stream, translate_pa_sink_state (info->state));
+ 
+         is_bt = is_bluetooth (info->proplist);
+         /* Sync devices as the port on the stream might have changed */
+@@ -1696,6 +1704,7 @@ update_source (GvcMixerControl      *control,
+         gvc_mixer_stream_set_is_muted (stream, info->mute);
+         gvc_mixer_stream_set_can_decibel (stream, !!(info->flags & PA_SOURCE_DECIBEL_VOLUME));
+         gvc_mixer_stream_set_base_volume (stream, (guint32) info->base_volume);
++        gvc_mixer_stream_set_state (stream, translate_pa_source_state (info->state));
+         g_debug ("update source");
+ 
+         is_bt = is_bluetooth (info->proplist);
+@@ -1884,7 +1893,6 @@ update_source_output (GvcMixerControl             *control,
+         gvc_mixer_stream_set_volume (stream, (guint)max_volume);
+         gvc_mixer_stream_set_is_muted (stream, info->mute);
+         set_icon_name_from_proplist (stream, info->proplist, "audio-input-microphone");
+-        gvc_mixer_stream_set_state (stream, translate_pa_source_output_state (info->corked));
+ 
+         if (is_new) {
+                 g_hash_table_insert (control->priv->source_outputs,
