@@ -9,7 +9,6 @@
   programs.steam.extest.enable = true;
 
   # vr
-  programs.alvr.enable = true;
   services.wivrn.enable = true;
   services.wivrn.openFirewall = true;
 
