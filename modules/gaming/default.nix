@@ -6,6 +6,7 @@
   programs.gamescope.enable = true;
   programs.steam.gamescopeSession.enable = true;
   programs.steam.remotePlay.openFirewall = true;
+  programs.steam.extest.enable = true;
 
   # vr
   programs.alvr.enable = true;
