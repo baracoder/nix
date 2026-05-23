@@ -12,16 +12,16 @@ in
   ];
 
   nixpkgs.overlays = [
-    (final: prev: {
-      gdm = prev.gdm.overrideAttrs (a: {
-        patches = a.patches ++ [
-          (final.fetchpatch {
-            url = "https://gitlab.gnome.org/GNOME/gdm/-/merge_requests/343.diff";
-            hash = "sha256-48QhxuBo9QOVhy9R1yfgT0ggeOaDqYrLz3UNKhDEsh0=";
-          })
-        ];
-      });
-    })
+    # (final: prev: {
+    #   gdm = prev.gdm.overrideAttrs (a: {
+    #     patches = a.patches ++ [
+    #       (final.fetchpatch {
+    #         url = "https://gitlab.gnome.org/GNOME/gdm/-/merge_requests/343.diff";
+    #         hash = "sha256-48QhxuBo9QOVhy9R1yfgT0ggeOaDqYrLz3UNKhDEsh0=";
+    #       })
+    #     ];
+    #   });
+    # })
   ];
 
   boot.loader.systemd-boot.enable = true;
