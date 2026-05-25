@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DEVICES=("0018:0911:5288.0005" "0018:27C6:0113.0004")
+DEVICES=(0018:0911:5288.000E  0018:27C6:0113.000D)
 DRIVER_DIR="/sys/bus/hid/drivers/hid-multitouch"
 
 # Detect lid state
