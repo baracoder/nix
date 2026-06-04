@@ -6,6 +6,7 @@
     bruno
     btop
     cachix
+    claude-code
     codebook
     copilot-language-server
     curl
