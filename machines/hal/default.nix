@@ -46,6 +46,7 @@ in
   boot.kernelModules = [
     "btrfs"
     "acpi_call"
+    "iwlwifi"
     "gpd_fan"
   ];
   boot.plymouth.enable = true;
@@ -199,8 +200,7 @@ in
     mediathekview
     vulkan-tools
     libva-utils
-    # broken https://github.com/NixOS/nixpkgs/issues/369571
-    # orca-slicer
+    orca-slicer
     looking-glass-client
     virtiofsd
     ptouch-print
