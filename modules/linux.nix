@@ -225,6 +225,7 @@
     espeak
     evince
     ghex
+    ghostty
     gitg
     gnome-boxes
     gnome-console
