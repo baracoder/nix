@@ -44,6 +44,7 @@
     {
       device = "/dev/disk/by-partlabel/crypt-swap";
       randomEncryption.enable = true;
+      randomEncryption.allowDiscards = true;
     }
   ];
   systemd.units."dev-sdc2.swap".enable = false;
