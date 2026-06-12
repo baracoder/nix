@@ -8,7 +8,6 @@
   #   url = "https://github.com/NixOS/nixpkgs/pull/436966.diff";
   #   flake = false;
   # };
-  inputs.vibepanel.url = "github:prankstr/vibepanel";
 
   outputs =
     {
