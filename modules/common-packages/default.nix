@@ -58,6 +58,7 @@
     nixfmt
     nmap
     nnn
+    nodejs
     nvd
     octave
     omnisharp-roslyn
@@ -80,6 +81,7 @@
     terraform-ls
     tldr
     tmux
+    tree
     typescript-language-server
     typos-lsp
     unzip
