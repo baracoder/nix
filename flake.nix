@@ -66,6 +66,7 @@
             nixos-hardware.nixosModules.lenovo-thinkpad-x1-11th-gen
             {
               nixpkgs.overlays = [
+                (import ./overlays/local.nix)
               ];
             }
           ];
