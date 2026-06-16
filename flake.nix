@@ -15,7 +15,6 @@
       nixpkgs,
       nixos-hardware,
       # nixpkgs-xr,
-      helix,
       nixpkgs-patcher,
       ...
     }@inputs:
