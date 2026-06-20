@@ -1,0 +1,11 @@
+{
+  "uuid": "tts@baracoder",
+  "name": "TTS",
+  "description": "Toggle the 'voluble' text-to-speech script from a status bar icon. Click to start, click again to interrupt.",
+  "shell-version": [
+    "48",
+    "49",
+    "50"
+  ],
+  "version": 1
+}

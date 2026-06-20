@@ -14,4 +14,6 @@ final: prev: {
   pywincontrols = final.callPackage ../pkgs/pywincontrols { };
 
   csharp-language-server = final.callPackage ../pkgs/csharp-language-server/package.nix { };
+
+  gnome-extension-tts-baracoder = final.callPackage ../pkgs/gnome-extension-tts/package.nix { };
 }
