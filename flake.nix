@@ -11,6 +11,7 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       nixos-hardware,
       # nixpkgs-xr,
@@ -19,6 +20,8 @@
       ...
     }@inputs:
     {
+      overlays.default = import ./overlays/local.nix;
+
       legacyPackages = nixpkgs.legacyPackages;
       nixosConfigurations = {
         hal = nixpkgs-patcher.lib.nixosSystem {
@@ -41,7 +44,7 @@
             nixos-hardware.nixosModules.common-gpu-amd
             {
               nixpkgs.overlays = [
-                (import ./overlays/local.nix)
+                self.overlays.default
                 (final: prev: {
                   # Currently all are recent enough
                   # wivrn = nixpkgs-xr.packages.x86_64-linux.wivrn;
@@ -66,7 +69,7 @@
             nixos-hardware.nixosModules.lenovo-thinkpad-x1-11th-gen
             {
               nixpkgs.overlays = [
-                (import ./overlays/local.nix)
+                self.overlays.default
               ];
             }
           ];

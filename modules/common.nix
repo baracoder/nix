@@ -38,7 +38,7 @@
   };
 
   environment.systemPackages = [
-    (pkgs.callPackage ../pkgs/vim.nix { })
+    pkgs.my-vim
     (pkgs.dotnetCorePackages.combinePackages (
       with pkgs.dotnetCorePackages;
       [

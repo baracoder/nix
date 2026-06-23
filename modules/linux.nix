@@ -261,7 +261,7 @@
     wl-clipboard
     zed-editor
 
-    (callPackage ../pkgs/vscode.nix { })
+    my-vscode
   ];
 
   services.pipewire = {

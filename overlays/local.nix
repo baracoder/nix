@@ -1,4 +1,9 @@
-final: prev: {
+final: prev:
+(prev.lib.filesystem.packagesFromDirectoryRecursive {
+  callPackage = final.callPackage;
+  directory = ../pkgs;
+})
+// {
   google-chrome = prev.google-chrome.override {
     commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation";
   };
@@ -6,14 +11,4 @@ final: prev: {
   vivaldi = prev.vivaldi.override {
     commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation";
   };
-
-  offload-game = final.callPackage ../pkgs/offload-game { };
-
-  egpu = final.callPackage ../pkgs/egpu { };
-
-  pywincontrols = final.callPackage ../pkgs/pywincontrols { };
-
-  csharp-language-server = final.callPackage ../pkgs/csharp-language-server/package.nix { };
-
-  gnome-extension-tts-baracoder = final.callPackage ../pkgs/gnome-extension-tts/package.nix { };
 }
