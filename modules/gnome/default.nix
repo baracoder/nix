@@ -43,6 +43,7 @@ in
     bing-wallpaper-changer
     bluetooth-battery-meter
     caffeine
+    home-assistant-extension
     notification-timeout
     quick-settings-audio-devices-hider
     quick-settings-audio-devices-renamer
