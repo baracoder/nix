@@ -7,6 +7,7 @@
     btop
     cachix
     claude-code
+    codebase-memory-mcp
     codebook
     copilot-language-server
     curl
