@@ -13,6 +13,7 @@
   services.wivrn.openFirewall = true;
 
   environment.systemPackages = with pkgs; [
+    beammp-launcher
     beyond-all-reason
     bs-manager
     egpu
