@@ -236,6 +236,7 @@
     hdparm
     iotop
     keepassxc
+    libnotify
     lm_sensors
     mtools
     mumble
@@ -248,6 +249,7 @@
     ptyxis
     qjackctl
     remmina
+    smartmontools
     show-midi
     speechd
     spice-gtk
