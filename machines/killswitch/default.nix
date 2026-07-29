@@ -77,6 +77,11 @@
 
   networking.hostName = "killswitch";
 
+  networking.wireless.iwd.settings.General = {
+    RoamThreshold = "-50";
+    RoamThreshold5G = "-50";
+  };
+
   system.stateVersion = "25.05";
 
   programs.xwayland.enable = true;
