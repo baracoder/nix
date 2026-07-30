@@ -217,7 +217,6 @@ in
     fprintd
     vial
     vivaldi
-    arduino-ide
   ];
 
   hardware.sensor.iio.enable = true;
