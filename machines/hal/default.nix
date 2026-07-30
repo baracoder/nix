@@ -123,7 +123,11 @@ in
 
   services.ollama = {
     enable = true;
-    #acceleration = "rocm";
+    package = pkgs.ollama-vulkan;
+  };
+  systemd.services.ollama.environment = {
+    OLLAMA_SCHED_SPREAD = "1";
+    OLLAMA_IGPU_ENABLE = "1";
   };
 
   services.logind.settings.Login.HandlePowerKey = "suspend";
