@@ -93,7 +93,7 @@ in
       sleep 5
       # Check if AC adapter is online (1=AC, 0=battery)
       if grep -q 1 /sys/class/power_supply/ADP1/online; then
-        hhdctl set tdp.qam.tdp=25
+        hhdctl set tdp.qam.tdp=22
       else
         hhdctl set tdp.qam.tdp=14
       fi
