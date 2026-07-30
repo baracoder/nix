@@ -9,7 +9,7 @@
     claude-code
     codebase-memory-mcp
     codebook
-    copilot-language-server
+    # copilot-language-server
     curl
     csharp-ls
     csharp-language-server
