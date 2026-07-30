@@ -201,6 +201,7 @@ in
     easyeffects
     discord
     ffmpeg
+    pkgs.python3Packages.huggingface-hub
     mediathekview
     vulkan-tools
     libva-utils
