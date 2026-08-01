@@ -78,6 +78,7 @@ in
 {
   services.pipewire.extraLv2Packages = [ pkgs.lsp-plugins ];
 
+
   # Speaker correction for the built-in speakers, ported from the EasyEffects
   # "Speakers" preset. Only the convolver and the limiter were active there;
   # bass_enhancer, filter, multiband_compressor and loudness were all bypassed.
@@ -141,7 +142,11 @@ in
                   at = 5.0; # attack ms
                   rt = 5.0; # release ms
                   lk = 5.0; # lookahead ms
-                  boost = 1; # gain boost
+                  # EasyEffects had this on; off here to stop transients at a
+                  # track change being made louder. Note LSP applies the
+                  # inverse of the threshold as makeup, so with th = 1.0 this
+                  # is close to a no-op.
+                  boost = 0; # gain boost
                   alr = 0; # automatic level regulation off
                   ovs = 0; # no oversampling
                   dith = 0; # no dithering
@@ -217,14 +222,12 @@ in
           ];
           "capture.props" = {
             "node.name" = dspNode;
-            # "Audio/Sink/Internal" rather than "Audio/Sink" keeps the filter
-            # out of the desktop's output list: pipewire-pulse only exposes an
-            # exact "Audio/Sink" (pw_manager_object_is_sink), while WirePlumber
-            # matches the class as a substring everywhere, so the node is still
-            # treated as an input-direction filter and linked normally. Same
-            # convention WirePlumber itself uses for hidden nodes in
-            # monitors/alsa.lua and monitors/bluez.lua.
-            "media.class" = "Audio/Sink/Internal";
+            # Must stay exactly "Audio/Sink". Suffixing it hides the node from
+            # pipewire-pulse, but then pulse clients streaming through the
+            # filter never complete a drain -- browsers hang between tracks.
+            # Verified by bisection: capture "Audio/Sink/Internal" hangs
+            # paplay indefinitely, plain "Audio/Sink" drains in 2s.
+            "media.class" = "Audio/Sink";
             "audio.position" = [
               "FL"
               "FR"

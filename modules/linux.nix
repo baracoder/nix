@@ -292,6 +292,12 @@
             };
             "capture.props" = {
               "node.name" = "capture.rnnoise_source";
+              # The "/Internal" suffix keeps both ends of the filter out of the
+              # desktop's device and stream lists: pipewire-pulse matches
+              # media.class exactly (pw_manager_object_is_source /
+              # _is_source_output), while WirePlumber matches it as a substring
+              # everywhere, so the filter is still linked normally.
+              "media.class" = "Stream/Input/Audio/Internal";
               "node.passive" = true;
               "node.virtual" = true;
               "node.pause-on-idle" = true;
@@ -302,6 +308,10 @@
             };
             "playback.props" = {
               "node.name" = "rnnoise_source";
+              # Must stay exactly "Audio/Source": this is the node pulse
+              # clients see, and suffixing the equivalent node on the speaker
+              # filter ("Audio/Sink/Internal") made pulse streams hang forever
+              # on drain. Not worth risking capture to hide a list entry.
               "media.class" = "Audio/Source";
               "node.virtual" = true;
               "audio.rate" = 48000;
