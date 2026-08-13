@@ -131,7 +131,7 @@
     jujutsu
     k9s
     kaf
-    kcat
+    (pkgs.broken kcat "libserdes fails to build")
     kubectl
     kubernetes-helm
     kustomize
