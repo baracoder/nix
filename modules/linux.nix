@@ -215,7 +215,6 @@
     aspell
     aspellDicts.de
     aspellDicts.en
-    ausweisapp
     avahi
     binutils
     bitwarden-desktop

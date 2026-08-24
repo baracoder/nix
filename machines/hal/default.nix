@@ -160,6 +160,10 @@ in
   services.xserver.videoDrivers = [ "amdgpu" ];
   programs.xwayland.enable = true;
   programs.coolercontrol.enable = true;
+  programs.ausweisapp = {
+    enable = true;
+    openFirewall = true;
+  };
   systemd.services.coolercontrold.preStart = "${pkgs.coreutils}/bin/sleep 15";
 
   nix.settings.max-jobs = lib.mkDefault 8;
