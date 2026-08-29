@@ -1,0 +1,78 @@
+From: Herman Fries <baracoder@googlemail.com>
+Subject: [PATCH] gvc: tolerate cards reported without an active profile
+
+pa_card_info.active_profile is dereferenced unconditionally in
+update_card(), but a card can legitimately be reported with no active
+profile. pipewire-pulse exposes such a card while a device is still
+settling -- it logs
+
+    mod.protocol-pulse: card 65 port 0 profiles inconsistent (0 < 1)
+
+and hands out a pa_card_info with n_profiles == 0 and a NULL
+active_profile. A shell that enumerates cards inside that window dies
+with
+
+    .gnome-shell-wr[6387]: segfault at 0 ... in libgvc.so
+
+which drops the whole session back to GDM. It is a race, so it only
+hits when a USB audio device (here a Logitech StreamCam) is enumerating
+at the same moment the session starts.
+
+Guard the dereference in update_card(), and the two places that a NULL
+profile would otherwise propagate to: gvc_mixer_card_get_profile()
+compares card->priv->profile with g_str_equal(), and
+gvc_mixer_ui_device_get_active_profile() dereferences its result.
+diff --git a/subprojects/gvc/gvc-mixer-card.c b/subprojects/gvc/gvc-mixer-card.c
+index 21da5c5..cc66a93 100644
+--- a/subprojects/gvc/gvc-mixer-card.c
++++ b/subprojects/gvc/gvc-mixer-card.c
+@@ -158,6 +158,11 @@ gvc_mixer_card_get_profile (GvcMixerCard *card)
+         g_return_val_if_fail (GVC_IS_MIXER_CARD (card), NULL);
+         g_return_val_if_fail (card->priv->profiles != NULL, NULL);
+ 
++        /* The card was reported without an active profile, so there is
++         * nothing to match against. */
++        if (card->priv->profile == NULL)
++                return NULL;
++
+         for (l = card->priv->profiles; l != NULL; l = l->next) {
+                 GvcMixerCardProfile *p = l->data;
+                 if (g_str_equal (card->priv->profile, p->profile)) {
+diff --git a/subprojects/gvc/gvc-mixer-control.c b/subprojects/gvc/gvc-mixer-control.c
+index 099b8d9..d514618 100644
+--- a/subprojects/gvc/gvc-mixer-control.c
++++ b/subprojects/gvc/gvc-mixer-control.c
+@@ -2608,7 +2608,8 @@ update_card (GvcMixerControl      *control,
+                 struct pa_card_profile_info pi = info->profiles[i];
+                 gboolean is_default;
+ 
+-                is_default = (g_strcmp0 (pi.name, info->active_profile->name) == 0);
++                is_default = (info->active_profile != NULL &&
++                              g_strcmp0 (pi.name, info->active_profile->name) == 0);
+                 g_debug ("\tProfile '%s': %d sources %d sinks%s",
+                          pi.name, pi.n_sources, pi.n_sinks,
+                          is_default ? " (Current)" : "");
+@@ -2646,7 +2647,8 @@ update_card (GvcMixerControl      *control,
+         gvc_mixer_card_set_profiles (card, profile_list);
+         gvc_mixer_card_set_name (card, pa_proplist_gets (info->proplist, "device.description"));
+         gvc_mixer_card_set_icon_name (card, pa_proplist_gets (info->proplist, "device.icon_name"));
+-        gvc_mixer_card_set_profile (card, info->active_profile->name);
++        if (info->active_profile != NULL)
++                gvc_mixer_card_set_profile (card, info->active_profile->name);
+ 
+         if (is_new) {
+                 g_hash_table_insert (control->priv->cards,
+diff --git a/subprojects/gvc/gvc-mixer-ui-device.c b/subprojects/gvc/gvc-mixer-ui-device.c
+index 7aca847..78d9683 100644
+--- a/subprojects/gvc/gvc-mixer-ui-device.c
++++ b/subprojects/gvc/gvc-mixer-ui-device.c
+@@ -567,6 +567,9 @@ gvc_mixer_ui_device_get_active_profile (GvcMixerUIDevice* device)
+         }
+ 
+         profile = gvc_mixer_card_get_profile (device->priv->card);
++        if (profile == NULL)
++                return NULL;
++
+         return gvc_mixer_ui_device_get_matching_profile (device, profile->profile);
+ }
+ 
