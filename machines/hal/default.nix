@@ -31,6 +31,7 @@ in
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [
     acpi_call
+    ryzen-smu
   ];
   boot.initrd.prepend = [ "${./dsdt/acpi_override}" ];
   boot.initrd.kernelModules = [ "amdgpu" ];
@@ -49,6 +50,7 @@ in
     "acpi_call"
     "iwlwifi"
     "gpd_fan"
+    "ryzen_smu"
   ];
   boot.plymouth.enable = true;
   boot.plymouth.extraConfig = ''
@@ -74,38 +76,58 @@ in
   hardware.bluetooth.enable = true;
   hardware.steam-hardware.enable = true;
 
-  services.handheld-daemon = {
-    enable = true;
-    ui.enable = true;
-    user = "bara";
-    adjustor.enable = true;
+  services.powerstation.enable = true;
+  systemd.services.powerstation.environment.XDG_DATA_DIRS = lib.mkForce (
+    lib.concatStringsSep ":" [
+      "${pkgs.hwdata}/share"
+      "/run/current-system/sw/share"
+    ]
+  );
+  services.inputplumber.enable = true;
+  environment.etc."inputplumber/devices.d/55-gpd-winmax2-2025.yaml".source =
+    ./inputplumber-gpd-winmax2-2025.yaml;
+
+  systemd.packages = [ pkgs.steamos-manager ];
+  systemd.services.steamos-manager = {
+    overrideStrategy = "asDropin";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "powerstation.service" ];
+    wants = [ "powerstation.service" ];
+  };
+  systemd.user.services.steamos-manager = {
+    overrideStrategy = "asDropin";
+    wantedBy = [ "graphical-session.target" ];
   };
 
   # Auto-adjust TDP based on power state at startup
   systemd.services.tdp-auto-adjust = {
     wantedBy = [ "multi-user.target" ];
-    after = [ "handheld-daemon.service" ];
-    requires = [ "handheld-daemon.service" ];
-    path = [ pkgs.handheld-daemon ];
+    after = [ "powerstation.service" ];
+    requires = [ "powerstation.service" ];
+    path = [ pkgs.powerstation-tdp ];
     script = ''
-      until [ -e "/sys/class/power_supply/ADP1/online" -a -e "/run/hhd/api" ]; do
+      until [ -e "/sys/class/power_supply/ADP1/online" ]; do
         sleep 1
       done
+      powerstation-tdp wait 45
       sleep 5
       # Check if AC adapter is online (1=AC, 0=battery)
       if grep -q 1 /sys/class/power_supply/ADP1/online; then
-        hhdctl set tdp.qam.tdp=22
+        powerstation-tdp set 22
       else
-        hhdctl set tdp.qam.tdp=14
+        powerstation-tdp set 14
       fi
+      # No headroom above the sustained limit, matching hhd's unchecked
+      # "Boost". Set after the TDP: `set` preserves whatever boost it finds.
+      powerstation-tdp boost 0
     '';
     serviceConfig.Type = "oneshot";
-    serviceConfig.TimeoutSec = 60;
+    serviceConfig.TimeoutSec = 120;
   };
 
   services.resolved.enable = true;
 
-  services.power-profiles-daemon.enable = true; # Power management is handled by handheld-daemon adjustor
+  services.power-profiles-daemon.enable = true; # Platform profiles; TDP itself is handled by powerstation
   powerManagement.cpuFreqGovernor = "ondemand";
 
   #virtualisation.waydroid.enable = true;
@@ -222,6 +244,10 @@ in
     fprintd
     vial
     vivaldi
+    gnome-extension-tdp-baracoder
+    powerstation-tdp
+    # steamosctl, plus the D-Bus policy and interface files
+    steamos-manager
   ];
 
   hardware.sensor.iio.enable = true;

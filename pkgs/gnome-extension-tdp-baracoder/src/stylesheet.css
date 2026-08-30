@@ -1,0 +1,7 @@
+/* Keeps the readout from resizing the slider as the digits change. */
+.tdp-value-label {
+  min-width: 3.2em;
+  text-align: right;
+  padding: 0 6px;
+  font-feature-settings: "tnum";
+}

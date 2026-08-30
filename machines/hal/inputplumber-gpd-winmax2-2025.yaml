@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ShadowBlip/InputPlumber/main/rootfs/usr/share/inputplumber/schema/composite_device_v1.json
+#
+# InputPlumber ships 50-gpd_winmax2.yaml, but it matches product_name
+# G1619-04 and the USB controllers of that board revision. This machine is a
+# G1619-05 (2025, Ryzen AI 9 HX 370) whose controller sits at 0000:c6:00.0, so
+# nothing there matches and the pad goes unmanaged.
+version: 1
+
+kind: CompositeDevice
+
+name: GPD WinMax2 2025
+
+single_source: false
+
+matches:
+  - dmi_data:
+      product_name: G1619-05
+      sys_vendor: GPD
+
+# The phys paths pin these to the built-in controller so that an external pad
+# reporting the same name is left alone.
+source_devices:
+  - group: gamepad
+    evdev:
+      name: "Microsoft X-Box 360 pad"
+      phys_path: usb-0000:c6:00.0-3/input0
+      handler: event*
+  # Carries the back paddles as Key0/Key9; gpd2 maps them to gamepad buttons.
+  - group: keyboard
+    evdev:
+      name: "  Mouse for Windows"
+      phys_path: usb-0000:c6:00.0-4/input0
+      handler: event*
+  - group: keyboard
+    evdev:
+      name: "  Mouse for Windows"
+      phys_path: usb-0000:c6:00.0-4/input1
+      handler: event*
+  - group: imu
+    iio:
+      name: "{i2c-BMI0160:00,i2c-BMI0260:00,i2c-10EC5280:00,bmi260}"
+
+options:
+  auto_manage: true
+
+target_devices:
+  - xbox-elite
+  - mouse
+  - keyboard
+
+capability_map_id: gpd2

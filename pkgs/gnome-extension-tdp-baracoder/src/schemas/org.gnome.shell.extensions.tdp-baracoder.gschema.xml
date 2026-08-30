@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.tdp-baracoder"
+          path="/org/gnome/shell/extensions/tdp-baracoder/">
+    <key name="use-device-limits" type="b">
+      <default>true</default>
+      <summary>Take the slider range from the device</summary>
+      <description>
+        Read MinTdp/MaxTdp from PowerStation, which sources them from its APU
+        and DMI override databases. Per-device caps belong there, not here.
+        Not every platform reports a range; the bounds below cover those.
+      </description>
+    </key>
+    <key name="min-tdp" type="d">
+      <default>5.0</default>
+      <range min="1.0" max="200.0"/>
+      <summary>Lower bound of the slider when the device reports none, in watts</summary>
+    </key>
+    <key name="max-tdp" type="d">
+      <default>28.0</default>
+      <range min="1.0" max="200.0"/>
+      <summary>Upper bound of the slider when the device reports none, in watts</summary>
+    </key>
+    <key name="boost-watts" type="d">
+      <default>2.0</default>
+      <range min="0.5" max="50.0"/>
+      <summary>Headroom above the sustained limit when boost is on, in watts</summary>
+      <description>
+        PowerStation sets the slow PPT to TDP + this and the fast PPT to 1.25x
+        that. The default mirrors hhd, whose boost raised the slow limit by 2 W.
+      </description>
+    </key>
+    <key name="step" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="10.0"/>
+      <summary>Granularity of the slider, in watts</summary>
+    </key>
+  </schema>
+</schemalist>

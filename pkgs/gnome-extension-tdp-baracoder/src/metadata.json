@@ -1,0 +1,12 @@
+{
+  "uuid": "tdp@baracoder",
+  "name": "TDP",
+  "description": "Control the APU power limit (TDP) from the Quick Settings menu via the PowerStation D-Bus interface.",
+  "shell-version": [
+    "48",
+    "49",
+    "50"
+  ],
+  "settings-schema": "org.gnome.shell.extensions.tdp-baracoder",
+  "version": 1
+}
