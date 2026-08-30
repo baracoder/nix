@@ -40,12 +40,15 @@
   boot.initrd.luks.devices."crypt-ssd".device =
     "/dev/disk/by-uuid/c822c962-094c-45bc-bb24-ea57062f02a4";
   boot.initrd.luks.devices."crypt-ssd".allowDiscards = true;
+  boot.initrd.luks.devices."crypt-swap" = {
+    device = "/dev/disk/by-partlabel/crypt-swap";
+    allowDiscards = true;
+  };
   swapDevices = [
     {
-      device = "/dev/disk/by-partlabel/crypt-swap";
-      randomEncryption.enable = true;
-      randomEncryption.allowDiscards = true;
+      device = "/dev/mapper/crypt-swap";
     }
   ];
+  boot.resumeDevice = "/dev/mapper/crypt-swap";
   systemd.units."dev-sdc2.swap".enable = false;
 }
