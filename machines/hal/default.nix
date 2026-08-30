@@ -201,7 +201,7 @@ in
     ];
   };
 
-  # Workaround for LG Ultrawide stuttering on playback resume
+  # Workaround for LG Ultrawide stuttering on playback resume.
   services.pipewire.wireplumber.extraConfig = {
     "hdmi-screen" = {
       "monitor.alsa.rules" = [
@@ -214,6 +214,7 @@ in
           actions = {
             update-props = {
               "session.suspend-timeout-seconds" = 0;
+              "node.always-process" = true;
             };
           };
         }
