@@ -7,7 +7,11 @@
   nix = {
     package = pkgs.nixVersions.latest;
     settings = {
-      experimental-features = "nix-command flakes ca-derivations";
+      experimental-features = [
+        "nix-command"
+        "flakes"
+        "ca-derivations"
+      ];
       trusted-users = [
         "root"
         "@wheel"
