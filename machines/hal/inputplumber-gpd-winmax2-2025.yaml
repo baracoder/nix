@@ -38,9 +38,18 @@ source_devices:
       name: "  Mouse for Windows"
       phys_path: usb-0000:c6:00.0-4/input1
       handler: event*
-  - group: imu
-    iio:
-      name: "{i2c-BMI0160:00,i2c-BMI0260:00,i2c-10EC5280:00,bmi260}"
+  # Disabled: nothing consumes motion data here. The xbox-elite target has no
+  # IMU, so samples only reached InputPlumber's auto-created dbus target and were
+  # dropped. It is not free either: InputPlumber has no IIO buffer/trigger path,
+  # so it reads in_accel_*_raw and in_anglvel_*_raw one attribute at a time and
+  # every sample costs six blocking I2C transactions to the BMI260. At its 200 Hz
+  # default that was ~7000 IRQ/s on the AMDI0010:02 controller and ~7% of a CPU
+  # burnt in system time while idle. Keep the sample_rate when re-enabling --
+  # without it the 200 Hz default comes back; 25 Hz is the gyro's lowest.
+  # - group: imu
+  #   iio:
+  #     name: "{i2c-BMI0160:00,i2c-BMI0260:00,i2c-10EC5280:00,bmi260}"
+  #     sample_rate: 25.0
 
 options:
   auto_manage: true
