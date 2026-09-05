@@ -236,6 +236,7 @@ in
     easyeffects
     discord
     ffmpeg
+    gearlever
     pkgs.python3Packages.huggingface-hub
     mediathekview
     vulkan-tools
@@ -256,6 +257,9 @@ in
     # steamosctl, plus the D-Bus policy and interface files
     steamos-manager
   ];
+
+  programs.appimage.enable = true;
+  programs.appimage.binfmt = true;
 
   hardware.sensor.iio.enable = true;
   hardware.enableRedistributableFirmware = true;
