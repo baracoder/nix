@@ -1,6 +1,7 @@
-{ pkgs, ... }:
+{ pkgs, aspire, ... }:
 {
   environment.systemPackages = with pkgs; [
+    aspire.packages.${pkgs.stdenv.hostPlatform.system}.aspire-cli
     bash-language-server
     bpftools
     bruno

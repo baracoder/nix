@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "aspire": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788593256,
+        "narHash": "sha256-E2D2NRAmZTo5St82cJVuZ5UEQpOvS4OfS+U7oUVom2k=",
+        "owner": "microsoft",
+        "repo": "aspire",
+        "rev": "1dd4584e3df56f5544a3e7f5fda8aa767f92318e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "microsoft",
+        "repo": "aspire",
+        "type": "github"
+      }
+    },
     "nixos-hardware": {
       "inputs": {
         "nixpkgs": "nixpkgs"
@@ -65,6 +85,7 @@
     },
     "root": {
       "inputs": {
+        "aspire": "aspire",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-patcher": "nixpkgs-patcher"

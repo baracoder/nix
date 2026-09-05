@@ -3,6 +3,8 @@
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   # inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
   inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
+  inputs.aspire.url = "github:microsoft/aspire";
+  inputs.aspire.inputs.nixpkgs.follows = "nixpkgs";
 
   # inputs.nixpkgs-patch-add-amd-debug-tools = {
   #   url = "https://github.com/NixOS/nixpkgs/pull/436966.diff";
