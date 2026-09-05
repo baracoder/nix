@@ -68,6 +68,12 @@ in
   ];
   boot.extraModprobeConfig = ''
     options bluetooth disable_ertm=1
+    # power_scheme=1 (CAM) disables wifi power save. The default (2, balanced)
+    # lets the card doze between beacons, which delays ACKs; APs running a
+    # low-ack watchdog read that as an unresponsive client and deauth with
+    # reason 34. Note NetworkManager's wifi.powersave does not apply under the
+    # iwd backend, so this modprobe option is the only lever that works here.
+    options iwlmvm power_scheme=1
   '';
 
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
