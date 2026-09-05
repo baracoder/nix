@@ -13,16 +13,18 @@
 # plus device entries that use it -- including G1619-05, this machine. That is
 # what Terra ships as "steamos-manager-powerstation": the same source, built
 # with Provides/Conflicts against the stock steamos-manager rather than a
-# separate program. Pinned to the commit Terra packaged.
+# separate program. Pinned to the head of the fork's dev branch, which is
+# what Terra packages from; note dev gets rebased, so the rev moves even
+# when the tip commit message does not.
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "steamos-manager";
-  version = "0-unstable-2026-08-23";
+  version = "0-unstable-2026-09-04";
 
   src = fetchFromGitHub {
     owner = "OpenGamingCollective";
     repo = "steamos-manager";
-    rev = "25bff4c18dc646570915186d08ebaeb0c14c001f";
-    hash = "sha256-kFqbUk46qKtCEvOmmgOqsLRZbxtf/5rwaVDWjeHhpQk=";
+    rev = "b2b641ed32587da7c4900c510fcbd8ca080d174f";
+    hash = "sha256-o+hyYOic8XVNOHAQVxtoFFFyhM4PdsTdkT1HDsRO2FE=";
   };
 
   cargoHash = "sha256-JN4cRQAgNReItzH1zqP3/tPnXZPJi/0VkP2C1fB6RcM=";

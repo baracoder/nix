@@ -25,7 +25,9 @@ source_devices:
       name: "Microsoft X-Box 360 pad"
       phys_path: usb-0000:c6:00.0-3/input0
       handler: event*
-  # Carries the back paddles as Key0/Key9; gpd2 maps them to gamepad buttons.
+  # Carries the back paddles. This unit's firmware sends F20/F21 rather than
+  # GPD's factory Key0/Key9, so the stock gpd2 map does not fit; see the
+  # gpd_winmax2_2025 map next to this file.
   - group: keyboard
     evdev:
       name: "  Mouse for Windows"
@@ -48,4 +50,4 @@ target_devices:
   - mouse
   - keyboard
 
-capability_map_id: gpd2
+capability_map_id: gpd_winmax2_2025

@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ShadowBlip/InputPlumber/main/rootfs/usr/share/inputplumber/schema/capability_map_v1.json
+#
+# InputPlumber's stock gpd2 map expects the back paddles to send Key0/Key9,
+# which is GPD's factory assignment. This unit's firmware has them on F20/F21
+# (see systemd.services.gpd-paddle-config in default.nix), so gpd2 never
+# matched: the paddles never became gamepad buttons and the raw keypresses
+# leaked through to the desktop instead.
+version: 1
+
+kind: CapabilityMap
+
+name: GPD WinMax2 2025
+
+id: gpd_winmax2_2025
+
+mapping:
+  - name: Left Paddle
+    source_events:
+      - keyboard: KeyF20
+    target_event:
+      gamepad:
+        button: LeftPaddle1
+  - name: Right Paddle
+    source_events:
+      - keyboard: KeyF21
+    target_event:
+      gamepad:
+        button: RightPaddle1
