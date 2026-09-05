@@ -328,17 +328,44 @@ in
           }
           ''
             export LC_ALL=C
-            enable_disable_wifi() {
-                if nmcli dev | grep "ethernet" | grep -w "connected"; then
-                    nmcli radio wifi off
-                else
-                    nmcli radio wifi on
-                fi
+
+            # Only real ethernet counts. Docker veths, bridges and the netbird
+            # tunnel also report type "ethernet" and would otherwise kill wifi
+            # whenever a container comes up.
+            ethernet_connected() {
+                local dev type state
+                while IFS=: read -r dev type state; do
+                    case "$dev" in
+                        veth* | docker* | br-* | virbr* | nb-* | tun* | tap*) continue ;;
+                    esac
+                    if [ "$type" = ethernet ] && [ "$state" = connected ]; then
+                        return 0
+                    fi
+                done <<< "$(nmcli -t -f DEVICE,TYPE,STATE device status)"
+                return 1
             }
 
+            set_wifi() {
+                # Never toggle the radio when it is already in the wanted state:
+                # an off/on cycle is a hard disconnect. "nmcli radio wifi" takes
+                # on/off but reports back enabled/disabled.
+                local want
+                case "$1" in
+                    on) want=enabled ;;
+                    off) want=disabled ;;
+                esac
+                [ "$(nmcli -t radio wifi)" = "$want" ] || nmcli radio wifi "$1"
+            }
+
+            # No connectivity-change: it fires while wifi is dropping, and
+            # cycling the radio then only lengthens the outage.
             case "$2" in
-              up|down|connectivity-change)
-                  enable_disable_wifi
+              up|down)
+                  if ethernet_connected; then
+                      set_wifi off
+                  else
+                      set_wifi on
+                  fi
                   ;;
             esac
           '';
