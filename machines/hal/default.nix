@@ -90,76 +90,11 @@ in
     ]
   );
   services.inputplumber.enable = true;
+  systemd.services.inputplumber.enable = false;
   environment.etc."inputplumber/devices.d/55-gpd-winmax2-2025.yaml".source =
     ./inputplumber-gpd-winmax2-2025.yaml;
   environment.etc."inputplumber/capability_maps.d/55-gpd-winmax2-2025.yaml".source =
     ./inputplumber-capability-map-gpd-winmax2-2025.yaml;
-
-  # The back paddles live in the controller's firmware, not in any kernel or
-  # InputPlumber setting, so they survive a reinstall and have to be programmed
-  # over HID. Two things matter here:
-  #
-  #   * l41/r41 pin the paddles to F20/F21, which is what the gpd_winmax2_2025
-  #     capability map above translates into gamepad paddle buttons.
-  #   * l4delay4/r4delay4 is the pause after the macro ends, i.e. the interval
-  #     at which a held paddle re-fires. It had been dropped to 25ms, so the
-  #     paddles repeated ~40x/second; 300 is the GPD factory value.
-  systemd.services.gpd-paddle-config = {
-    description = "Program GPD Win Max 2 back paddle firmware";
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    script =
-      let
-        # gpdconfig rewrites the device's flash on every invocation, without
-        # checking whether anything actually changed, so compare first.
-        settings = [
-          "l41=F20"
-          "l42=NONE"
-          "l43=NONE"
-          "l44=NONE"
-          "r41=F21"
-          "r42=NONE"
-          "r43=NONE"
-          "r44=NONE"
-          "l4delay1=100"
-          "l4delay2=100"
-          "l4delay3=100"
-          "l4delay4=300"
-          "r4delay1=100"
-          "r4delay2=100"
-          "r4delay3=100"
-          "r4delay4=300"
-        ];
-      in
-      ''
-        # The controller sits on USB and may not have enumerated yet.
-        for _ in $(seq 30); do
-          ${pkgs.pywincontrols}/bin/gpdconfig -v > /run/gpd-paddle-config.current 2>/dev/null && break
-          sleep 1
-        done
-        if [ ! -s /run/gpd-paddle-config.current ]; then
-          echo "GPD controller did not appear; leaving paddle config alone" >&2
-          exit 0
-        fi
-
-        needed=""
-        for kv in ${lib.escapeShellArgs settings}; do
-          grep -qxF "$kv" /run/gpd-paddle-config.current || needed="$needed $kv"
-        done
-
-        if [ -z "$needed" ]; then
-          echo "Paddle firmware already as configured; not rewriting flash"
-          exit 0
-        fi
-
-        echo "Updating paddle firmware:$needed"
-        # shellcheck disable=SC2086
-        ${pkgs.pywincontrols}/bin/gpdconfig ${lib.escapeShellArgs settings}
-      '';
-  };
 
   systemd.packages = [ pkgs.steamos-manager ];
   systemd.services.steamos-manager = {
