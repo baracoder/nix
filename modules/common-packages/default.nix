@@ -76,6 +76,7 @@
     ripgrep
     samba
     scooter
+    secretspec
     skopeo
     sqlite
     taplo
