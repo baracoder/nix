@@ -217,6 +217,7 @@
     aspellDicts.en
     avahi
     binutils
+    bitwarden-cli
     bitwarden-desktop
     blackbox-terminal
     cifs-utils
