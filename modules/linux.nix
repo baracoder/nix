@@ -227,6 +227,7 @@
     ghex
     ghostty
     gitg
+    gitte
     gnome-boxes
     gnome-console
     gnome-tweaks
