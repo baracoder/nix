@@ -90,7 +90,7 @@
     typos-lsp
     unzip
     vscode-json-languageserver
-    vue-language-server
+    (broken vue-language-server "manual nodejs compilation")
     wget
     wireshark
     yaml-language-server
