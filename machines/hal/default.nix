@@ -184,7 +184,6 @@ in
     "iommu=pt"
     "acpi_enforce_resources=lax"
     "bluetooth.disable_ertm=1" # bluetooth gamepad compatibility
-    "pcie_hp=1"
     "pci=realloc"
   ];
 
