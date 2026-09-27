@@ -5,6 +5,7 @@
   inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
   inputs.aspire.url = "github:microsoft/aspire";
   inputs.aspire.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.llm-agents.url = "github:numtide/llm-agents.nix";
 
   # inputs.nixpkgs-patch-add-amd-debug-tools = {
   #   url = "https://github.com/NixOS/nixpkgs/pull/436966.diff";

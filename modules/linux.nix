@@ -1,5 +1,7 @@
 {
   pkgs,
+  lib,
+  llm-agents,
   ...
 }:
 
@@ -265,6 +267,9 @@
     zed-editor
 
     my-vscode
+    # The GNOME screen reader also installs bin/orca; leave that name to it,
+    # the IDE's own entry point is orca-ide.
+    (lib.lowPrio llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.orca)
   ];
 
   services.pipewire = {
