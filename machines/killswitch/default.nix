@@ -117,6 +117,7 @@
   services.fprintd.enable = true;
 
   environment.systemPackages = with pkgs; [
+    android-studio-full
     awscli2
     colima
     direnv
