@@ -10,6 +10,7 @@ in
   imports = [
     ./audio.nix
     ./filesystems.nix
+    ./touchpad.nix
   ];
 
   nixpkgs.overlays = [
