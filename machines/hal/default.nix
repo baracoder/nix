@@ -236,7 +236,6 @@ in
     amdgpu_top
     audacity
     clonehero
-    easyeffects
     discord
     ffmpeg
     gearlever

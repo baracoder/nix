@@ -120,7 +120,6 @@
     awscli2
     colima
     direnv
-    easyeffects
     eksctl
     fprintd
     fzf
