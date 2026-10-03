@@ -242,7 +242,7 @@
     libnotify
     lm_sensors
     mtools
-    mumble
+    (broken mumble "build failure")
     ntfs3g
     nvme-cli
     pamixer
@@ -260,13 +260,12 @@
     usbutils
     virt-manager
     vlc
-    vscode-fhs
     # winboat
     wireguard-tools
     wl-clipboard
     zed-editor
 
-    my-vscode
+    (broken my-vscode "csharp extension")
     # The GNOME screen reader also installs bin/orca; leave that name to it,
     # the IDE's own entry point is orca-ide.
     (lib.lowPrio llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.orca)
