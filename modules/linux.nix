@@ -63,6 +63,13 @@
     ];
   };
 
+  # fonts.fontDir (enabled above and by flatpak) bakes a font path into
+  # xwayland, turning it into a variant Hydra never builds. Keep the stock
+  # package so it comes from the binary cache.
+  # Drop this if https://github.com/NixOS/nixpkgs/pull/552263 lands: it changes
+  # the package default, which would make "" the uncached variant instead.
+  programs.xwayland.defaultFontPath = "";
+
   services.pipewire = {
     enable = true;
     wireplumber.enable = true;
