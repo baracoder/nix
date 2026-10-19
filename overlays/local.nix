@@ -22,6 +22,14 @@ final: prev:
     ];
   });
 
+  gnomeExtensions = prev.gnomeExtensions // {
+    upower-battery = prev.gnomeExtensions.upower-battery.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        ./patches/upower-battery-other-audio.patch
+      ];
+    });
+  };
+
   google-chrome = prev.google-chrome.override {
     commandLineArgs = "--enable-features=TouchpadOverscrollHistoryNavigation";
   };

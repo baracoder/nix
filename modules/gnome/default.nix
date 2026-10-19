@@ -50,6 +50,7 @@ in
     steal-my-focus-window
     steal-my-focus-window
     tiling-assistant
+    upower-battery
     weeks-start-on-monday-again
     windownavigator
     pkgs.gnome-extension-tts-baracoder

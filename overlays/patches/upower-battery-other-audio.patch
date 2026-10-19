@@ -1,0 +1,13 @@
+diff --git a/extension.js b/extension.js
+--- a/extension.js
++++ b/extension.js
+@@ -91,6 +91,9 @@ export default class UpowerBatteryExtension extends Extension {
+ 		icons[UPowerGlib.DeviceKind.TOUCHPAD] = { icon: 'input-touchpad-symbolic' };
+ 		icons[UPowerGlib.DeviceKind.HEADSET] = { icon: 'audio-headset-symbolic' };
+ 		icons[UPowerGlib.DeviceKind.HEADPHONES] = { icon: 'audio-headphones-symbolic' };
++		// UPower downgrades USB headsets/earbuds to OTHER_AUDIO when the sibling
++		// sound card carries no SOUND_FORM_FACTOR, even if udev tagged them.
++		icons[UPowerGlib.DeviceKind.OTHER_AUDIO] = { icon: 'audio-headphones-symbolic' };
+ 		icons[UPowerGlib.DeviceKind.BLUETOOTH_GENERIC] = { icon: 'bluetooth-symbolic' };
+ 		icons[UPowerGlib.DeviceKind.SPEAKERS] = { icon: 'audio-speakers-symbolic' };
+ 		icons[UPowerGlib.DeviceKind.PHONE] = { icon: 'smartphone-symbolic' };
