@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Unpack the vendor download(s) in archives/ and lay out one work/<version>/
+# directory per BIOS release, plus work/ec/ for the embedded controller image.
+#
+# Usage: import-vendor [--unpack]   (--unpack also runs unpack-rom on each)
+set -euo pipefail
+
+root=$(dirname "$(dirname "$(realpath "$0")")")
+here="$root/scripts"
+work="$root/work"
+dl="$work/dl"
+mkdir -p "$dl"
+
+# Nested archives: outer Google Drive zip -> per-version rar/zip.
+# unar handles RAR5; 7zz in nixpkgs is built without the RAR codec.
+shopt -s nullglob globstar
+for a in "$root"/archives/*.zip; do
+    unar -q -f -o "$dl" "$a"
+done
+for a in "$dl"/**/*.rar "$dl"/**/*.zip; do
+    unar -q -f -D -o "${a%.*}" "$a"
+done
+
+for rom in "$dl"/**/*Rel.rom; do
+    # .../Max2-370_Release_Bios_V0.21/Ahn2802100Rel.rom -> v0.21
+    ver=$(basename "$(dirname "$rom")" | sed -E 's/.*_V([0-9.]+)$/v\1/')
+    mkdir -p "$work/$ver"
+    cp -f "$rom" "$work/$ver/bios.rom"
+    cp -f "$(dirname "$rom")"/Release_Note.txt "$work/$ver/" 2>/dev/null || true
+    echo "$ver  $(sha256sum < "$rom" | cut -c1-16)  $(basename "$rom")"
+done
+
+for ec in "$dl"/**/EC_V*/*.bin; do
+    mkdir -p "$work/ec"
+    cp -f "$ec" "$(dirname "$ec")"/ReleaseNotes.txt "$work/ec/"
+done
+
+if [[ ${1:-} == --unpack ]]; then
+    for d in "$work"/v*/; do
+        echo "### $(basename "$d")"
+        "$here/unpack-rom" "$d"
+    done
+fi

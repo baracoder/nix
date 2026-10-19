@@ -1,0 +1,3 @@
+# Vendor firmware is proprietary and large; keep it local only.
+archives/
+work/

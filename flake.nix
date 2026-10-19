@@ -25,6 +25,13 @@
       overlays.default = import ./overlays/local.nix;
 
       legacyPackages = nixpkgs.legacyPackages;
+
+      devShells.x86_64-linux.firmware = import ./firmware-analysis/shell.nix {
+        pkgs = import nixpkgs {
+          system = "x86_64-linux";
+          overlays = [ self.overlays.default ];
+        };
+      };
       nixosConfigurations = {
         hal = nixpkgs-patcher.lib.nixosSystem {
           system = "x86_64-linux";

@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Unpack one BIOS image into an analysis directory.
+#
+# Usage: unpack-rom <dir>    (expects <dir>/bios.rom)
+#
+# Produces in <dir>:
+#   bios.rom.dump/        UEFIExtract tree (all volumes/files/sections, decompressed)
+#   bios.rom.report.txt   flat UEFIExtract report
+#   modules.tsv           name/GUID/size/CRC32 of every FFS file, for diffing versions
+#   psp.txt, psp.json     AMD PSP directory entries (ABL, SMU, PSP OS, ...)
+#   psp-entries.tsv       unique PSP entries (type, version, size, md5), for diffing
+#   psp/                  extracted, uncompressed PSP entries
+#   acpi/                 carved ACPI tables (.aml), decompiled (.dsl), index.tsv
+#   setup/                HII/IFR dumps of the setup forms (hidden BIOS options)
+set -euo pipefail
+
+dir=$(realpath "$1")
+here=$(dirname "$(realpath "$0")")
+rom="$dir/bios.rom"
+[[ -f $rom ]] || { echo "missing $rom" >&2; exit 1; }
+cd "$dir"
+
+echo "== UEFI tree"
+rm -rf bios.rom.dump
+uefiextract bios.rom all >/dev/null
+uefiextract bios.rom report >/dev/null
+
+# Report columns: Type | Subtype | Base | Size | CRC32 | -- GUID | UI name
+# Base is left out since it shifts between versions and would hide real diffs.
+awk -F'|' '$1 ~ /^ *File *$/ {
+    for (i = 2; i <= NF; i++) gsub(/^[ -]+| +$/, "", $i)
+    print $7 "\t" $6 "\t" $2 "\t" $4 "\t" $5
+}' bios.rom.report.txt | sort > modules.tsv
+echo "   $(wc -l < modules.tsv) FFS files"
+
+echo "== AMD PSP"
+psptool -E bios.rom > psp.txt 2> psp.warnings.txt || true
+psptool -E -j bios.rom > psp.json 2>/dev/null || true
+# Flat, position-independent list for diffing: type, version, size, md5
+python3 -I -c '
+import json, sys
+rows = {(e["sectionType"], e["version"], e["size"], e["md5"])
+        for d in json.load(open(sys.argv[1])) for e in d["entries"] if e["size"]}
+for r in sorted(rows):
+    print(*r, sep="\t")
+' psp.json > psp-entries.tsv
+rm -rf psp
+psptool -X -n -u -o psp bios.rom >/dev/null 2>>psp.warnings.txt || true
+echo "   $(find psp -type f 2>/dev/null | wc -l) PSP entries extracted"
+
+echo "== ACPI"
+rm -rf acpi
+python3 -I "$here/find-acpi-tables.py" bios.rom.dump acpi > /dev/null
+(
+    cd acpi
+    shopt -s nullglob
+    ssdts=(SSDT-*.aml)
+    for t in *.aml; do
+        iasl -d "$t" > /dev/null 2>&1 || echo "   iasl failed: $t"
+    done
+    # Re-disassemble the DSDT with SSDT externals resolved; reads much better.
+    for d in DSDT-*.aml; do
+        iasl -e "${ssdts[@]}" -p "${d%.aml}.ext" -d "$d" > /dev/null 2>&1 || true
+    done
+)
+echo "   $(ls acpi/*.aml | wc -l) tables, see acpi/index.tsv"
+
+echo "== Setup forms (IFR)"
+rm -rf setup && mkdir setup
+for mod in Setup AmdPbsSetupDxe CbsSetupDxeSTX OemSetup OemSyncCBSSetup; do
+    pe=$(find bios.rom.dump -type d -name "[0-9]* $mod" -print -quit)
+    [[ -n $pe ]] || continue
+    body=$(find "$pe" -path "*PE32 image section*" -name body.bin -print -quit)
+    [[ -n $body ]] || continue
+    cp "$body" "setup/$mod.efi"
+    (cd setup && ifrextractor "$mod.efi" all > /dev/null 2>&1 || true)
+done
+echo "   $(ls setup/*.txt 2>/dev/null | wc -l) form dumps"

@@ -9,9 +9,14 @@ in
 {
   imports = [
     ./audio.nix
+    ./crash-diagnostics.nix
     ./filesystems.nix
     ./touchpad.nix
   ];
+
+  # Reset investigation: flip to true (or run `hal-c3 off`) to test whether
+  # the spontaneous resets go away without the deepest idle state.
+  hal.crashDiagnostics.disableC3 = false;
 
   nixpkgs.overlays = [
     # (final: prev: {
@@ -134,6 +139,8 @@ in
     serviceConfig.Type = "oneshot";
     serviceConfig.TimeoutSec = 120;
   };
+
+  programs.linzone-hub.enable = true;
 
   services.resolved.enable = true;
 

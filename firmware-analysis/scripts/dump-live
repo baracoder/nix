@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Snapshot what the running firmware actually hands the OS, for comparison
+# against the carved tables. Needs root for ACPI tables and SMBIOS.
+#
+# Usage: dump-live [outdir]   (default: work/live-<bios_version>)
+set -euo pipefail
+
+root=$(dirname "$(dirname "$(realpath "$0")")")
+ver=$(cat /sys/class/dmi/id/bios_version)
+out=$(realpath -m "${1:-$root/work/live-v$ver}")
+mkdir -p "$out/acpi"
+cd "$out"
+
+# Note: if machines/hal/dsdt/acpi_override is in the initrd, the live DSDT is
+# the patched one; the firmware original is still in the ROM's acpi/ dir.
+sudo sh -c 'for t in /sys/firmware/acpi/tables/*; do [ -f "$t" ] && cat "$t" > "acpi/$(basename "$t").aml"; done' || true
+sudo sh -c 'cd /sys/firmware/acpi/tables/dynamic 2>/dev/null && for t in *; do cat "$t" > "'"$out"'/acpi/dyn-$t.aml"; done' || true
+sudo chown -R "$(id -u):$(id -g)" acpi
+(cd acpi && for t in *.aml; do iasl -d "$t" >/dev/null 2>&1 || true; done)
+
+sudo dmidecode > dmidecode.txt
+cat /proc/cmdline > cmdline.txt
+uname -a > uname.txt
+sudo dmesg > dmesg.txt || true
+# Reasons for the previous reset as recorded by the FCH (if the kernel logs it)
+grep -iE "reset reason|PMFW|s2idle|amd_pmc|mce|machine check|watchdog" dmesg.txt > dmesg-interesting.txt || true
+journalctl -b -1 -k --no-pager 2>/dev/null | tail -300 > prev-boot-kernel-tail.txt || true
+echo "live snapshot in $out"
