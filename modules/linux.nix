@@ -137,9 +137,11 @@
 
   };
 
-  # Use my monitor config
   systemd.tmpfiles.rules = [
+    # Use my monitor config
     "L+ /run/gdm/.config/monitors.xml - - - - /home/bara/.config/monitors.xml"
+    # Exclude codebase-memory-mcp sockets
+    "x /tmp/cbm-daemon-*"
   ];
 
   services.envfs.enable = true;
