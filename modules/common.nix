@@ -34,6 +34,7 @@
     };
   };
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.android_sdk.accept_license = true;
 
   nixpkgs.overlays = [
   ];
