@@ -117,17 +117,11 @@
   services.fprintd.enable = true;
 
   environment.systemPackages = with pkgs; [
-    android-studio-full
+    android-studio
     awscli2
-    colima
-    direnv
     eksctl
     fprintd
-    fzf
     gh
-    gitFull
-    htop
-    jq
     jujutsu
     k9s
     kaf
@@ -135,20 +129,10 @@
     kubectl
     kubernetes-helm
     kustomize
-    meld
-    nebula
-    nh
     slack
     tfswitch
     valkey
-    vial
-    vivaldi
-    wireshark
     yarn
-  ];
-
-  services.udev.packages = [
-    pkgs.vial
   ];
 
 }

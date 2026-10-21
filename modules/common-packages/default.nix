@@ -1,5 +1,9 @@
 { pkgs, aspire, ... }:
 {
+  services.udev.packages = [
+    pkgs.vial
+  ];
+
   environment.systemPackages = with pkgs; [
     aspire.packages.${pkgs.stdenv.hostPlatform.system}.aspire-cli
     bash-language-server
@@ -32,7 +36,6 @@
     gnumake
     grpcurl
     harper
-    helix
     helm-ls
     htop
     imagemagick
@@ -59,6 +62,7 @@
     nix-tree
     nixd
     nixfmt
+    nh
     nmap
     nnn
     nodejs
@@ -66,7 +70,7 @@
     octave
     omnisharp-roslyn
     opencode
-    piper-tts
+    (broken piper-tts "wait for https://github.com/NixOS/nixpkgs/pull/576063")
     pdfgrep
     pre-commit
     pwgen
@@ -90,6 +94,8 @@
     typos-lsp
     unzip
     vscode-json-languageserver
+    vial
+    vivaldi
     (broken vue-language-server "manual nodejs compilation")
     wget
     wireshark

@@ -272,7 +272,6 @@
     # winboat
     wireguard-tools
     wl-clipboard
-    zed-editor
 
     (broken my-vscode "csharp extension")
     # The GNOME screen reader also installs bin/orca; leave that name to it,
