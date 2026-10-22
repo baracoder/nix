@@ -62,6 +62,7 @@
     nix-tree
     nixd
     nixfmt
+    nixpkgs-track
     nh
     nmap
     nnn
