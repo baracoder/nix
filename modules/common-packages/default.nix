@@ -39,7 +39,8 @@
     helm-ls
     htop
     imagemagick
-    jetbrains.datagrip
+    dbeaver-bin
+    # jetbrains.datagrip
     jetbrains.rider
     python3Packages.jedi-language-server
     jq
