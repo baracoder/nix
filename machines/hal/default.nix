@@ -36,7 +36,6 @@ in
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = linuxPackages;
   boot.extraModulePackages = with linuxPackages; [
-    acpi_call
     ryzen-smu
   ];
   boot.initrd.prepend = [ "${./dsdt/acpi_override}" ];
@@ -63,7 +62,6 @@ in
     DeviceScale=2
   '';
 
-  boot.initrd.systemd.enable = true;
   boot.initrd.systemd.network.wait-online.enable = false;
 
   boot.blacklistedKernelModules = [
