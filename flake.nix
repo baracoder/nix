@@ -7,8 +7,8 @@
   inputs.aspire.inputs.nixpkgs.follows = "nixpkgs";
   inputs.llm-agents.url = "github:numtide/llm-agents.nix";
 
-  # inputs.nixpkgs-patch-add-amd-debug-tools = {
-  #   url = "https://github.com/NixOS/nixpkgs/pull/436966.diff";
+  # inputs.nixpkgs-patch-install-ryzen-smu = {
+  #   url = "https://github.com/NixOS/nixpkgs/pull/576504.diff";
   #   flake = false;
   # };
 
