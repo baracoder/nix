@@ -24,15 +24,14 @@ stdenv.mkDerivation {
     "-C"
     "${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
     "M=$(PWD)"
+    "INSTALL_MOD_PATH=${placeholder "out"}"
+    "INSTALL_MOD_DIR=kernel/drivers/hid"
+    "DEPMOD=true"
   ];
   buildFlags = [ "modules" ];
-
-  installPhase = ''
-    runHook preInstall
-    install -Dm444 hid_inzone_battery.ko \
-      $out/lib/modules/${kernel.modDirVersion}/kernel/drivers/hid/hid_inzone_battery.ko
-    runHook postInstall
-  '';
+  # Install through kbuild so the module gets compressed and its .ko.cer is
+  # generated, which aggregateModules expects (nixpkgs#575192).
+  installTargets = [ "modules_install" ];
 
   meta = {
     description = "Sony INZONE HID battery power_supply driver";
