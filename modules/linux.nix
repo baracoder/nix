@@ -123,7 +123,6 @@
       brlaser
       brgenml1lpr
       brgenml1cupswrapper
-      hplip
     ];
     displayManager = {
       autoLogin = {
