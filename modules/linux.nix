@@ -195,14 +195,11 @@
   hardware.usb-modeswitch.enable = true;
 
   programs.direnv = {
-    package = pkgs.direnv;
+    enable = true;
     silent = false;
     loadInNixShell = true;
     direnvrcExtra = "";
-    nix-direnv = {
-      enable = true;
-      package = pkgs.nix-direnv;
-    };
+    nix-direnv.enable = true;
   };
 
   programs.nix-index.enable = true;
