@@ -51,7 +51,6 @@
   boot.initrd.luks.devices."crypt-swap" = {
     device = "/dev/disk/by-uuid/afca4682-64fe-490e-bf7b-2b532f2a437e";
   };
-  boot.initrd.systemd.enable = true;
 
   systemd.generators.systemd-gpt-auto-generator = "/dev/null";
 
