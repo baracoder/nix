@@ -5,6 +5,70 @@
   ...
 }:
 
+let
+  # A loopback sink for WirePlumber's role-based linking policy, see
+  # services.pipewire below.
+  roleSink =
+    {
+      name,
+      desc,
+      roles,
+      priority,
+      lowerPriorityAction,
+      playbackProps ? { },
+    }:
+    {
+      name = "libpipewire-module-loopback";
+      args = {
+        "node.name" = "loopback.sink.role.${name}";
+        "node.description" = desc;
+        # Positions per side, not in args: the module uses a top-level
+        # audio.position as the format of both streams, so a playback
+        # position set in playbackProps would only be a label.
+        "capture.props" = {
+          "media.class" = "Audio/Sink";
+          "audio.position" = [
+            "FL"
+            "FR"
+          ];
+          # Keeps the sink out of GNOME's output list: libgvc skips portless
+          # sinks on the bluetooth bus. WirePlumber only reads device.bus on
+          # real devices. The "/Internal" media.class suffix used for rnnoise
+          # would hide it too, but pulse clients then hang on drain.
+          "device.bus" = "bluetooth";
+          "device.intended-roles" = roles;
+          "policy.role-based.target" = true;
+          "policy.role-based.priority" = priority;
+          "policy.role-based.action.same-priority" = "mix";
+          # Applied by the higher-priority sink to the ones below it.
+          "policy.role-based.action.lower-priority" = lowerPriorityAction;
+        };
+        "playback.props" = {
+          "node.name" = "loopback.sink.role.${name}.output";
+          "node.passive" = true;
+          "audio.position" = [
+            "FL"
+            "FR"
+          ];
+        }
+        // playbackProps;
+      };
+    };
+
+  # Speech-triggered ducking for calls, see services.pipewire below. The
+  # ducker is a 4-channel sink: media on FL/FR goes through a sidechain
+  # compressor keyed by the call audio on RL/RR, which is mixed back in
+  # unprocessed. Only standard positions work here: WirePlumber reshapes the
+  # feeding streams to this layout, and AUX channels were silently dropped.
+  voiceDucker = "input.voice-ducker";
+  # Feeding the ducker: the streams must not upmix, or stereo media would
+  # also land on RL/RR and duck itself.
+  toVoiceDucker = positions: {
+    "target.object" = voiceDucker;
+    "audio.position" = positions;
+    "channelmix.upmix" = false;
+  };
+in
 {
   networking.extraHosts = ''
     192.168.98.3 wau
@@ -70,6 +134,20 @@
   # the package default, which would make "" the uncached variant instead.
   programs.xwayland.defaultFontPath = "";
 
+  # Role-based ducking: WirePlumber's role-based linking policy is on by
+  # default but needs a loopback sink per role to act on. While a stream
+  # plays into a sink, every lower-priority sink is ducked:
+  #   40 Assistant (TTS, screen reader) = Communication (calls)
+  #   20 Notification
+  #   10 Multimedia (music, video, games; the default for role-less streams)
+  # Calls are the exception: they keep their stream open even while nobody
+  # talks, so link-based ducking would hold everything down for the whole
+  # call. Communication therefore only mixes, and the voice ducker below
+  # lowers media while someone actually speaks. TTS shares the level so a
+  # call doesn't duck it; on a tie the most recent stream decides, so TTS
+  # started during a call still ducks media and notifications.
+  # pipewire-pulse maps the pulse roles (music, video, event, phone, ...)
+  # onto these.
   services.pipewire = {
     enable = true;
     wireplumber.enable = true;
@@ -77,6 +155,186 @@
     jack.enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
+
+    extraLv2Packages = [ pkgs.lsp-plugins ];
+
+    extraConfig.pipewire."90-role-ducking"."context.modules" = [
+      (roleSink {
+        name = "multimedia";
+        desc = "Multimedia";
+        roles = [
+          "Music"
+          "Movie"
+          "Game"
+          "Multimedia"
+          "Production"
+        ];
+        priority = 10;
+        lowerPriorityAction = "mix";
+        playbackProps = toVoiceDucker [
+          "FL"
+          "FR"
+        ];
+      })
+      (roleSink {
+        name = "notification";
+        desc = "Notification";
+        roles = [ "Notification" ];
+        priority = 20;
+        lowerPriorityAction = "duck";
+      })
+      (roleSink {
+        name = "assistant";
+        desc = "Assistant";
+        roles = [
+          "Assistant"
+          "Accessibility"
+        ];
+        priority = 40;
+        lowerPriorityAction = "duck";
+      })
+      (roleSink {
+        name = "communication";
+        desc = "Communication";
+        roles = [ "Communication" ];
+        priority = 40;
+        lowerPriorityAction = "mix";
+        playbackProps = toVoiceDucker [
+          "RL"
+          "RR"
+        ];
+      })
+    ];
+
+    # If the ducker fails to load (nofail), both feeds fall back to the
+    # default sink: everything still plays, just without call ducking.
+    extraConfig.pipewire."91-voice-ducker"."context.modules" = [
+      {
+        name = "libpipewire-module-filter-chain";
+        flags = [ "nofail" ];
+        args = {
+          "node.description" = "Voice Ducker";
+          "media.name" = "Voice Ducker";
+          "filter.graph" = {
+            nodes = [
+              {
+                type = "lv2";
+                name = "comp";
+                plugin = "http://lsp-plug.in/plugins/lv2/sc_compressor_stereo";
+                # External sidechain (sct = 2, the default). Threshold and
+                # ratio by LV2 symbol: al ~ -40 dB, times in ms.
+                control = {
+                  al = 1.0e-2;
+                  cr = 10.0;
+                  at = 10.0;
+                  hold = 500.0;
+                  rt = 800.0;
+                };
+              }
+              {
+                type = "builtin";
+                name = "voice_l";
+                label = "copy";
+              }
+              {
+                type = "builtin";
+                name = "voice_r";
+                label = "copy";
+              }
+              {
+                type = "builtin";
+                name = "mix_l";
+                label = "mixer";
+              }
+              {
+                type = "builtin";
+                name = "mix_r";
+                label = "mixer";
+              }
+            ];
+            links = [
+              {
+                output = "voice_l:Out";
+                input = "comp:sc_l";
+              }
+              {
+                output = "voice_r:Out";
+                input = "comp:sc_r";
+              }
+              {
+                output = "comp:out_l";
+                input = "mix_l:In 1";
+              }
+              {
+                output = "comp:out_r";
+                input = "mix_r:In 1";
+              }
+              {
+                output = "voice_l:Out";
+                input = "mix_l:In 2";
+              }
+              {
+                output = "voice_r:Out";
+                input = "mix_r:In 2";
+              }
+            ];
+            inputs = [
+              "comp:in_l"
+              "comp:in_r"
+              "voice_l:In"
+              "voice_r:In"
+            ];
+            outputs = [
+              "mix_l:Out"
+              "mix_r:Out"
+            ];
+          };
+          "capture.props" = {
+            "node.name" = voiceDucker;
+            "media.class" = "Audio/Sink";
+            "device.bus" = "bluetooth"; # hidden from GNOME, see roleSink
+            "audio.channels" = 4;
+            "audio.position" = [
+              "FL"
+              "FR"
+              "RL"
+              "RR"
+            ];
+          };
+          "playback.props" = {
+            "node.name" = "output.voice-ducker";
+            "node.passive" = true;
+            # Any role that no role sink claims, so the output goes to the
+            # default sink. Without one it would get the Multimedia default
+            # and loop back into the Multimedia sink.
+            "media.role" = "DSP";
+            "audio.channels" = 2;
+            "audio.position" = [
+              "FL"
+              "FR"
+            ];
+          };
+        };
+      }
+    ];
+    # Discord sets no media.role at all. Its voice engine (WebRTC's pulse
+    # backend) plays calls through a stream named "playStream"; its other
+    # sounds go through Chromium and stay in the Multimedia default.
+    extraConfig.pipewire-pulse."90-discord-voice-role"."stream.rules" = [
+      {
+        matches = [
+          {
+            "application.process.binary" = "~.*[Dd]iscord.*";
+            "media.name" = "playStream";
+          }
+        ];
+        actions.update-props."media.role" = "Communication";
+      }
+    ];
+    wireplumber.extraConfig."90-role-ducking"."wireplumber.settings" = {
+      "node.stream.default-media-role" = "Multimedia";
+      "linking.role-based.duck-level" = 0.3;
+    };
   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.

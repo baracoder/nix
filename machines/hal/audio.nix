@@ -228,6 +228,9 @@ in
             # Verified by bisection: capture "Audio/Sink/Internal" hangs
             # paplay indefinitely, plain "Audio/Sink" drains in 2s.
             "media.class" = "Audio/Sink";
+            # Hides it from GNOME's output list instead (see roleSink in
+            # modules/linux.nix).
+            "device.bus" = "bluetooth";
             "audio.position" = [
               "FL"
               "FR"

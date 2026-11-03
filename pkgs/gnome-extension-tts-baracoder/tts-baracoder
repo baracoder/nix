@@ -1,0 +1,26 @@
+# Read the primary selection aloud with piper.
+#
+# Started (and interrupted) by the tts@baracoder GNOME extension. The
+# voice_en / voice_de variables are prepended by package.nix and point at
+# piper .onnx models with their .onnx.json config next to them.
+
+text=$(wl-paste --primary --no-newline 2>/dev/null || true)
+if [[ -z ${text//[[:space:]]/} ]]; then
+  exit 0
+fi
+
+# "@name" -> "name", so mentions aren't read out as "at name".
+text=$(sed -E 's/\B@\b//g' <<<"$text")
+
+voice=$voice_en
+if head -n 10 <<<"$text" | langid -l en,de | grep -q "'de'"; then
+  voice=$voice_de
+fi
+
+rate=$(jq -r .audio.sample_rate "$voice.json")
+
+# The Assistant role makes WirePlumber duck notifications and media while we
+# speak (see the role-based loopback sinks in modules/linux.nix).
+piper --model "$voice" --output-raw <<<"$text" 2>/dev/null |
+  pw-play --raw --rate "$rate" --format s16 --channels 1 \
+    --media-role Assistant -

@@ -72,12 +72,10 @@
     octave
     omnisharp-roslyn
     opencode
-    (broken piper-tts "wait for https://github.com/NixOS/nixpkgs/pull/576063")
     pdfgrep
     pre-commit
     pwgen
     python3
-    python3Packages.py3langid
     renameutils
     ripgrep
     samba

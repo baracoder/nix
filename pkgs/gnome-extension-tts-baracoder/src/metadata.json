@@ -1,7 +1,7 @@
 {
   "uuid": "tts@baracoder",
   "name": "TTS",
-  "description": "Toggle the 'voluble' text-to-speech script from a status bar icon. Click to start, click again to interrupt.",
+  "description": "Read the primary selection aloud with piper from a status bar icon. Click to start, click again to interrupt.",
   "shell-version": [
     "48",
     "49",

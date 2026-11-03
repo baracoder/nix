@@ -49,11 +49,11 @@ const TtsButton = GObject.registerClass(
       let proc;
       try {
         proc = Gio.Subprocess.new(
-          ['voluble'],
+          ['@ttsCommand@'],
           Gio.SubprocessFlags.NONE
         );
       } catch (e) {
-        Main.notifyError('TTS', `Could not start voluble: ${e.message}`);
+        Main.notifyError('TTS', `Could not start TTS: ${e.message}`);
         return;
       }
 
@@ -83,7 +83,7 @@ const TtsButton = GObject.registerClass(
 
       const pid = this._proc.get_identifier();
       if (pid) {
-        console.log("got pid ${pid}");
+        console.log(`got pid ${pid}`);
         Gio.Subprocess.new(['pkill', '-P', `${pid}`], Gio.SubprocessFlags.NONE);
       } else {
         console.warn("no pid");
@@ -103,7 +103,7 @@ const TtsButton = GObject.registerClass(
       // Make sure we don't leave the script running when the extension
       // is disabled or the shell reloads.
       if (this._proc) {
-        this._proc._stop();
+        this._stop();
         this._proc = null;
       }
       super.destroy();
