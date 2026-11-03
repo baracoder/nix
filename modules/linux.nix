@@ -523,6 +523,7 @@ in
     usbutils
     virt-manager
     vlc
+    vulnix
     # winboat
     wireguard-tools
     wl-clipboard
