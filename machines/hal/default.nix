@@ -254,6 +254,7 @@ in
     ptouch-print
     nebula
     newelle
+    ionwl
     pywincontrols
     fprintd
     vial
@@ -294,6 +295,7 @@ in
     ATTRS{vendor}=="0x10de", TAG+="mutter-device-ignore"
   '';
   services.displayManager.defaultSession = lib.mkForce "gnome";
+  services.displayManager.sessionPackages = [ pkgs.ionwl ];
 
   systemd.tmpfiles.settings."10-looking-glass" = {
     "/dev/shm/looking-glass".f = {
