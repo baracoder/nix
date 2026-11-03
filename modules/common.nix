@@ -46,12 +46,12 @@
     vimAlias = true;
   };
 
-  environment.systemPackages = [
-    pkgs.my-vim
+  environment.systemPackages = with pkgs; [
+    my-vim
     # Pre-built tree-sitter parsers for neovim, so LazyVim's nvim-treesitter
     # never needs a C compiler. See pkgs/nvim-treesitter-parsers.nix.
-    pkgs.nvim-treesitter-parsers
-    (pkgs.dotnetCorePackages.combinePackages (
+    nvim-treesitter-parsers
+    (dotnetCorePackages.combinePackages (
       with pkgs.dotnetCorePackages;
       [
         sdk_10_0
