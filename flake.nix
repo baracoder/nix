@@ -3,7 +3,7 @@
   inputs.nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   # inputs.nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
   inputs.nixpkgs-patcher.url = "github:gepbird/nixpkgs-patcher";
-  inputs.aspire.url = "github:microsoft/aspire";
+  inputs.aspire.url = "github:microsoft/aspire/v13.6.4";
   inputs.aspire.inputs.nixpkgs.follows = "nixpkgs";
   inputs.llm-agents.url = "github:numtide/llm-agents.nix";
 
