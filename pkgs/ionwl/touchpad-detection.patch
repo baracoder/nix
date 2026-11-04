@@ -1,0 +1,40 @@
+diff --git a/src/handler/input/mod.rs b/src/handler/input/mod.rs
+index 9e2a7f6b..aaa5c1bf 100644
+--- a/src/handler/input/mod.rs
++++ b/src/handler/input/mod.rs
+@@ -548,6 +548,12 @@ impl IonMain {
+ 
+             // Downcast to libinput device for runtime config write-through.
+             let libinput_device = libinput_device_get(device);
++            // libinput reports touchpads as pointers, not with the touch
++            // capability (that is touchscreens); tap support identifies them.
++            let is_touchpad = has_touch
++                || libinput_device
++                    .as_ref()
++                    .is_some_and(|dev| dev.config_tap_finger_count() > 0);
+ 
+             // Initialize settings from preferences.
+             let dev_ptr = device_ptr_extract(device);
+@@ -560,11 +566,11 @@ impl IonMain {
+                 name_base: name.clone(),
+                 port_id: port_id.clone(),
+                 usb_id: device.usb_id(),
+-                is_touchpad: has_touch,
++                is_touchpad,
+                 libinput_device,
+                 ..Default::default()
+             };
+-            if has_touch {
++            if is_touchpad {
+                 dev.apply_touchpad_prefs(&self.app.preferences.touchpad);
+             } else {
+                 dev.apply_pointer_prefs(&self.app.preferences.pointer);
+@@ -584,7 +590,7 @@ impl IonMain {
+                 "Pointer device registered: {} (id={}, touchpad={})",
+                 device.name(),
+                 device.id(),
+-                has_touch
++                is_touchpad
+             );
+ 
+             self.hook_invoke(crate::python::HookEvent::PointerAddPost(id));

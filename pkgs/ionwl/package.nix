@@ -40,7 +40,12 @@ rustPlatform.buildRustPackage {
 
   # IONWL_PRIMARY_GPU picks the render GPU when smithay guesses wrong, and
   # the DMA-BUF global comes from it rather than the first GPU found.
-  patches = [ ./primary-gpu-override.patch ];
+  patches = [
+    ./primary-gpu-override.patch
+    # Touchpads were only detected via libinput's touch capability, which
+    # only touchscreens have, so they got mouse prefs instead.
+    ./touchpad-detection.patch
+  ];
 
   postPatch = ''
     ln -s ${./Cargo.lock} Cargo.lock
