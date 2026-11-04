@@ -28,6 +28,18 @@ in
   config = lib.mkIf cfg.enable {
     services.displayManager.sessionPackages = [ cfg.package ];
 
+    # ionwl only exports its environment to systemd; this target is what
+    # activates graphical-session.target, without which the desktop portal
+    # (and so GTK settings like the icon theme) refuses to start.
+    # ion_init.py starts it on startup and stops it on shutdown.
+    systemd.user.targets.ionwl-session = {
+      description = "ionwl compositor session";
+      documentation = [ "man:systemd.special(7)" ];
+      bindsTo = [ "graphical-session.target" ];
+      wants = [ "graphical-session-pre.target" ];
+      after = [ "graphical-session-pre.target" ];
+    };
+
     environment.sessionVariables = lib.mkIf (cfg.primaryGpu != null) {
       IONWL_PRIMARY_GPU = cfg.primaryGpu;
     };
