@@ -1,0 +1,1216 @@
+From c9ce652e7abe549ad7e1920f03afd0d1d7bf6689 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Wed, 4 Nov 2026 20:28:07 +0100
+Subject: [PATCH] Add: workspace switching via ext-workspace
+
+Bars and docks (waybar, Quickshell-based shells) bind
+ext_workspace_manager_v1 to list workspaces and switch between them.
+
+A desktop spans every output, so each desktop is a workspace in a
+single group that every output enters, in desktop order with its index
+as its coordinate. The active desktop is the active workspace, and a
+desktop holding an urgent window is urgent. Clients can activate,
+remove (refused, as from Python, for the last or a non-empty desktop)
+and create desktops.
+
+The state is published once per main-loop iteration as a diff against
+what each client was last sent, rather than from every site that can
+rename, reorder, switch or mark a desktop urgent, or add an output.
+---
+ doc/python_api/rst/guide/features.rst  |   4 +
+ src/handler/protocol.rs                |   2 +
+ src/handler/protocol/ext_workspace.rs  |  77 +++++
+ src/protocols/ext_workspace.rs         | 444 +++++++++++++++++++++++++
+ src/protocols/mod.rs                   |   4 +
+ src/state/desktop.rs                   |  37 +++
+ src/state/mod.rs                       |   8 +-
+ src/state/run.rs                       |   4 +
+ tests/integration/api/ext_workspace.rs | 170 ++++++++++
+ tests/integration/api/mod.rs           |   1 +
+ tests/integration/common/client.rs     | 236 +++++++++++++
+ tests/integration/common/mod.rs        |   2 +-
+ 12 files changed, 986 insertions(+), 3 deletions(-)
+ create mode 100644 src/handler/protocol/ext_workspace.rs
+ create mode 100644 src/protocols/ext_workspace.rs
+ create mode 100644 src/state/desktop.rs
+ create mode 100644 tests/integration/api/ext_workspace.rs
+
+diff --git a/doc/python_api/rst/guide/features.rst b/doc/python_api/rst/guide/features.rst
+index 34d4ff57..62aafb76 100644
+--- a/doc/python_api/rst/guide/features.rst
++++ b/doc/python_api/rst/guide/features.rst
+@@ -131,6 +131,10 @@ wlr-foreign-toplevel-management
+    reported.
+ ext-session-lock
+    Secure screen lockers (swaylock, gtklock).
++ext-workspace
++   Workspace switchers in bars and docks (waybar, Quickshell-based shells).
++   Each desktop is a workspace in one group spanning every output. Clients
++   can activate, create and remove desktops.
+ 
+ Not Yet Supported
+ -----------------
+diff --git a/src/handler/protocol.rs b/src/handler/protocol.rs
+index 7e942cd2..78178df1 100644
+--- a/src/handler/protocol.rs
++++ b/src/handler/protocol.rs
+@@ -100,6 +100,7 @@ use smithay::backend::allocator::dmabuf::Dmabuf;
+ // The Smithay protocol handler impls live in per-family submodules; this file
+ // retains only the shared `ClientState` and the `delegate_dispatch2!` wiring.
+ mod decoration;
++mod ext_workspace;
+ mod foreign_toplevel;
+ #[cfg(feature = "icon")]
+ mod icon;
+@@ -141,4 +142,5 @@ crate::delegate_output_management!(IonMain);
+ crate::delegate_gamma_control!(IonMain);
+ crate::delegate_output_power!(IonMain);
+ crate::delegate_foreign_toplevel!(IonMain);
++crate::delegate_ext_workspace!(IonMain);
+ crate::delegate_screencopy!(IonMain);
+diff --git a/src/handler/protocol/ext_workspace.rs b/src/handler/protocol/ext_workspace.rs
+new file mode 100644
+index 00000000..d51315e4
+--- /dev/null
++++ b/src/handler/protocol/ext_workspace.rs
+@@ -0,0 +1,77 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! ext-workspace handler: publishes the desktops and applies client requests.
++
++use std::collections::HashSet;
++
++use tracing::debug;
++
++use super::IonMain;
++use crate::protocols::{
++    ExtWorkspaceHandler, ExtWorkspaceManagerState, WorkspaceInfo, WorkspaceRequest,
++};
++use crate::tiling::DesktopId;
++
++impl ExtWorkspaceHandler for IonMain {
++    fn ext_workspace_state(&mut self) -> &mut ExtWorkspaceManagerState {
++        &mut self.wm.protocol_managers.ext_workspace_state
++    }
++
++    fn ext_workspace_commit(&mut self, requests: Vec<WorkspaceRequest>) {
++        for request in requests {
++            debug!("ext-workspace: {request:?}");
++            match request {
++                WorkspaceRequest::Activate(id) => self.desktop_activate(DesktopId::from_u64(id)),
++                WorkspaceRequest::Remove(id) => {
++                    self.desktop_remove_checked(DesktopId::from_u64(id));
++                }
++                WorkspaceRequest::Create(name) => self.desktop_create(&name),
++            }
++        }
++    }
++}
++
++impl IonMain {
++    /// Publish the desktops and outputs to ext-workspace clients.
++    ///
++    /// Runs once per main-loop iteration rather than from the mutation sites:
++    /// a desktop's name, its order, which is active, its windows' urgency and
++    /// the outputs all move from many places, and the whole state is a few
++    /// desktops. The publish is a diff, so an iteration that changed none of
++    /// it sends nothing.
++    pub(crate) fn ext_workspace_refresh(&mut self) {
++        let (workspaces, outputs) = {
++            let scene = self.wm.scene.read();
++            let layout = &scene.layout;
++            let urgent: HashSet<usize> = layout
++                .windows
++                .iter()
++                .filter(|(_, window)| window.urgent)
++                .filter_map(|(window_id, _)| layout.desktop_find_by_window(window_id))
++                .collect();
++            let active = layout.desktop_active();
++            let workspaces = layout
++                .desktops
++                .iter()
++                .enumerate()
++                .map(|(index, desktop)| WorkspaceInfo {
++                    id: desktop.id.as_u64(),
++                    name: desktop.name.clone(),
++                    active: index == active,
++                    urgent: urgent.contains(&index),
++                })
++                .collect();
++            let mut outputs: Vec<_> = scene.outputs.iter().collect();
++            outputs.sort_by_key(|(output_id, _)| **output_id);
++            let outputs = outputs
++                .into_iter()
++                .map(|(_, co)| co.output.clone())
++                .collect();
++            (workspaces, outputs)
++        };
++        self.wm
++            .protocol_managers
++            .ext_workspace_state
++            .refresh::<Self>(workspaces, outputs);
++    }
++}
+diff --git a/src/protocols/ext_workspace.rs b/src/protocols/ext_workspace.rs
+new file mode 100644
+index 00000000..95ad2316
+--- /dev/null
++++ b/src/protocols/ext_workspace.rs
+@@ -0,0 +1,444 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! ext-workspace-v1 protocol implementation.
++//!
++//! Lets bars and docks list workspaces and switch between them.
++//!
++//! ## Model
++//!
++//! A desktop spans every output, so ionwl advertises a single workspace
++//! group that every output enters, and one workspace per desktop in it, in
++//! desktop order. The active desktop is the one `active` workspace. Each
++//! workspace reports its index in the desktop list as its coordinates, and
++//! no `id`: desktop ids restart with the compositor, which the protocol
++//! reserves `id` against.
++//!
++//! Clients can activate a workspace, remove one (refused, as from Python, for
++//! the last desktop or one holding windows) and create one in the group.
++//! Deactivating has no meaning with exactly one desktop active, and there is
++//! one group to assign to, so neither capability is advertised.
++//!
++//! ## Updates
++//!
++//! The compositor publishes the full desktop and output lists through
++//! [`ExtWorkspaceManagerState::refresh`], which diffs them against what each
++//! bound manager was last sent and sends only the changes, closed by `done`.
++
++use smithay::{
++    output::Output,
++    reexports::{
++        wayland_protocols::ext::workspace::v1::server::{
++            ext_workspace_group_handle_v1::{self, ExtWorkspaceGroupHandleV1, GroupCapabilities},
++            ext_workspace_handle_v1::{self, ExtWorkspaceHandleV1, WorkspaceCapabilities},
++            ext_workspace_manager_v1::{self, ExtWorkspaceManagerV1},
++        },
++        wayland_server::{
++            Client, DataInit, Dispatch, DisplayHandle, GlobalDispatch, New, Resource,
++            backend::ClientId, protocol::wl_output::WlOutput,
++        },
++    },
++};
++use tracing::warn;
++
++const VERSION: u32 = 1;
++
++/// One desktop as clients see it.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct WorkspaceInfo {
++    /// The desktop's id, which names it in [`WorkspaceRequest`]s.
++    pub id: u64,
++    pub name: String,
++    pub active: bool,
++    /// A window on the desktop wants attention.
++    pub urgent: bool,
++}
++
++impl WorkspaceInfo {
++    fn state(&self) -> ext_workspace_handle_v1::State {
++        let mut state = ext_workspace_handle_v1::State::empty();
++        if self.active {
++            state |= ext_workspace_handle_v1::State::Active;
++        }
++        if self.urgent {
++            state |= ext_workspace_handle_v1::State::Urgent;
++        }
++        state
++    }
++}
++
++/// A request a client made, applied on its `commit`.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum WorkspaceRequest {
++    /// Switch to the desktop with this id.
++    Activate(u64),
++    /// Remove the desktop with this id.
++    Remove(u64),
++    /// Create a desktop with this name.
++    Create(String),
++}
++
++/// Handler trait for ext-workspace.
++pub trait ExtWorkspaceHandler {
++    fn ext_workspace_state(&mut self) -> &mut ExtWorkspaceManagerState;
++
++    /// Apply the requests a client committed, in the order it made them.
++    fn ext_workspace_commit(&mut self, requests: Vec<WorkspaceRequest>);
++}
++
++/// Dispatch data of a workspace group: the manager it was sent through.
++pub struct WorkspaceGroupData {
++    manager: ExtWorkspaceManagerV1,
++}
++
++/// Dispatch data of a workspace: its desktop and the manager it was sent
++/// through.
++pub struct WorkspaceData {
++    id: u64,
++    manager: ExtWorkspaceManagerV1,
++}
++
++/// What one bound manager has been sent.
++struct Instance {
++    manager: ExtWorkspaceManagerV1,
++    group: ExtWorkspaceGroupHandleV1,
++    /// Each workspace sent, with the info and index it was last sent.
++    workspaces: Vec<(ExtWorkspaceHandleV1, WorkspaceInfo, usize)>,
++    /// The outputs the group was sent `output_enter` for.
++    outputs: Vec<WlOutput>,
++    /// Requests made since the last `commit`.
++    pending: Vec<WorkspaceRequest>,
++}
++
++/// State for the ext-workspace protocol.
++pub struct ExtWorkspaceManagerState {
++    display: DisplayHandle,
++    instances: Vec<Instance>,
++    /// The desktops last published, in order.
++    workspaces: Vec<WorkspaceInfo>,
++    /// The outputs last published.
++    outputs: Vec<Output>,
++}
++
++impl ExtWorkspaceManagerState {
++    /// Create the state and register the global.
++    pub(crate) fn new<D>(display: &DisplayHandle) -> Self
++    where
++        D: GlobalDispatch<ExtWorkspaceManagerV1, ()>
++            + Dispatch<ExtWorkspaceManagerV1, ()>
++            + 'static,
++    {
++        display.create_global::<D, ExtWorkspaceManagerV1, _>(VERSION, ());
++        Self {
++            display: display.clone(),
++            instances: Vec::new(),
++            workspaces: Vec::new(),
++            outputs: Vec::new(),
++        }
++    }
++
++    /// Publish the desktops, in order, and the outputs their group spans,
++    /// sending each bound manager what changed.
++    ///
++    /// Re-checked on every call even when both lists are unchanged: a client
++    /// that binds an output after the manager gets its `output_enter` here.
++    pub(crate) fn refresh<D>(&mut self, workspaces: Vec<WorkspaceInfo>, outputs: Vec<Output>)
++    where
++        D: Dispatch<ExtWorkspaceHandleV1, WorkspaceData> + 'static,
++    {
++        self.workspaces = workspaces;
++        self.outputs = outputs;
++        for instance in &mut self.instances {
++            instance.sync::<D>(&self.display, &self.workspaces, &self.outputs);
++        }
++    }
++
++    fn instance_mut(&mut self, manager: &ExtWorkspaceManagerV1) -> Option<&mut Instance> {
++        self.instances.iter_mut().find(|i| i.manager == *manager)
++    }
++
++    /// Queue `request` for the commit of `manager`'s client.
++    fn request_queue(&mut self, manager: &ExtWorkspaceManagerV1, request: WorkspaceRequest) {
++        if let Some(instance) = self.instance_mut(manager) {
++            instance.pending.push(request);
++        }
++    }
++}
++
++impl Instance {
++    /// Send what changed since the last sync, then `done` if anything did.
++    fn sync<D>(&mut self, display: &DisplayHandle, workspaces: &[WorkspaceInfo], outputs: &[Output])
++    where
++        D: Dispatch<ExtWorkspaceHandleV1, WorkspaceData> + 'static,
++    {
++        let Some(client) = self.manager.client() else {
++            return;
++        };
++        let mut changed = false;
++
++        // Outputs: the client's own `wl_output`s for every published output.
++        let current: Vec<WlOutput> = outputs
++            .iter()
++            .flat_map(|output| output.client_outputs(&client))
++            .collect();
++        self.outputs.retain(|wl_output| {
++            if current.contains(wl_output) {
++                return true;
++            }
++            if wl_output.is_alive() {
++                self.group.output_leave(wl_output);
++            }
++            changed = true;
++            false
++        });
++        for wl_output in current {
++            if !self.outputs.contains(&wl_output) {
++                self.group.output_enter(&wl_output);
++                self.outputs.push(wl_output);
++                changed = true;
++            }
++        }
++
++        // Removed workspaces leave the group before they go.
++        self.workspaces.retain(|(handle, info, _)| {
++            if workspaces.iter().any(|w| w.id == info.id) {
++                return true;
++            }
++            self.group.workspace_leave(handle);
++            handle.removed();
++            changed = true;
++            false
++        });
++
++        for (index, info) in workspaces.iter().enumerate() {
++            if let Some((handle, sent, sent_index)) = self
++                .workspaces
++                .iter_mut()
++                .find(|(_, sent, _)| sent.id == info.id)
++            {
++                if sent.name != info.name {
++                    handle.name(info.name.clone());
++                    changed = true;
++                }
++                if sent.state() != info.state() {
++                    handle.state(info.state());
++                    changed = true;
++                }
++                if *sent_index != index {
++                    handle.coordinates(coordinates(index));
++                    *sent_index = index;
++                    changed = true;
++                }
++                *sent = info.clone();
++                continue;
++            }
++            let data = WorkspaceData {
++                id: info.id,
++                manager: self.manager.clone(),
++            };
++            let handle = match client.create_resource::<ExtWorkspaceHandleV1, _, D>(
++                display,
++                self.manager.version(),
++                data,
++            ) {
++                Ok(handle) => handle,
++                Err(err) => {
++                    warn!("ext-workspace: creating a workspace handle failed: {err}");
++                    continue;
++                }
++            };
++            self.manager.workspace(&handle);
++            handle.name(info.name.clone());
++            handle.coordinates(coordinates(index));
++            handle.state(info.state());
++            handle.capabilities(WorkspaceCapabilities::Activate | WorkspaceCapabilities::Remove);
++            self.group.workspace_enter(&handle);
++            self.workspaces.push((handle, info.clone(), index));
++            changed = true;
++        }
++
++        if changed {
++            self.manager.done();
++        }
++    }
++}
++
++/// The protocol's coordinates array for a workspace at `index`: one
++/// dimension, native-endian `u32`.
++fn coordinates(index: usize) -> Vec<u8> {
++    u32::try_from(index)
++        .unwrap_or(u32::MAX)
++        .to_ne_bytes()
++        .to_vec()
++}
++
++impl<D> GlobalDispatch<ExtWorkspaceManagerV1, (), D> for ExtWorkspaceManagerState
++where
++    D: GlobalDispatch<ExtWorkspaceManagerV1, ()>
++        + Dispatch<ExtWorkspaceManagerV1, ()>
++        + Dispatch<ExtWorkspaceGroupHandleV1, WorkspaceGroupData>
++        + Dispatch<ExtWorkspaceHandleV1, WorkspaceData>
++        + ExtWorkspaceHandler
++        + 'static,
++{
++    fn bind(
++        state: &mut D,
++        handle: &DisplayHandle,
++        client: &Client,
++        resource: New<ExtWorkspaceManagerV1>,
++        _global_data: &(),
++        data_init: &mut DataInit<'_, D>,
++    ) {
++        let manager = data_init.init(resource, ());
++        let group = match client.create_resource::<ExtWorkspaceGroupHandleV1, _, D>(
++            handle,
++            manager.version(),
++            WorkspaceGroupData {
++                manager: manager.clone(),
++            },
++        ) {
++            Ok(group) => group,
++            Err(err) => {
++                warn!("ext-workspace: creating the workspace group failed: {err}");
++                return;
++            }
++        };
++        manager.workspace_group(&group);
++        group.capabilities(GroupCapabilities::CreateWorkspace);
++
++        let mut instance = Instance {
++            manager,
++            group,
++            workspaces: Vec::new(),
++            outputs: Vec::new(),
++            pending: Vec::new(),
++        };
++        let ws_state = state.ext_workspace_state();
++        instance.sync::<D>(handle, &ws_state.workspaces, &ws_state.outputs);
++        // The group was announced whether or not there was anything in it.
++        if instance.workspaces.is_empty() && instance.outputs.is_empty() {
++            instance.manager.done();
++        }
++        ws_state.instances.push(instance);
++    }
++}
++
++impl<D> Dispatch<ExtWorkspaceManagerV1, (), D> for ExtWorkspaceManagerState
++where
++    D: Dispatch<ExtWorkspaceManagerV1, ()> + ExtWorkspaceHandler,
++{
++    fn request(
++        state: &mut D,
++        _client: &Client,
++        resource: &ExtWorkspaceManagerV1,
++        request: <ExtWorkspaceManagerV1 as Resource>::Request,
++        _data: &(),
++        _dhandle: &DisplayHandle,
++        _data_init: &mut DataInit<'_, D>,
++    ) {
++        match request {
++            ext_workspace_manager_v1::Request::Commit => {
++                let requests = state
++                    .ext_workspace_state()
++                    .instance_mut(resource)
++                    .map(|instance| std::mem::take(&mut instance.pending))
++                    .unwrap_or_default();
++                if !requests.is_empty() {
++                    state.ext_workspace_commit(requests);
++                }
++            }
++            ext_workspace_manager_v1::Request::Stop => {
++                // The handles already sent stay with the client, which
++                // destroys them; nothing more is sent to them.
++                state
++                    .ext_workspace_state()
++                    .instances
++                    .retain(|i| i.manager != *resource);
++                resource.finished();
++            }
++            _ => unreachable!("unhandled ext_workspace_manager_v1 request"),
++        }
++    }
++
++    fn destroyed(state: &mut D, _client: ClientId, resource: &ExtWorkspaceManagerV1, _data: &()) {
++        state
++            .ext_workspace_state()
++            .instances
++            .retain(|i| i.manager != *resource);
++    }
++}
++
++impl<D> Dispatch<ExtWorkspaceGroupHandleV1, WorkspaceGroupData, D> for ExtWorkspaceManagerState
++where
++    D: Dispatch<ExtWorkspaceGroupHandleV1, WorkspaceGroupData> + ExtWorkspaceHandler,
++{
++    fn request(
++        state: &mut D,
++        _client: &Client,
++        _resource: &ExtWorkspaceGroupHandleV1,
++        request: <ExtWorkspaceGroupHandleV1 as Resource>::Request,
++        data: &WorkspaceGroupData,
++        _dhandle: &DisplayHandle,
++        _data_init: &mut DataInit<'_, D>,
++    ) {
++        match request {
++            ext_workspace_group_handle_v1::Request::CreateWorkspace { workspace } => {
++                state
++                    .ext_workspace_state()
++                    .request_queue(&data.manager, WorkspaceRequest::Create(workspace));
++            }
++            // The group is never removed while its manager is bound, so
++            // there is nothing to stop sending to it.
++            ext_workspace_group_handle_v1::Request::Destroy => {}
++            _ => unreachable!("unhandled ext_workspace_group_handle_v1 request"),
++        }
++    }
++}
++
++impl<D> Dispatch<ExtWorkspaceHandleV1, WorkspaceData, D> for ExtWorkspaceManagerState
++where
++    D: Dispatch<ExtWorkspaceHandleV1, WorkspaceData> + ExtWorkspaceHandler,
++{
++    fn request(
++        state: &mut D,
++        _client: &Client,
++        _resource: &ExtWorkspaceHandleV1,
++        request: <ExtWorkspaceHandleV1 as Resource>::Request,
++        data: &WorkspaceData,
++        _dhandle: &DisplayHandle,
++        _data_init: &mut DataInit<'_, D>,
++    ) {
++        let request = match request {
++            ext_workspace_handle_v1::Request::Activate => WorkspaceRequest::Activate(data.id),
++            ext_workspace_handle_v1::Request::Remove => WorkspaceRequest::Remove(data.id),
++            // Not advertised (see the module doc), so ignored as the protocol
++            // allows. A destroyed handle is only ever sent to again when its
++            // workspace goes, and sends to a dead resource are dropped.
++            ext_workspace_handle_v1::Request::Deactivate
++            | ext_workspace_handle_v1::Request::Assign { .. }
++            | ext_workspace_handle_v1::Request::Destroy => return,
++            _ => unreachable!("unhandled ext_workspace_handle_v1 request"),
++        };
++        state
++            .ext_workspace_state()
++            .request_queue(&data.manager, request);
++    }
++}
++
++/// Delegate macro for ext-workspace.
++#[macro_export]
++macro_rules! delegate_ext_workspace {
++    ($ty:ty) => {
++        smithay::reexports::wayland_server::delegate_global_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::ext::workspace::v1::server::ext_workspace_manager_v1::ExtWorkspaceManagerV1: ()
++        ] => $crate::protocols::ext_workspace::ExtWorkspaceManagerState);
++        smithay::reexports::wayland_server::delegate_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::ext::workspace::v1::server::ext_workspace_manager_v1::ExtWorkspaceManagerV1: ()
++        ] => $crate::protocols::ext_workspace::ExtWorkspaceManagerState);
++        smithay::reexports::wayland_server::delegate_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::ext::workspace::v1::server::ext_workspace_group_handle_v1::ExtWorkspaceGroupHandleV1: $crate::protocols::ext_workspace::WorkspaceGroupData
++        ] => $crate::protocols::ext_workspace::ExtWorkspaceManagerState);
++        smithay::reexports::wayland_server::delegate_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::ext::workspace::v1::server::ext_workspace_handle_v1::ExtWorkspaceHandleV1: $crate::protocols::ext_workspace::WorkspaceData
++        ] => $crate::protocols::ext_workspace::ExtWorkspaceManagerState);
++    };
++}
+diff --git a/src/protocols/mod.rs b/src/protocols/mod.rs
+index 5c6214ce..158ba63a 100644
+--- a/src/protocols/mod.rs
++++ b/src/protocols/mod.rs
+@@ -2,6 +2,7 @@
+ 
+ //! Wayland protocol implementations.
+ 
++pub mod ext_workspace;
+ pub mod foreign_toplevel;
+ pub mod gamma_control;
+ pub mod output_management;
+@@ -9,6 +10,9 @@ pub mod output_power;
+ pub mod screencopy;
+ pub mod virtual_keyboard;
+ 
++pub use ext_workspace::{
++    ExtWorkspaceHandler, ExtWorkspaceManagerState, WorkspaceInfo, WorkspaceRequest,
++};
+ pub use foreign_toplevel::{
+     ForeignToplevelHandler, ForeignToplevelManagerState, PendingForeignToplevelMetadata,
+ };
+diff --git a/src/state/desktop.rs b/src/state/desktop.rs
+new file mode 100644
+index 00000000..b016f7e3
+--- /dev/null
++++ b/src/state/desktop.rs
+@@ -0,0 +1,37 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! Desktop operations for handler code, each followed by `operator_post`.
++
++use tracing::debug;
++
++use crate::state::IonMain;
++use crate::tiling::DesktopId;
++
++impl IonMain {
++    /// Switch to the desktop `desktop_id`, if it still exists.
++    pub(crate) fn desktop_activate(&mut self, desktop_id: DesktopId) {
++        self.wm_op(|wm, app, registry| {
++            let index = wm.scene.read().layout.desktop_by_id(desktop_id);
++            if let Some(index) = index {
++                wm.desktop_switch_to(app, registry, index);
++            }
++        });
++    }
++
++    /// Create a desktop named `name` (made unique, numbered when empty).
++    pub(crate) fn desktop_create(&mut self, name: &str) {
++        self.wm_op(|wm, app, registry| {
++            wm.desktop_new(app, registry, name);
++        });
++    }
++
++    /// Remove the desktop `desktop_id`, unless the layout refuses: the last
++    /// desktop and one holding windows stay.
++    pub(crate) fn desktop_remove_checked(&mut self, desktop_id: DesktopId) {
++        self.wm_op(|wm, app, registry| {
++            if let Err(refused) = wm.desktop_remove(app, registry, desktop_id) {
++                debug!("Desktop {desktop_id:?} not removed: {refused:?}");
++            }
++        });
++    }
++}
+diff --git a/src/state/mod.rs b/src/state/mod.rs
+index c1c5931a..32fdb0ce 100644
+--- a/src/state/mod.rs
++++ b/src/state/mod.rs
+@@ -7,6 +7,7 @@ mod client_popup;
+ mod config;
+ mod cursor;
+ mod deferred;
++mod desktop;
+ mod devices;
+ mod dnd;
+ mod focus;
+@@ -159,8 +160,8 @@ use crate::cursor::CursorManager;
+ use crate::fixed::PointFromFixed;
+ use crate::input::KeymapRegistry;
+ use crate::protocols::{
+-    ForeignToplevelManagerState, GammaControlManagerState, OutputManagementState, OutputPowerState,
+-    Screencopy, ScreencopyManagerState,
++    ExtWorkspaceManagerState, ForeignToplevelManagerState, GammaControlManagerState,
++    OutputManagementState, OutputPowerState, Screencopy, ScreencopyManagerState,
+ };
+ use crate::render::FontManager;
+ use crate::tiling::{FocusState, FrameId, LayoutManager, OutputId, ResizeEdge, WindowId};
+@@ -1212,6 +1213,8 @@ pub(crate) struct ProtocolManagers {
+     /// user goes idle. Fed the same activity and inhibit state as ionwl's own
+     /// idle timer (see `state::idle`), with each client's own timeouts.
+     pub(crate) idle_notifier_state: IdleNotifierState<IonMain>,
++    /// `ext-workspace` state for bars and docks listing the desktops.
++    pub(crate) ext_workspace_state: ExtWorkspaceManagerState,
+ }
+ 
+ impl WaylandGlobals {
+@@ -1272,6 +1275,7 @@ impl ProtocolManagers {
+                 |_| true,
+             ),
+             idle_notifier_state: IdleNotifierState::new(display_handle, evlh.clone()),
++            ext_workspace_state: ExtWorkspaceManagerState::new::<IonMain>(display_handle),
+         }
+     }
+ }
+diff --git a/src/state/run.rs b/src/state/run.rs
+index f3b84a4e..dd32c9aa 100644
+--- a/src/state/run.rs
++++ b/src/state/run.rs
+@@ -880,6 +880,10 @@ impl IonMain {
+             self.foreign_toplevel_verify();
+         }
+ 
++        // Desktops and outputs change from too many places to trigger from
++        // each; this diff is the one place ext-workspace clients hear of them.
++        self.ext_workspace_refresh();
++
+         // Answer clients now rather than leave replies to the pre-sleep flush
+         // above, which the next iteration reaches only past its render pass.
+         self.clients_flush();
+diff --git a/tests/integration/api/ext_workspace.rs b/tests/integration/api/ext_workspace.rs
+new file mode 100644
+index 00000000..a79cfcba
+--- /dev/null
++++ b/tests/integration/api/ext_workspace.rs
+@@ -0,0 +1,170 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! ext-workspace tests: the desktops as a bar's workspace switcher sees them,
++//! and the requests it makes.
++
++use crate::common::{ClientId, Fixture, WorkspaceEntry};
++
++use super::helpers::{desktop_active_name, desktop_add, desktop_focus};
++
++/// One output, the default desktop plus `names` after it, and a client bound
++/// to ext-workspace that has seen them.
++fn workspace_fixture(names: &[&str]) -> (Fixture, ClientId) {
++    let mut fixture = Fixture::new();
++    fixture.output_add_default();
++    for name in names {
++        desktop_add(&mut fixture, name);
++    }
++    let client_id = fixture.add_client();
++    fixture.double_roundtrip(client_id);
++    (fixture, client_id)
++}
++
++/// The workspaces the client last saw `done` for, after a roundtrip.
++fn workspaces(fixture: &mut Fixture, client_id: ClientId) -> Vec<WorkspaceEntry> {
++    fixture.double_roundtrip(client_id);
++    fixture.client(client_id).ext_workspaces()
++}
++
++/// The names of `workspaces` in order, and the one active.
++fn names_active(workspaces: &[WorkspaceEntry]) -> (Vec<&str>, Vec<&str>) {
++    (
++        workspaces.iter().map(|w| w.name.as_str()).collect(),
++        workspaces
++            .iter()
++            .filter(|w| w.active)
++            .map(|w| w.name.as_str())
++            .collect(),
++    )
++}
++
++/// Every desktop is a workspace in the one group, in desktop order with its
++/// index as its coordinate, and the active desktop is the one active.
++#[test]
++fn desktops_listed_in_one_group() {
++    let (mut fixture, client_id) = workspace_fixture(&["b", "c"]);
++    let first = desktop_active_name(&mut fixture);
++    let listed = workspaces(&mut fixture, client_id);
++
++    let (names, active) = names_active(&listed);
++    assert_eq!(names, [first.as_str(), "b", "c"]);
++    assert_eq!(active, [first.as_str()]);
++    assert!(listed.iter().all(|w| w.in_group), "{listed:?}");
++    assert_eq!(
++        listed.iter().map(|w| w.coordinate).collect::<Vec<_>>(),
++        [Some(0), Some(1), Some(2)],
++    );
++    assert_eq!(
++        fixture
++            .client(client_id)
++            .ext_workspace_group_outputs()
++            .len(),
++        1
++    );
++}
++
++/// The group spans every output, as each desktop does.
++#[test]
++fn group_enters_every_output() {
++    let (mut fixture, client_id) = workspace_fixture(&[]);
++    fixture.output_add_default_right();
++    fixture.double_roundtrip(client_id);
++    fixture.double_roundtrip(client_id);
++    assert_eq!(
++        fixture
++            .client(client_id)
++            .ext_workspace_group_outputs()
++            .len(),
++        2
++    );
++}
++
++/// Switching desktops moves the active state, in one `done`.
++#[test]
++fn switch_moves_active() {
++    let (mut fixture, client_id) = workspace_fixture(&["b"]);
++    let done_before = fixture.client(client_id).ext_workspace_done_count();
++    desktop_focus(&mut fixture, 1);
++    let listed = workspaces(&mut fixture, client_id);
++
++    assert_eq!(names_active(&listed).1, ["b"]);
++    assert_eq!(
++        fixture.client(client_id).ext_workspace_done_count(),
++        done_before + 1,
++    );
++}
++
++/// With nothing changed, nothing is sent.
++#[test]
++fn unchanged_sends_nothing() {
++    let (mut fixture, client_id) = workspace_fixture(&["b"]);
++    let done_before = fixture.client(client_id).ext_workspace_done_count();
++    fixture.double_roundtrip(client_id);
++    assert_eq!(
++        fixture.client(client_id).ext_workspace_done_count(),
++        done_before,
++    );
++}
++
++/// Activating a workspace switches to its desktop.
++#[test]
++fn activate_switches_desktop() {
++    let (mut fixture, client_id) = workspace_fixture(&["b"]);
++    fixture.client(client_id).ext_workspace_activate("b");
++    let listed = workspaces(&mut fixture, client_id);
++
++    assert_eq!(desktop_active_name(&mut fixture), "b");
++    assert_eq!(names_active(&listed).1, ["b"]);
++}
++
++/// Creating a workspace in the group adds a desktop after the others.
++#[test]
++fn create_adds_desktop() {
++    let (mut fixture, client_id) = workspace_fixture(&[]);
++    fixture.client(client_id).ext_workspace_create("new");
++    let listed = workspaces(&mut fixture, client_id);
++
++    assert_eq!(names_active(&listed).0.last(), Some(&"new"));
++}
++
++/// Removing an empty, inactive workspace removes its desktop, and the client
++/// sees it leave the group before it goes.
++#[test]
++fn remove_drops_desktop() {
++    let (mut fixture, client_id) = workspace_fixture(&["b", "c"]);
++    fixture.client(client_id).ext_workspace_remove("b");
++    let listed = workspaces(&mut fixture, client_id);
++
++    let first = desktop_active_name(&mut fixture);
++    assert_eq!(names_active(&listed).0, [first.as_str(), "c"]);
++    assert_eq!(listed[1].coordinate, Some(1), "the coordinates close up");
++}
++
++/// The last desktop cannot be removed, as from Python.
++#[test]
++fn remove_last_refused() {
++    let (mut fixture, client_id) = workspace_fixture(&[]);
++    let first = desktop_active_name(&mut fixture);
++    fixture.client(client_id).ext_workspace_remove(&first);
++    let listed = workspaces(&mut fixture, client_id);
++
++    assert_eq!(names_active(&listed).0, [first.as_str()]);
++}
++
++/// A desktop holding an urgent window is reported urgent.
++#[test]
++fn urgent_window_marks_its_desktop() {
++    let (mut fixture, client_id) = workspace_fixture(&["b"]);
++    let window_client = fixture.add_client();
++    fixture.spawn_window(window_client);
++    fixture.deferred_process();
++    let window_id = super::helpers::first_window(&mut fixture);
++    desktop_focus(&mut fixture, 1);
++    fixture.ionwl().window_urgent_set(window_id, true);
++    let listed = workspaces(&mut fixture, client_id);
++
++    assert_eq!(
++        listed.iter().map(|w| w.urgent).collect::<Vec<_>>(),
++        [true, false],
++    );
++}
+diff --git a/tests/integration/api/mod.rs b/tests/integration/api/mod.rs
+index 68cc1ae8..9f654de5 100644
+--- a/tests/integration/api/mod.rs
++++ b/tests/integration/api/mod.rs
+@@ -11,6 +11,7 @@ mod decor;
+ mod dnd;
+ mod dnd_hover;
+ mod edge_cases;
++mod ext_workspace;
+ mod floating_move;
+ mod focus;
+ mod geometry_constraints;
+diff --git a/tests/integration/common/client.rs b/tests/integration/common/client.rs
+index 771571a4..2abefc83 100644
+--- a/tests/integration/common/client.rs
++++ b/tests/integration/common/client.rs
+@@ -111,6 +111,15 @@ use wayland_client::{
+ };
+ 
+ use smithay::reexports::wayland_protocols::ext::session_lock::v1::client::ext_session_lock_manager_v1::ExtSessionLockManagerV1;
++use smithay::reexports::wayland_protocols::ext::workspace::v1::client::ext_workspace_group_handle_v1::{
++    self, ExtWorkspaceGroupHandleV1,
++};
++use smithay::reexports::wayland_protocols::ext::workspace::v1::client::ext_workspace_handle_v1::{
++    self, ExtWorkspaceHandleV1,
++};
++use smithay::reexports::wayland_protocols::ext::workspace::v1::client::ext_workspace_manager_v1::{
++    self, ExtWorkspaceManagerV1,
++};
+ use smithay::reexports::wayland_protocols::ext::session_lock::v1::client::ext_session_lock_surface_v1::{
+     self, ExtSessionLockSurfaceV1,
+ };
+@@ -165,6 +174,41 @@ pub struct Client {
+     state: ClientState,
+ }
+ 
++/// One workspace the compositor advertises over ext-workspace, as a bar's
++/// workspace switcher would show it.
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
++pub struct WorkspaceEntry {
++    pub name: String,
++    /// The first coordinate, the workspace's position in the list.
++    pub coordinate: Option<u32>,
++    pub active: bool,
++    pub urgent: bool,
++    /// Whether the group has sent `workspace_enter` for it.
++    pub in_group: bool,
++}
++
++/// What a client bound to ext-workspace has been told, as of the last `done`.
++#[derive(Default)]
++struct ExtWorkspaceView {
++    manager: Option<ExtWorkspaceManagerV1>,
++    groups: Vec<ExtWorkspaceGroupHandleV1>,
++    /// The outputs the groups have entered and not left.
++    group_outputs: Vec<WlOutput>,
++    /// The workspaces, as of the events received so far.
++    pending: Vec<(ExtWorkspaceHandleV1, WorkspaceEntry)>,
++    /// `pending` as of the last `done`.
++    done: Vec<(ExtWorkspaceHandleV1, WorkspaceEntry)>,
++    done_count: usize,
++}
++
++impl ExtWorkspaceView {
++    fn in_group_set(&mut self, workspace: &ExtWorkspaceHandleV1, in_group: bool) {
++        if let Some((_, entry)) = self.pending.iter_mut().find(|(h, _)| h == workspace) {
++            entry.in_group = in_group;
++        }
++    }
++}
++
+ /// One toplevel handle the compositor advertises, as a taskbar would show it.
+ struct ForeignToplevelEntry {
+     handle: ZwlrForeignToplevelHandleV1,
+@@ -281,6 +325,8 @@ struct ClientState {
+     /// A handle is added on `toplevel` and removed on `closed`, so this is what
+     /// a taskbar would be showing.
+     foreign_toplevels: Vec<ForeignToplevelEntry>,
++    /// The ext-workspace manager and what it reported.
++    ext_workspace: ExtWorkspaceView,
+     windows: Vec<TestWindow>,
+     popups: Vec<TestPopup>,
+     layer_surfaces: Vec<TestLayerSurface>,
+@@ -668,6 +714,7 @@ impl Client {
+             layer_shell: None,
+             foreign_toplevel: None,
+             foreign_toplevels: Vec::new(),
++            ext_workspace: ExtWorkspaceView::default(),
+             single_pixel_buffer: None,
+             viewporter: None,
+             presentation: None,
+@@ -994,6 +1041,89 @@ impl Client {
+         std::mem::take(&mut self.state.touch_events)
+     }
+ 
++    /// The workspaces ext-workspace reported as of its last `done`, in the
++    /// order they were announced.
++    pub fn ext_workspaces(&self) -> Vec<WorkspaceEntry> {
++        self.state
++            .ext_workspace
++            .done
++            .iter()
++            .map(|(_, entry)| entry.clone())
++            .collect()
++    }
++
++    /// How many `done` events ext-workspace has sent.
++    pub fn ext_workspace_done_count(&self) -> usize {
++        self.state.ext_workspace.done_count
++    }
++
++    /// The names of the outputs the workspace group has entered, sorted.
++    pub fn ext_workspace_group_outputs(&self) -> Vec<String> {
++        let mut names: Vec<String> = self
++            .state
++            .ext_workspace
++            .group_outputs
++            .iter()
++            .map(|output| {
++                self.state
++                    .output_names
++                    .iter()
++                    .find(|(bound, _)| bound == output)
++                    .map_or_else(|| "<unnamed>".to_string(), |(_, name)| name.clone())
++            })
++            .collect();
++        names.sort();
++        names
++    }
++
++    /// The handle of the workspace reported as `name`.
++    fn ext_workspace_handle(&self, name: &str) -> ExtWorkspaceHandleV1 {
++        self.state
++            .ext_workspace
++            .done
++            .iter()
++            .find(|(_, entry)| entry.name == name)
++            .map_or_else(
++                || panic!("no workspace named {name:?}"),
++                |(handle, _)| handle.clone(),
++            )
++    }
++
++    /// Ask to activate the workspace `name`, and commit.
++    pub fn ext_workspace_activate(&self, name: &str) {
++        self.ext_workspace_handle(name).activate();
++        self.ext_workspace_commit();
++    }
++
++    /// Ask to remove the workspace `name`, and commit.
++    pub fn ext_workspace_remove(&self, name: &str) {
++        self.ext_workspace_handle(name).remove();
++        self.ext_workspace_commit();
++    }
++
++    /// Ask the first group for a workspace named `name`, and commit.
++    pub fn ext_workspace_create(&self, name: &str) {
++        let group = self
++            .state
++            .ext_workspace
++            .groups
++            .first()
++            .expect("a workspace group was announced")
++            .clone();
++        group.create_workspace(name.to_string());
++        self.ext_workspace_commit();
++    }
++
++    fn ext_workspace_commit(&self) {
++        self.state
++            .ext_workspace
++            .manager
++            .as_ref()
++            .expect("the ext-workspace manager is bound")
++            .commit();
++        self.state.conn.flush().expect("Failed to flush");
++    }
++
+     /// Titles of the toplevels the compositor currently advertises over
+     /// zwlr-foreign-toplevel - what a taskbar would be listing.
+     pub fn foreign_toplevel_titles(&self) -> Vec<String> {
+@@ -2489,6 +2619,9 @@ impl Dispatch<WlRegistry, ()> for ClientState {
+                         state.output = Some(output.clone());
+                     }
+                     state.outputs.push(output);
++                } else if interface == ExtWorkspaceManagerV1::interface().name {
++                    let version = min(version, ExtWorkspaceManagerV1::interface().version);
++                    state.ext_workspace.manager = Some(registry.bind(name, version, qh, ()));
+                 } else if interface == ExtSessionLockManagerV1::interface().name {
+                     let version = min(version, ExtSessionLockManagerV1::interface().version);
+                     state.session_lock_manager = Some(registry.bind(name, version, qh, ()));
+@@ -2743,6 +2876,109 @@ impl Dispatch<XdgPopup, ()> for ClientState {
+     }
+ }
+ 
++impl Dispatch<ExtWorkspaceManagerV1, ()> for ClientState {
++    fn event(
++        state: &mut Self,
++        _proxy: &ExtWorkspaceManagerV1,
++        event: <ExtWorkspaceManagerV1 as wayland_client::Proxy>::Event,
++        _data: &(),
++        _conn: &Connection,
++        _qhandle: &QueueHandle<Self>,
++    ) {
++        let view = &mut state.ext_workspace;
++        match event {
++            ext_workspace_manager_v1::Event::WorkspaceGroup { workspace_group } => {
++                view.groups.push(workspace_group);
++            }
++            ext_workspace_manager_v1::Event::Workspace { workspace } => {
++                view.pending.push((workspace, WorkspaceEntry::default()));
++            }
++            ext_workspace_manager_v1::Event::Done => {
++                view.done = view.pending.clone();
++                view.done_count += 1;
++            }
++            _ => (),
++        }
++    }
++
++    wayland_client::event_created_child!(ClientState, ExtWorkspaceManagerV1, [
++        ext_workspace_manager_v1::EVT_WORKSPACE_GROUP_OPCODE => (ExtWorkspaceGroupHandleV1, ()),
++        ext_workspace_manager_v1::EVT_WORKSPACE_OPCODE => (ExtWorkspaceHandleV1, ()),
++    ]);
++}
++
++impl Dispatch<ExtWorkspaceGroupHandleV1, ()> for ClientState {
++    fn event(
++        state: &mut Self,
++        _proxy: &ExtWorkspaceGroupHandleV1,
++        event: <ExtWorkspaceGroupHandleV1 as wayland_client::Proxy>::Event,
++        _data: &(),
++        _conn: &Connection,
++        _qhandle: &QueueHandle<Self>,
++    ) {
++        let view = &mut state.ext_workspace;
++        match event {
++            ext_workspace_group_handle_v1::Event::OutputEnter { output } => {
++                view.group_outputs.push(output);
++            }
++            ext_workspace_group_handle_v1::Event::OutputLeave { output } => {
++                view.group_outputs.retain(|bound| *bound != output);
++            }
++            ext_workspace_group_handle_v1::Event::WorkspaceEnter { workspace } => {
++                view.in_group_set(&workspace, true);
++            }
++            ext_workspace_group_handle_v1::Event::WorkspaceLeave { workspace } => {
++                view.in_group_set(&workspace, false);
++            }
++            _ => (),
++        }
++    }
++}
++
++impl Dispatch<ExtWorkspaceHandleV1, ()> for ClientState {
++    fn event(
++        state: &mut Self,
++        proxy: &ExtWorkspaceHandleV1,
++        event: <ExtWorkspaceHandleV1 as wayland_client::Proxy>::Event,
++        _data: &(),
++        _conn: &Connection,
++        _qhandle: &QueueHandle<Self>,
++    ) {
++        let view = &mut state.ext_workspace;
++        if matches!(event, ext_workspace_handle_v1::Event::Removed) {
++            assert!(
++                view.pending
++                    .iter()
++                    .any(|(handle, entry)| handle == proxy && !entry.in_group),
++                "a workspace is removed only after leaving its group"
++            );
++            view.pending.retain(|(handle, _)| handle != proxy);
++            proxy.destroy();
++            return;
++        }
++        let Some((_, entry)) = view.pending.iter_mut().find(|(handle, _)| handle == proxy) else {
++            return;
++        };
++        match event {
++            ext_workspace_handle_v1::Event::Name { name } => entry.name = name,
++            ext_workspace_handle_v1::Event::Coordinates { coordinates } => {
++                entry.coordinate = coordinates
++                    .as_chunks::<4>()
++                    .0
++                    .first()
++                    .map(|chunk| u32::from_ne_bytes(*chunk));
++            }
++            ext_workspace_handle_v1::Event::State {
++                state: WEnum::Value(flags),
++            } => {
++                entry.active = flags.contains(ext_workspace_handle_v1::State::Active);
++                entry.urgent = flags.contains(ext_workspace_handle_v1::State::Urgent);
++            }
++            _ => (),
++        }
++    }
++}
++
+ impl Dispatch<ZwlrForeignToplevelManagerV1, ()> for ClientState {
+     fn event(
+         state: &mut Self,
+diff --git a/tests/integration/common/mod.rs b/tests/integration/common/mod.rs
+index 0a66bd76..d60370bd 100644
+--- a/tests/integration/common/mod.rs
++++ b/tests/integration/common/mod.rs
+@@ -12,7 +12,7 @@ pub mod temp_script;
+ #[allow(unused_imports)]
+ pub use client::{
+     Client, ClientId, GammaControlEvent, OutputManagementEvent, OutputPowerEvent, PointerAxisEvent,
+-    TestWindow, TouchEvent,
++    TestWindow, TouchEvent, WorkspaceEntry,
+ };
+ pub use fixture::{DEFAULT_OUTPUT_H, DEFAULT_OUTPUT_W, Fixture};
+ #[allow(unused_imports)]
+-- 
+2.56.0
+

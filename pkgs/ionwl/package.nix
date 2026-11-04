@@ -49,6 +49,8 @@ rustPlatform.buildRustPackage {
     ./ext-idle-notify.patch
     # MatchPointer(btn.WHEEL_UP / WHEEL_DOWN / ...) binds wheel detents.
     ./wheel-bindings.patch
+    # Workspace lists and switching for bars (dux-shell, waybar).
+    ./ext-workspace.patch
   ];
 
   postPatch = ''
