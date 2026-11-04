@@ -24,12 +24,12 @@
 
 rustPlatform.buildRustPackage {
   pname = "ionwl";
-  version = "0.1.0-unstable-2026-10-28";
+  version = "0.1.0-unstable-2026-11-04";
 
   src = fetchgit {
     url = "https://codeberg.org/ideasman42/ionwl.git";
-    rev = "9d67cd24f0e69585f175153638e5fa3036e8ddfc";
-    hash = "sha256-qMTCIVOgVM48Tfc6ZWiTusyiAC7qVxYtKc1jGhUAhHc=";
+    rev = "7ef31c864ab41f59a6a27353c4a0075f58dabead";
+    hash = "sha256-x991n0K2pB3SkpzCVdZmR2/cvJeRiDlsw3cSpVsiO6E=";
   };
 
   # Upstream does not commit a lockfile.
