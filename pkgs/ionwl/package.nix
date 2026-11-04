@@ -38,6 +38,10 @@ rustPlatform.buildRustPackage {
     allowBuiltinFetchGit = true;
   };
 
+  # IONWL_PRIMARY_GPU picks the render GPU when smithay guesses wrong, and
+  # the DMA-BUF global comes from it rather than the first GPU found.
+  patches = [ ./primary-gpu-override.patch ];
+
   postPatch = ''
     ln -s ${./Cargo.lock} Cargo.lock
   '';

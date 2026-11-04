@@ -1,0 +1,65 @@
+diff --git a/src/backend/udev/device.rs b/src/backend/udev/device.rs
+index 898fb87e..742b4ca6 100644
+--- a/src/backend/udev/device.rs
++++ b/src/backend/udev/device.rs
+@@ -236,11 +236,22 @@ impl DrmBackend {
+         let (session, notifier) =
+             LibSeatSession::new().context("Failed to create libseat session")?;
+ 
+-        // Find primary GPU.
+-        let primary_gpu = udev::primary_gpu(session.seat())
+-            .context("Failed to find primary GPU")?
+-            .and_then(|path| DrmNode::from_path(&path).ok())
+-            .context("No suitable GPU found")?;
++        // Find primary GPU, `IONWL_PRIMARY_GPU` (a DRM device path) overrides
++        // when it exists.
++        let primary_gpu_override =
++            crate::constants::paths::env_var_nonempty("IONWL_PRIMARY_GPU").and_then(|path| {
++                DrmNode::from_path(&path)
++                    .inspect_err(|e| warn!("Ignoring IONWL_PRIMARY_GPU {path}: {e}"))
++                    .ok()
++            });
++        let primary_gpu = if let Some(node) = primary_gpu_override {
++            node
++        } else {
++            udev::primary_gpu(session.seat())
++                .context("Failed to find primary GPU")?
++                .and_then(|path| DrmNode::from_path(&path).ok())
++                .context("No suitable GPU found")?
++        };
+ 
+         info!("Using primary GPU: {:?}", primary_gpu);
+ 
+@@ -293,6 +304,7 @@ impl DrmBackend {
+         Ok(Self {
+             session,
+             primary_render_node: None,
++            primary_gpu,
+             gpu_manager,
+             devices: HashMap::new(),
+             loop_handle: loop_handle.clone(),
+@@ -405,9 +417,9 @@ impl DrmBackend {
+             entry.insert(dmabuf_ok);
+         }
+ 
+-        // Initialize the client buffer formats if not yet done (first GPU).
++        // Initialize the client buffer formats from the primary GPU.
+         // Use DmabufFeedbackBuilder to provide device info to clients for proper GPU selection.
+-        if state.wm.dmabuf_global.is_none() {
++        if state.wm.dmabuf_global.is_none() && node == self.primary_gpu {
+             match self.gpu_manager.single_renderer(&render_node) {
+                 Ok(renderer) => {
+                     let formats = renderer.as_ref().dmabuf_formats();
+diff --git a/src/backend/udev/mod.rs b/src/backend/udev/mod.rs
+index 3f2ee1bf..a03f0665 100644
+--- a/src/backend/udev/mod.rs
++++ b/src/backend/udev/mod.rs
+@@ -427,6 +427,8 @@ pub struct DrmBackend {
+     /// Primary render node used for dmabuf import: the render-node variant
+     /// of the primary GPU `new` selects, used by the GPU manager.
+     primary_render_node: Option<DrmNode>,
++    /// Primary GPU selected in `new`; the DMA-BUF global is installed from it.
++    primary_gpu: DrmNode,
+     /// GPU manager for multi-GPU support.
+     gpu_manager: GpuManager<GbmGlesBackend<GlowRenderer, DrmDeviceFd>>,
+     /// Per-device state.
