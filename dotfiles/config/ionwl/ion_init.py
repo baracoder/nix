@@ -121,7 +121,7 @@ def main() -> None:
     # prefs.system.notify_on_error = False
 
     # Cursor size.
-    prefs.cursor.size = 48
+    prefs.cursor.size = 32
 
     # Font settings.
     prefs.fonts.titlebar_font.face = 'DejaVu Sans:size=11:weight=bold'
