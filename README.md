@@ -52,3 +52,32 @@ darwin-rebuild switch --flake .
 ### Darwin NixOS VM
 
 Bootstrap using the [darwin builder](https://nixos.org/manual/nixpkgs/unstable/#sec-darwin-builder)
+
+# Patches to upstream
+
+Local patches carried in this repo, to send upstream and drop once merged.
+The ionwl ones are `git format-patch` output from a checkout of
+`codeberg.org/ideasman42/ionwl` with the patches applied in order, so each
+can be sent as it is.
+
+- [ ] `overlays/patches/gnome-shell-gvc-null-active-profile.patch`: gvc crashes
+  on a sound card with no active profile, which kills gnome-shell
+  ([libgnome-volume-control](https://gitlab.gnome.org/GNOME/libgnome-volume-control))
+- [ ] `overlays/patches/upower-battery-other-audio.patch`: headphones icon for
+  devices UPower reports as `OTHER_AUDIO`
+  ([upower-battery](https://extensions.gnome.org/extension/5165/upower-battery/))
+- [ ] `pkgs/ionwl/primary-gpu-override.patch`: `IONWL_PRIMARY_GPU` picks the
+  render GPU ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/touchpad-detection.patch`: touchpads get touchpad prefs, not
+  mouse prefs ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/ext-idle-notify.patch`: ext-idle-notify, listed under "Not
+  Yet Supported" in ionwl's docs ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/wheel-bindings.patch`: bind scroll-wheel detents with
+  `MatchPointer(btn.WHEEL_UP)` etc. ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/ext-workspace.patch`: ext-workspace, for workspace switchers
+  in bars ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/way-shell/ionwl-backend.patch`: ionwl window-manager backend
+  ([way-shell](https://github.com/ldelossa/way-shell))
+- [ ] `pkgs/linzone-hub/package.nix` `postPatch`: the udev rule assigns
+  `ENV{UPOWER_BATTERY_TYPE}:=`, but udev has no `:=` for `ENV`
+  ([linzone-hub](https://github.com/patyhank/linzone-hub))
