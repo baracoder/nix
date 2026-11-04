@@ -254,7 +254,6 @@ in
     ptouch-print
     nebula
     newelle
-    ionwl
     pywincontrols
     fprintd
     vial
@@ -293,9 +292,18 @@ in
     # preferred GPU for gnome
     ATTRS{vendor}=="0x1002", TAG+="mutter-device-preferred-primary"
     ATTRS{vendor}=="0x10de", TAG+="mutter-device-ignore"
+
+    # Stable name for the iGPU (Radeon 890M); its PCI bus number shifts
+    # depending on whether the eGPU is attached.
+    SUBSYSTEM=="drm", KERNEL=="card[0-9]*", ATTRS{vendor}=="0x1002", ATTRS{device}=="0x150e", SYMLINK+="dri/igpu"
   '';
   services.displayManager.defaultSession = lib.mkForce "gnome";
-  services.displayManager.sessionPackages = [ pkgs.ionwl ];
+  # Both displays hang off the iGPU (the eGPU only renders), but ionwl
+  # would otherwise pick the eGPU as its primary GPU.
+  programs.ionwl = {
+    enable = true;
+    primaryGpu = "/dev/dri/igpu";
+  };
 
   systemd.tmpfiles.settings."10-looking-glass" = {
     "/dev/shm/looking-glass".f = {

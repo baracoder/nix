@@ -44,6 +44,7 @@
             ./modules/gnome
             ./modules/gaming
             ./modules/linzone-hub
+            ./modules/ionwl
             ./machines/hal
             nixpkgs.nixosModules.notDetected
             nixos-hardware.nixosModules.common-pc-laptop
