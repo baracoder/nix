@@ -34,8 +34,10 @@ in
 
     environment.systemPackages = with pkgs; [
       cfg.package
-      # shell: bar, launcher, notifications
+      # shell: bar, launcher, notifications; run one of the two shells,
+      # both own the notification daemon name
       noctalia
+      way-shell
       fuzzel
       # outputs, via wlr-output-management
       wlr-randr

@@ -1,0 +1,842 @@
+diff --git a/data/ionwl/way_shell_ionwl.py b/data/ionwl/way_shell_ionwl.py
+new file mode 100644
+index 0000000..c17ed2a
+--- /dev/null
++++ b/data/ionwl/way_shell_ionwl.py
+@@ -0,0 +1,205 @@
++# Way-Shell helper, loaded into the IonWL compositor's Python interpreter over
++# its IPC socket. Way-Shell queries state and runs actions through it, and the
++# hooks it attaches tell Way-Shell when desktops change.
++#
++# An IonWL desktop spans every output, so each one is reported as a single
++# Way-Shell workspace placed on the focused output.
++
++import json
++import os
++import socket
++
++import ion
++
++# Hooks after which the reported state may differ.
++HOOKS = (
++    'desktop_new_post',
++    'desktop_remove_post',
++    'desktop_rename_post',
++    'desktop_switch_post',
++    'window_new_post',
++    'window_close_post',
++    'window_move_post',
++    'window_focus_post',
++    'window_urgent_post',
++    'output_add_post',
++    'output_remove_post',
++    'compositor_reload_post',
++)
++
++_event_path = None
++_event_sock = None
++
++
++def _notify(*_args, **_kwargs):
++    if _event_sock is None:
++        return
++    try:
++        _event_sock.sendto(b'\n', _event_path)
++    except (BlockingIOError, InterruptedError):
++        # Way-Shell is behind: it refreshes from the pings already queued.
++        pass
++    except OSError:
++        # Way-Shell is gone.
++        hooks_remove()
++
++
++def hooks_installed():
++    return _notify in ion.app.hooks.desktop_switch_post
++
++
++def hooks_install(name):
++    '''Ping the abstract datagram socket *name* on every change.
++
++    Returns True when the hooks had to be (re-)attached, as after a config
++    reload, which detaches every hook.
++    '''
++    global _event_path, _event_sock
++    path = '\0' + name
++    if path != _event_path or _event_sock is None:
++        if _event_sock is not None:
++            _event_sock.close()
++        _event_sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
++        _event_sock.setblocking(False)
++        _event_path = path
++    attached = False
++    for name in HOOKS:
++        hook = getattr(ion.app.hooks, name)
++        if _notify not in hook:
++            hook.append(_notify)
++            attached = True
++    return attached
++
++
++def hooks_remove():
++    global _event_path, _event_sock
++    for name in HOOKS:
++        hook = getattr(ion.app.hooks, name)
++        if _notify in hook:
++            hook.remove(_notify)
++    if _event_sock is not None:
++        _event_sock.close()
++    _event_path = None
++    _event_sock = None
++
++
++def _output_focused():
++    output = ion.wm.context.output
++    if output is not None:
++        return output
++    for output in ion.wm.outputs:
++        if output.is_enabled:
++            return output
++    return None
++
++
++def _desktop_find(desktop_id, name):
++    desktops = ion.wm.desktops
++    if desktop_id >= 0:
++        for desktop in desktops:
++            if desktop.id == desktop_id:
++                return desktop
++    for desktop in desktops:
++        if desktop.name == name:
++            return desktop
++    return None
++
++
++def _desktop_ensure(desktop_id, name):
++    desktop = _desktop_find(desktop_id, name)
++    if desktop is None and name:
++        desktop = ion.wm.desktops.new(name)
++    return desktop
++
++
++def _window_focused():
++    window = ion.wm.context.window
++    if window is not None:
++        return window
++    for window in ion.wm.windows:
++        if window.is_focused:
++            return window
++    return None
++
++
++def state():
++    desktops = ion.wm.desktops
++    active = desktops.active
++    output = _output_focused()
++    output_name = output.name if output is not None else ''
++
++    urgent = set()
++    for window in ion.wm.windows:
++        if window.urgent:
++            desktop = desktops.find_by_window(window)
++            if desktop is not None:
++                urgent.add(desktop.id)
++
++    workspaces = [
++        {
++            'id': desktop.id,
++            'num': index + 1,
++            'name': desktop.name,
++            'output': output_name,
++            'focused': desktop == active,
++            'visible': desktop == active,
++            'urgent': desktop.id in urgent,
++            'empty': desktop.is_empty,
++        }
++        for index, desktop in enumerate(desktops)
++    ]
++    outputs = [
++        {
++            'name': o.name,
++            'current_workspace': active.name if o.is_enabled else '',
++        }
++        for o in ion.wm.outputs
++    ]
++    return json.dumps({'workspaces': workspaces, 'outputs': outputs})
++
++
++def focus(desktop_id, name):
++    desktop = _desktop_ensure(desktop_id, name)
++    if desktop is None:
++        return False
++    desktop.focus()
++    return True
++
++
++def rename(name):
++    if not name:
++        return False
++    ion.wm.desktops.active.name = name
++    return True
++
++
++def window_to(desktop_id, name):
++    window = _window_focused()
++    desktop = _desktop_ensure(desktop_id, name)
++    if window is None or desktop is None:
++        return False
++    if desktop == ion.wm.desktops.find_by_window(window):
++        return True
++    items = list(desktop.items_tiling)
++    if not items:
++        return False
++    # Keep the window on its output when the desktop has a workspace there.
++    target = items[0].workspace
++    source = window.workspace
++    if source is not None:
++        for item in ion.wm.desktops.find_by_window(window).items_tiling:
++            if item.workspace == source and item.output is not None:
++                for other in items:
++                    if other.output == item.output:
++                        target = other.workspace
++                break
++    window.move_to_workspace(target)
++    return True
++
++
++def output_focus(name):
++    for output in ion.wm.outputs:
++        if output.name == name:
++            output.focus()
++            return True
++    return False
+diff --git a/data/org.ldelossa.way-shell.gschema.xml b/data/org.ldelossa.way-shell.gschema.xml
+index b668a9d..9c51991 100644
+--- a/data/org.ldelossa.way-shell.gschema.xml
++++ b/data/org.ldelossa.way-shell.gschema.xml
+@@ -70,7 +70,8 @@
+             <summary>The window manager backend to use (default: sway)</summary>
+             <description>
+ 			Instructs Way-Shell which window manager to use.
+-			Currently supported options are "sway".
++			Currently supported options are "sway", "niri" and "ionwl".
++			"sway" falls back to "ionwl" in an IonWL session.
+ 
+ 			Changing this setting requires a restart to take effect.
+             </description>
+diff --git a/gresources.xml b/gresources.xml
+index b4565d6..c8aa939 100644
+--- a/gresources.xml
++++ b/gresources.xml
+@@ -2,6 +2,7 @@
+ <gresources>
+     <gresource prefix="/org/ldelossa/way-shell">
+         <file>data/theme/way-shell-dark.css</file>
++        <file>data/ionwl/way_shell_ionwl.py</file>
+     </gresource>
+ </gresources>
+ <gresources>
+diff --git a/src/services/window_manager_service/ionwl/window_manager_service_ionwl.c b/src/services/window_manager_service/ionwl/window_manager_service_ionwl.c
+new file mode 100644
+index 0000000..b2dc5d5
+--- /dev/null
++++ b/src/services/window_manager_service/ionwl/window_manager_service_ionwl.c
+@@ -0,0 +1,542 @@
++// IonWL backend.
++//
++// IonWL is driven over its IPC socket, which runs Python inside the
++// compositor. On start-up the helper module data/ionwl/way_shell_ionwl.py is
++// loaded into it; queries and actions are calls into that module, and the
++// hooks it attaches ping an abstract datagram socket owned by this service
++// whenever desktops change. A config reload detaches every hook, so a periodic
++// check re-attaches them.
++//
++// Requests are a line each: "<command> <payload>\n", answered with "ok\n",
++// "ok:<result>\n" or "error:<message>\n". The "-e" commands carry a payload
++// with backslashes and newlines escaped, and NUL-delimited fields after the
++// first are visible to Python as ion.app.ipc_args.
++
++#include "window_manager_service_ionwl.h"
++
++#include <adwaita.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <glib-unix.h>
++#include <json-glib/json-glib.h>
++#include <string.h>
++#include <sys/socket.h>
++#include <sys/un.h>
++#include <unistd.h>
++
++#define HELPER_RESOURCE "/org/ldelossa/way-shell/data/ionwl/way_shell_ionwl.py"
++#define HELPER_MODULE "way_shell_ionwl"
++// Coalesces the bursts of pings a single action causes.
++#define REFRESH_DELAY_MS 15
++// How often to check the hooks are still attached.
++#define HEARTBEAT_S 2
++
++static const char *helper_loader =
++    "import sys, types, ion\n"
++    "old = sys.modules.get('" HELPER_MODULE "')\n"
++    "if old is not None:\n"
++    "    old.hooks_remove()\n"
++    "m = types.ModuleType('" HELPER_MODULE "')\n"
++    "exec(compile(ion.app.ipc_args[0], '" HELPER_MODULE ".py', 'exec'),"
++    " m.__dict__)\n"
++    "sys.modules['" HELPER_MODULE "'] = m";
++
++enum signals { workspaces_changed, outputs_changed, signals_n };
++
++struct _WMServiceIonwl {
++    GObject parent_instance;
++    int cmd_fd;
++    GIOChannel *cmd;
++    int event_fd;
++    gchar *event_name;
++    guint event_watch;
++    guint refresh_id;
++    guint heartbeat_id;
++    gchar *state_json;
++    GPtrArray *workspaces;
++    GPtrArray *outputs;
++};
++
++static guint service_signals[signals_n] = {0};
++G_DEFINE_TYPE(WMServiceIonwl, wm_service_ionwl, G_TYPE_OBJECT);
++
++static void workspace_free(gpointer data) {
++    WMWorkspace *ws = data;
++    g_free(ws->name);
++    g_free(ws->output);
++    g_free(ws);
++}
++
++static void output_free(gpointer data) {
++    WMOutput *o = data;
++    g_free(o->name);
++    g_free(o->make);
++    g_free(o->model);
++    g_free(o->serial);
++    g_free(o->current_workspace);
++    g_free(o);
++}
++
++static void wm_service_ionwl_dispose(GObject *gobject) {
++    WMServiceIonwl *self = WM_SERVICE_IONWL(gobject);
++
++    g_clear_handle_id(&self->event_watch, g_source_remove);
++    g_clear_handle_id(&self->refresh_id, g_source_remove);
++    g_clear_handle_id(&self->heartbeat_id, g_source_remove);
++    g_clear_pointer(&self->cmd, g_io_channel_unref);
++    if (self->cmd_fd >= 0) close(self->cmd_fd);
++    self->cmd_fd = -1;
++    if (self->event_fd >= 0) close(self->event_fd);
++    self->event_fd = -1;
++    g_clear_pointer(&self->event_name, g_free);
++    g_clear_pointer(&self->state_json, g_free);
++    g_clear_pointer(&self->workspaces, g_ptr_array_unref);
++    g_clear_pointer(&self->outputs, g_ptr_array_unref);
++
++    G_OBJECT_CLASS(wm_service_ionwl_parent_class)->dispose(gobject);
++}
++
++static void wm_service_ionwl_class_init(WMServiceIonwlClass *klass) {
++    GObjectClass *object_class = G_OBJECT_CLASS(klass);
++    object_class->dispose = wm_service_ionwl_dispose;
++
++    service_signals[workspaces_changed] = g_signal_new(
++        "workspaces-changed", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST, 0,
++        NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_PTR_ARRAY);
++
++    service_signals[outputs_changed] = g_signal_new(
++        "outputs-changed", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST, 0,
++        NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_PTR_ARRAY);
++}
++
++static void wm_service_ionwl_init(WMServiceIonwl *self) {
++    self->cmd_fd = -1;
++    self->event_fd = -1;
++}
++
++// IPC
++
++static gchar *ipc_socket_path() {
++    const gchar *path = g_getenv("IONWL_SOCKET");
++    if (path && *path) return g_strdup(path);
++
++    const gchar *runtime = g_getenv("XDG_RUNTIME_DIR");
++    const gchar *display = g_getenv("WAYLAND_DISPLAY");
++    if (!runtime) return NULL;
++    if (!display || !*display) display = "wayland-0";
++    return g_strdup_printf("%s/ionwl.%s.sock", runtime, display);
++}
++
++static int ipc_connect(WMServiceIonwl *self) {
++    g_autofree gchar *path = ipc_socket_path();
++    struct sockaddr_un addr = {.sun_family = AF_UNIX};
++
++    if (!path || strlen(path) >= sizeof(addr.sun_path)) {
++        g_warning("window_manager_service_ionwl.c: no usable IPC socket path");
++        return -1;
++    }
++    strcpy(addr.sun_path, path);
++
++    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
++    if (fd < 0) return -1;
++    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
++        g_warning("window_manager_service_ionwl.c: connect(%s): %s", path,
++                  g_strerror(errno));
++        close(fd);
++        return -1;
++    }
++
++    self->cmd_fd = fd;
++    self->cmd = g_io_channel_unix_new(fd);
++    g_io_channel_set_encoding(self->cmd, NULL, NULL);
++    g_io_channel_set_close_on_unref(self->cmd, FALSE);
++    return 0;
++}
++
++// Escapes a field for an "-e" request.
++static void escape_append(GString *out, const gchar *field) {
++    for (const gchar *p = field; *p; p++) {
++        if (*p == '\\')
++            g_string_append(out, "\\\\");
++        else if (*p == '\n')
++            g_string_append(out, "\\n");
++        else
++            g_string_append_c(out, *p);
++    }
++}
++
++// Reverses the escaping of a response line.
++static gchar *unescape(const gchar *in) {
++    GString *out = g_string_sized_new(strlen(in));
++    for (const gchar *p = in; *p; p++) {
++        if (*p == '\\' && p[1] == '\\') {
++            g_string_append_c(out, '\\');
++            p++;
++        } else if (*p == '\\' && p[1] == 'n') {
++            g_string_append_c(out, '\n');
++            p++;
++        } else {
++            g_string_append_c(out, *p);
++        }
++    }
++    return g_string_free(out, FALSE);
++}
++
++// Sends a request whose payload is `code` followed by the NULL-terminated
++// `args`, and returns the result ("" for none), or NULL on error.
++static gchar *ipc_request(WMServiceIonwl *self, const gchar *command,
++                          const gchar *imports, const gchar *code,
++                          const gchar *const *args) {
++    if (!self->cmd) return NULL;
++
++    GString *line = g_string_new(command);
++    g_string_append(line, "-ie ");
++    g_string_append(line, imports);
++    g_string_append_c(line, ' ');
++    escape_append(line, code);
++    for (; args && *args; args++) {
++        g_string_append_c(line, '\0');
++        escape_append(line, *args);
++    }
++    g_string_append_c(line, '\n');
++
++    GError *error = NULL;
++    gsize written = 0;
++    GIOStatus status = g_io_channel_write_chars(self->cmd, line->str,
++                                                line->len, &written, &error);
++    g_string_free(line, TRUE);
++    if (status == G_IO_STATUS_NORMAL)
++        status = g_io_channel_flush(self->cmd, &error);
++    if (status != G_IO_STATUS_NORMAL) {
++        g_warning("window_manager_service_ionwl.c: IPC write failed: %s",
++                  error ? error->message : "unknown");
++        g_clear_error(&error);
++        return NULL;
++    }
++
++    g_autofree gchar *reply = NULL;
++    status = g_io_channel_read_line(self->cmd, &reply, NULL, NULL, &error);
++    if (status != G_IO_STATUS_NORMAL || !reply) {
++        g_warning("window_manager_service_ionwl.c: IPC read failed: %s",
++                  error ? error->message : "connection closed");
++        g_clear_error(&error);
++        return NULL;
++    }
++    g_strchomp(reply);
++
++    if (g_strcmp0(reply, "ok") == 0) return g_strdup("");
++    if (g_str_has_prefix(reply, "ok:")) return unescape(reply + 3);
++
++    g_autofree gchar *message =
++        unescape(g_str_has_prefix(reply, "error:") ? reply + 6 : reply);
++    g_warning("window_manager_service_ionwl.c: IonWL error: %s", message);
++    return NULL;
++}
++
++// Calls `HELPER_MODULE.<expr>`, with `args` as ion.app.ipc_args.
++static gchar *helper_eval(WMServiceIonwl *self, const gchar *expr,
++                          const gchar *const *args) {
++    g_autofree gchar *code = g_strdup_printf(HELPER_MODULE ".%s", expr);
++    return ipc_request(self, "py-eval", "ion:" HELPER_MODULE, code, args);
++}
++
++static gboolean helper_eval_true(WMServiceIonwl *self, const gchar *expr,
++                                 const gchar *const *args) {
++    g_autofree gchar *result = helper_eval(self, expr, args);
++    return g_strcmp0(result, "True") == 0;
++}
++
++static int helper_load(WMServiceIonwl *self) {
++    g_autoptr(GBytes) bytes = g_resources_lookup_data(
++        HELPER_RESOURCE, G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
++    if (!bytes) {
++        g_warning("window_manager_service_ionwl.c: missing %s",
++                  HELPER_RESOURCE);
++        return -1;
++    }
++    g_autofree gchar *source =
++        g_strndup(g_bytes_get_data(bytes, NULL), g_bytes_get_size(bytes));
++    const gchar *args[] = {source, NULL};
++
++    g_autofree gchar *result =
++        ipc_request(self, "py-exec", "ion", helper_loader, args);
++    return result ? 0 : -1;
++}
++
++// Events
++
++static void hooks_install(WMServiceIonwl *self, gboolean *attached) {
++    const gchar *args[] = {self->event_name, NULL};
++    g_autofree gchar *result =
++        helper_eval(self, "hooks_install(ion.app.ipc_args[0])", args);
++
++    if (!result) {
++        // The helper is gone, as when the compositor's Python was reset.
++        if (helper_load(self) != 0) return;
++        g_free(result);
++        result = helper_eval(self, "hooks_install(ion.app.ipc_args[0])", args);
++    }
++    if (attached) *attached = g_strcmp0(result, "True") == 0;
++}
++
++static void workspaces_parse(WMServiceIonwl *self, JsonObject *root) {
++    GPtrArray *workspaces = g_ptr_array_new_with_free_func(workspace_free);
++    JsonArray *array = json_object_get_array_member(root, "workspaces");
++
++    for (guint i = 0; array && i < json_array_get_length(array); i++) {
++        JsonObject *o = json_array_get_object_element(array, i);
++        WMWorkspace *ws = g_new0(WMWorkspace, 1);
++        ws->id = json_object_get_int_member(o, "id");
++        ws->num = json_object_get_int_member(o, "num");
++        ws->name = g_strdup(json_object_get_string_member(o, "name"));
++        ws->output = g_strdup(json_object_get_string_member(o, "output"));
++        ws->focused = json_object_get_boolean_member(o, "focused");
++        ws->visible = json_object_get_boolean_member(o, "visible");
++        ws->urgent = json_object_get_boolean_member(o, "urgent");
++        ws->empty = json_object_get_boolean_member(o, "empty");
++        g_ptr_array_add(workspaces, ws);
++    }
++
++    g_clear_pointer(&self->workspaces, g_ptr_array_unref);
++    self->workspaces = workspaces;
++}
++
++static void outputs_parse(WMServiceIonwl *self, JsonObject *root) {
++    GPtrArray *outputs = g_ptr_array_new_with_free_func(output_free);
++    JsonArray *array = json_object_get_array_member(root, "outputs");
++
++    for (guint i = 0; array && i < json_array_get_length(array); i++) {
++        JsonObject *o = json_array_get_object_element(array, i);
++        WMOutput *out = g_new0(WMOutput, 1);
++        out->name = g_strdup(json_object_get_string_member(o, "name"));
++        out->make = g_strdup("");
++        out->model = g_strdup("");
++        out->serial = g_strdup("");
++        out->current_workspace =
++            g_strdup(json_object_get_string_member(o, "current_workspace"));
++        g_ptr_array_add(outputs, out);
++    }
++
++    g_clear_pointer(&self->outputs, g_ptr_array_unref);
++    self->outputs = outputs;
++}
++
++// Fetches the state, returning TRUE when it changed.
++static gboolean state_refresh(WMServiceIonwl *self) {
++    gchar *json = helper_eval(self, "state()", NULL);
++    if (!json) return FALSE;
++    if (g_strcmp0(json, self->state_json) == 0) {
++        g_free(json);
++        return FALSE;
++    }
++
++    g_autoptr(JsonParser) parser = json_parser_new();
++    GError *error = NULL;
++    if (!json_parser_load_from_data(parser, json, -1, &error)) {
++        g_warning("window_manager_service_ionwl.c: bad state: %s",
++                  error->message);
++        g_error_free(error);
++        g_free(json);
++        return FALSE;
++    }
++
++    JsonObject *root = json_node_get_object(json_parser_get_root(parser));
++    workspaces_parse(self, root);
++    outputs_parse(self, root);
++    g_free(self->state_json);
++    self->state_json = json;
++    return TRUE;
++}
++
++static void state_refresh_emit(WMServiceIonwl *self) {
++    if (!state_refresh(self)) return;
++    g_signal_emit(self, service_signals[workspaces_changed], 0,
++                  self->workspaces);
++    g_signal_emit(self, service_signals[outputs_changed], 0, self->outputs);
++}
++
++static gboolean on_refresh(gpointer data) {
++    WMServiceIonwl *self = data;
++    self->refresh_id = 0;
++    state_refresh_emit(self);
++    return G_SOURCE_REMOVE;
++}
++
++static void refresh_schedule(WMServiceIonwl *self) {
++    if (self->refresh_id) return;
++    self->refresh_id = g_timeout_add(REFRESH_DELAY_MS, on_refresh, self);
++}
++
++static gboolean on_event(gint fd, GIOCondition condition, gpointer data) {
++    WMServiceIonwl *self = data;
++    char buf[64];
++
++    // Drain: one refresh covers every ping queued so far.
++    while (recv(fd, buf, sizeof(buf), MSG_DONTWAIT) > 0);
++    refresh_schedule(self);
++    return G_SOURCE_CONTINUE;
++}
++
++static gboolean on_heartbeat(gpointer data) {
++    WMServiceIonwl *self = data;
++    gboolean attached = FALSE;
++
++    hooks_install(self, &attached);
++    // Changes made while detached went unreported.
++    if (attached) refresh_schedule(self);
++    return G_SOURCE_CONTINUE;
++}
++
++static int events_listen(WMServiceIonwl *self) {
++    self->event_name = g_strdup_printf("way-shell-ionwl.%d", getpid());
++
++    struct sockaddr_un addr = {.sun_family = AF_UNIX};
++    // Abstract namespace: leading NUL, nothing left behind on exit.
++    gsize len = strlen(self->event_name);
++    memcpy(addr.sun_path + 1, self->event_name, len);
++
++    int fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
++    if (fd < 0) return -1;
++    if (bind(fd, (struct sockaddr *)&addr,
++             offsetof(struct sockaddr_un, sun_path) + 1 + len) != 0) {
++        g_warning("window_manager_service_ionwl.c: bind: %s",
++                  g_strerror(errno));
++        close(fd);
++        return -1;
++    }
++
++    self->event_fd = fd;
++    self->event_watch = g_unix_fd_add(fd, G_IO_IN, on_event, self);
++    return 0;
++}
++
++// WindowManager interface
++
++static GPtrArray *wm_service_ionwl_get_workspaces(WindowManager *wm) {
++    WMServiceIonwl *self = wm->private;
++    if (!self->workspaces) return NULL;
++    return g_ptr_array_ref(self->workspaces);
++}
++
++static GPtrArray *wm_service_ionwl_get_outputs(WindowManager *wm) {
++    WMServiceIonwl *self = wm->private;
++    if (!self->outputs) return NULL;
++    return g_ptr_array_ref(self->outputs);
++}
++
++// A workspace with num < 0 is one named by the user, to be created if
++// missing; others are identified by id.
++static void workspace_args(WMWorkspace *ws, gchar **id, const gchar **name) {
++    *id = g_strdup_printf("%d", ws->num < 0 ? -1 : (gint)ws->id);
++    *name = ws->name ? ws->name : "";
++}
++
++static int wm_service_ionwl_focus_workspace(WindowManager *wm,
++                                            WMWorkspace *ws) {
++    WMServiceIonwl *self = wm->private;
++    g_autofree gchar *id = NULL;
++    const gchar *name = NULL;
++    if (!ws) return -1;
++    workspace_args(ws, &id, &name);
++
++    const gchar *args[] = {id, name, NULL};
++    return helper_eval_true(
++               self, "focus(int(ion.app.ipc_args[0]), ion.app.ipc_args[1])",
++               args)
++               ? 0
++               : -1;
++}
++
++static int wm_service_ionwl_rename_workspace(WindowManager *wm,
++                                             const gchar *name) {
++    WMServiceIonwl *self = wm->private;
++    if (!name || !*name) return -1;
++
++    const gchar *args[] = {name, NULL};
++    return helper_eval_true(self, "rename(ion.app.ipc_args[0])", args) ? 0
++                                                                       : -1;
++}
++
++// IonWL desktops span every output, so a workspace cannot be moved to one;
++// the closest equivalent is focusing that output.
++static int wm_service_ionwl_current_ws_to_output(WindowManager *wm,
++                                                 WMOutput *o) {
++    WMServiceIonwl *self = wm->private;
++    if (!o || !o->name) return -1;
++
++    const gchar *args[] = {o->name, NULL};
++    return helper_eval_true(self, "output_focus(ion.app.ipc_args[0])", args)
++               ? 0
++               : -1;
++}
++
++static int wm_service_ionwl_current_app_to_workspace(WindowManager *wm,
++                                                     WMWorkspace *ws) {
++    WMServiceIonwl *self = wm->private;
++    g_autofree gchar *id = NULL;
++    const gchar *name = NULL;
++    if (!ws) return -1;
++    workspace_args(ws, &id, &name);
++
++    const gchar *args[] = {id, name, NULL};
++    return helper_eval_true(
++               self,
++               "window_to(int(ion.app.ipc_args[0]), ion.app.ipc_args[1])",
++               args)
++               ? 0
++               : -1;
++}
++
++static guint wm_service_ionwl_register_on_workspaces_changed(
++    WindowManager *wm, wm_on_workspaces_changed cb, void *data) {
++    return g_signal_connect_swapped(wm->private, "workspaces-changed",
++                                    G_CALLBACK(cb), data);
++}
++
++static guint wm_service_ionwl_unregister_on_workspaces_changed(
++    WindowManager *wm, wm_on_workspaces_changed cb, void *data) {
++    return g_signal_handlers_disconnect_by_func(wm->private, cb, data);
++}
++
++static guint wm_service_ionwl_register_on_outputs_changed(
++    WindowManager *wm, wm_on_outputs_changed cb, void *data) {
++    return g_signal_connect_swapped(wm->private, "outputs-changed",
++                                    G_CALLBACK(cb), data);
++}
++
++static guint wm_service_ionwl_unregister_on_outputs_changed(
++    WindowManager *wm, wm_on_outputs_changed cb, void *data) {
++    return g_signal_handlers_disconnect_by_func(wm->private, cb, data);
++}
++
++WindowManager *wm_service_ionwl_window_manager_init() {
++    WMServiceIonwl *self = g_object_new(WM_SERVICE_IONWL_TYPE, NULL);
++
++    if (ipc_connect(self) != 0 || helper_load(self) != 0 ||
++        events_listen(self) != 0) {
++        g_object_unref(self);
++        return NULL;
++    }
++    hooks_install(self, NULL);
++    state_refresh(self);
++    self->heartbeat_id =
++        g_timeout_add_seconds(HEARTBEAT_S, on_heartbeat, self);
++
++    WindowManager *wm = g_malloc0(sizeof(WindowManager));
++    wm->private = self;
++    wm->get_workspaces = wm_service_ionwl_get_workspaces;
++    wm->get_outputs = wm_service_ionwl_get_outputs;
++    wm->focus_workspace = wm_service_ionwl_focus_workspace;
++    wm->rename_workspace = wm_service_ionwl_rename_workspace;
++    wm->current_ws_to_output = wm_service_ionwl_current_ws_to_output;
++    wm->current_app_to_workspace = wm_service_ionwl_current_app_to_workspace;
++    wm->register_on_workspaces_changed =
++        wm_service_ionwl_register_on_workspaces_changed;
++    wm->unregister_on_workspaces_changed =
++        wm_service_ionwl_unregister_on_workspaces_changed;
++    wm->register_on_outputs_changed =
++        wm_service_ionwl_register_on_outputs_changed;
++    wm->unregister_on_outputs_changed =
++        wm_service_ionwl_unregister_on_outputs_changed;
++    return wm;
++}
+diff --git a/src/services/window_manager_service/ionwl/window_manager_service_ionwl.h b/src/services/window_manager_service/ionwl/window_manager_service_ionwl.h
+new file mode 100644
+index 0000000..fda043f
+--- /dev/null
++++ b/src/services/window_manager_service/ionwl/window_manager_service_ionwl.h
+@@ -0,0 +1,16 @@
++#pragma once
++
++#include <adwaita.h>
++
++#include "../window_manager_service.h"
++
++G_BEGIN_DECLS
++
++struct _WMServiceIonwl;
++#define WM_SERVICE_IONWL_TYPE wm_service_ionwl_get_type()
++G_DECLARE_FINAL_TYPE(WMServiceIonwl, wm_service_ionwl, WM_SERVICE, IONWL,
++                     GObject);
++
++G_END_DECLS
++
++WindowManager *wm_service_ionwl_window_manager_init();
+diff --git a/src/services/window_manager_service/window_manager_service.c b/src/services/window_manager_service/window_manager_service.c
+index 3a3bb1f..292d3a8 100644
+--- a/src/services/window_manager_service/window_manager_service.c
++++ b/src/services/window_manager_service/window_manager_service.c
+@@ -2,6 +2,7 @@
+ 
+ #include "./sway/window_manager_service_sway.h"
+ #include "./niri/window_manager_service_niri.h"
++#include "./ionwl/window_manager_service_ionwl.h"
+ 
+ static WindowManager *global = NULL;
+ 
+@@ -16,7 +17,21 @@ int window_manager_service_init() {
+ 
+     char *backend = g_settings_get_string(settings, "backend");
+ 
+-    if (g_strcmp0(backend, "sway") == 0) {
++    // The default targets Sway; under IonWL, which has no Sway IPC, use its
++    // own backend unless one was picked explicitly.
++    if (g_strcmp0(backend, "sway") == 0 && !g_getenv("SWAYSOCK") &&
++        g_strcmp0(g_getenv("XDG_CURRENT_DESKTOP"), "ionwl") == 0) {
++        g_free(backend);
++        backend = g_strdup("ionwl");
++    }
++
++    if (g_strcmp0(backend, "ionwl") == 0) {
++        global = wm_service_ionwl_window_manager_init();
++        if (!global) {
++            g_warning("Failed to connect to IonWL");
++            return -1;
++        }
++    } else if (g_strcmp0(backend, "sway") == 0) {
+         global = wm_service_sway_window_manager_init();
+     } else if (g_strcmp0(backend, "niri") == 0) {
+         global = wm_service_niri_window_manager_init();
