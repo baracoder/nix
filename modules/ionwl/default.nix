@@ -44,6 +44,18 @@ in
       IONWL_PRIMARY_GPU = cfg.primaryGpu;
     };
 
+    # Lock screen, via ext-session-lock. ion_init.py locks through
+    # `loginctl lock-session`, which ionwl-lockd turns into gtklock; it
+    # also locks before suspend.
+    programs.gtklock = {
+      enable = true;
+      config.main.idle-hide = true;
+      modules = with pkgs; [
+        gtklock-userinfo-module
+        gtklock-powerbar-module
+      ];
+    };
+
     environment.systemPackages = with pkgs; [
       cfg.package
       # shell: bar, launcher, notifications; run one of the two shells,
@@ -59,6 +71,8 @@ in
       grim
       slurp
       wl-clipboard
+      # lock screen trigger, see above
+      ionwl-lockd
     ];
 
     # ionwl sets XDG_CURRENT_DESKTOP=ionwl; screen sharing goes through
