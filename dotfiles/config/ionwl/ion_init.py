@@ -33,6 +33,7 @@ reload = "main" in locals()
 TERMINAL = ('ghostty',)
 LAUNCHER = ('fuzzel',)
 SCRATCHPAD = '*scratch*'  # Workspace used as a scratchpad.
+LOOK = 'Other/i3'  # Window decoration look, as named in the frame menu's "Looks".
 
 
 # -----------------------------------------------------------------------------
@@ -421,6 +422,19 @@ def main() -> None:
     km_global.items.new(MatchKey(kbd.XF86_AUDIO_NEXT), ops.system_exec(command=('cmus-remote', '--next')))
     km_global.items.new(MatchKey(kbd.XF86_AUDIO_REWIND), ops.system_exec(command=('cmus-remote', '--seek', '-10')))
     km_global.items.new(MatchKey(kbd.XF86_AUDIO_FORWARD), ops.system_exec(command=('cmus-remote', '--seek', '+10')))
+
+    # -------------------------------------------------------------------------
+    # Looks
+
+    # A reload resets the look, so apply it on every load. Looks are the
+    # scripts the "Looks" menu runs, from share/ionwl/resources/looks, named
+    # with "/" escaped as "%2F".
+    if LOOK:
+        import os.path
+        import urllib.parse
+        looks_dir = os.path.join(os.path.dirname(ion_utils.__file__), '..', '..', 'resources', 'looks')
+        look_path = os.path.realpath(os.path.join(looks_dir, urllib.parse.quote(LOOK, safe='') + '.py'))
+        ops.python_exec(filepath=look_path).call(ion.types.EventCommand())
 
     ion.utils.log('Config loaded')
 
