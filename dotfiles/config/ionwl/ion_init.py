@@ -324,6 +324,16 @@ def main() -> None:
     km_global.items.new(MatchKey(kbd.M, logo=True), ops.desktop_focus_occupied_cycle(direction=1))
     km_global.items.new(MatchKey(kbd.COMMA, logo=True), ops.desktop_focus_occupied_cycle(direction=-1))
 
+    # Super+wheel steps through all desktops, stopping at the ends. The wheel
+    # buttons come from pkgs/ionwl/wheel-bindings.patch; older builds lack them.
+    if hasattr(btn, 'WHEEL_DOWN'):
+        km_global.items.new(
+            MatchPointer(btn.WHEEL_DOWN, logo=True), ops.desktop_focus_cycle(direction=1, wrap=False)
+        )
+        km_global.items.new(
+            MatchPointer(btn.WHEEL_UP, logo=True), ops.desktop_focus_cycle(direction=-1, wrap=False)
+        )
+
     # Cycle to next empty desktop.
     km_global.items.new(MatchKey(kbd.RETURN, logo=True, ctrl=True), ops.desktop_focus_empty_cycle(direction=1))
 
