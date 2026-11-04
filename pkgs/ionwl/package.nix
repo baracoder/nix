@@ -47,6 +47,8 @@ rustPlatform.buildRustPackage {
     ./touchpad-detection.patch
     # Idle notifications for clients (swayidle, shells' idle timers).
     ./ext-idle-notify.patch
+    # MatchPointer(btn.WHEEL_UP / WHEEL_DOWN / ...) binds wheel detents.
+    ./wheel-bindings.patch
   ];
 
   postPatch = ''

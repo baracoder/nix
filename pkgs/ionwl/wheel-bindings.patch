@@ -1,0 +1,543 @@
+From 24967ec7b1524eb258a7fa777b983ff2e856d4ae Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Wed, 4 Nov 2026 20:20:29 +0100
+Subject: [PATCH] Input: bind scroll-wheel detents as virtual pointer buttons
+
+Each wheel detent runs the bindings of a virtual button, WHEEL_UP,
+WHEEL_DOWN, WHEEL_LEFT or WHEEL_RIGHT in ion.constants.pointer_buttons,
+so they bind through MatchPointer like any other button:
+
+    km.items.new(MatchPointer(btn.WHEEL_DOWN, logo=True), op)
+
+A detent runs Press bindings, then Click bindings (MatchPointer's
+default action) when no Press binding ran; it has no release, drag or
+double click. High-resolution wheels add up their fractions of a detent.
+An axis whose direction is bound is withheld from the client, unless the
+binding passes through. Continuous (touchpad) scroll is unchanged.
+---
+ doc/architecture/readme.rst             |   9 +-
+ src/handler/input/mod.rs                |   1 +
+ src/handler/input/pointer_button.rs     |   6 +-
+ src/handler/input/pointer_motion.rs     |  22 +++-
+ src/handler/input/pointer_wheel.rs      | 168 ++++++++++++++++++++++++
+ src/input/binding.rs                    |   7 +
+ src/state/mod.rs                        |   5 +
+ tests/integration/api/input_dispatch.rs | 162 +++++++++++++++++++++++
+ 8 files changed, 370 insertions(+), 10 deletions(-)
+ create mode 100644 src/handler/input/pointer_wheel.rs
+
+diff --git a/doc/architecture/readme.rst b/doc/architecture/readme.rst
+index 699725ee..7b986363 100644
+--- a/doc/architecture/readme.rst
++++ b/doc/architecture/readme.rst
+@@ -858,10 +858,13 @@ Limitations
+   spatial regions or trigger bindings. A touch can drive an interactive
+   operation a pointer started, but cannot start one.
+ 
+-- Scroll cannot be bound.
++- Only wheel scroll can be bound.
+ 
+-  Keymaps match keys and pointer buttons only (``InputTrigger``). Scroll
+-  reaches clients, and reaches generators as ``Scroll`` events.
++  Each wheel detent runs the bindings of a virtual pointer button
++  (``WHEEL_UP``, ``WHEEL_DOWN``, ``WHEEL_LEFT``, ``WHEEL_RIGHT``), so keymaps
++  still match keys and pointer buttons only (``InputTrigger``). Continuous
++  scroll (touchpads) has no detents and cannot be bound; it reaches clients,
++  and reaches generators as ``Scroll`` events.
+ 
+ 
+ Supported Protocols
+diff --git a/src/handler/input/mod.rs b/src/handler/input/mod.rs
+index aaa5c1bf..f7f8630e 100644
+--- a/src/handler/input/mod.rs
++++ b/src/handler/input/mod.rs
+@@ -14,6 +14,7 @@ mod pointer_hit_test;
+ mod pointer_motion;
+ #[cfg(debug_assertions)]
+ mod pointer_parity;
++mod pointer_wheel;
+ mod tablet;
+ mod touch;
+ 
+diff --git a/src/handler/input/pointer_button.rs b/src/handler/input/pointer_button.rs
+index 01dcfe9e..e3b72c28 100644
+--- a/src/handler/input/pointer_button.rs
++++ b/src/handler/input/pointer_button.rs
+@@ -199,7 +199,7 @@ impl IonMain {
+     /// The one walk every kind goes through, spatial regions and `Global`
+     /// alike: a binding whose operator did not consume is stepped over, so a
+     /// poll failure at the head of a match list cannot shadow what follows it.
+-    fn region_cascade_run(
++    pub(super) fn region_cascade_run(
+         &mut self,
+         lookup: &CascadeLookup,
+         region: &PointerRegion,
+@@ -427,7 +427,7 @@ impl IonMain {
+     }
+ 
+     /// Return the `Keymap` for a spatial region if one is registered.
+-    fn region_keymap_get(&self, region: &PointerRegion) -> Option<&Keymap> {
++    pub(super) fn region_keymap_get(&self, region: &PointerRegion) -> Option<&Keymap> {
+         let km_index = region.keymap_index()?;
+         self.registry.keymaps.get_at(km_index)
+     }
+@@ -439,7 +439,7 @@ impl IonMain {
+     /// derives every field from the same `target` via accessor
+     /// methods on `PointerTarget` - one cache check, one
+     /// `debug_assert`.
+-    fn pointer_hit_context(&self) -> PointerHitContext {
++    pub(super) fn pointer_hit_context(&self) -> PointerHitContext {
+         debug_assert!(!self.fullscreen_covers_pointer());
+         let Some(po) = self.pointer_over_cached() else {
+             return PointerHitContext::default();
+diff --git a/src/handler/input/pointer_motion.rs b/src/handler/input/pointer_motion.rs
+index b786b743..75f28eb6 100644
+--- a/src/handler/input/pointer_motion.rs
++++ b/src/handler/input/pointer_motion.rs
+@@ -544,18 +544,26 @@ impl IonMain {
+         // Scroll activity invalidates a pending key click.
+         self.wm.event_state.pending_key_click_invalidate();
+ 
++        // Wheel bindings first; the client gets only the axes they leave.
++        let taken = self.pointer_wheel_bindings(event);
++
+         let source = event.source();
+         let time = event.time();
+ 
+         // Build the axis frame, horizontal then vertical.
+         let mut frame = AxisFrame::new(time).source(source);
+-        for axis in [Axis::Horizontal, Axis::Vertical] {
++        let mut frame_empty = true;
++        for (axis, taken) in [Axis::Horizontal, Axis::Vertical].into_iter().zip(taken) {
++            if taken {
++                continue;
++            }
+             let discrete = event.amount_v120(axis);
+             // Scroll amount - continuous first, falling back to discrete (v120).
+             let amount = event
+                 .amount(axis)
+                 .unwrap_or_else(|| discrete.unwrap_or(0.0) * input_const::V120_TO_CONTINUOUS);
+             if amount != 0.0 {
++                frame_empty = false;
+                 frame = frame
+                     .value(axis, amount)
+                     .relative_direction(axis, event.relative_direction(axis));
+@@ -563,14 +571,20 @@ impl IonMain {
+                     frame = frame.v120(axis, discrete.round() as i32);
+                 }
+             } else if source == AxisSource::Finger {
++                frame_empty = false;
+                 frame = frame.stop(axis);
+             }
+         }
+ 
++        // A wheel event whose every scrolling axis a binding took has
++        // nothing left for the client.
++        if taken.contains(&true) && frame_empty {
++            return;
++        }
+         // Send to pointer. With no locked-session return above, unlike the
+-        // button handler: scroll reaches only this send, and the locked
+-        // hit-test confines pointer focus to the lock surface, so there is no
+-        // compositor action to withhold.
++        // button handler: `pointer_wheel_bindings` runs no binding while
++        // locked, and the locked hit-test confines pointer focus to the lock
++        // surface, so there is no compositor action to withhold.
+         if let Some(pointer) = self.wm.seat.get_pointer() {
+             pointer.axis(self, frame);
+             pointer.frame(self);
+diff --git a/src/handler/input/pointer_wheel.rs b/src/handler/input/pointer_wheel.rs
+new file mode 100644
+index 00000000..e2473abf
+--- /dev/null
++++ b/src/handler/input/pointer_wheel.rs
+@@ -0,0 +1,168 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! Scroll-wheel bindings.
++//!
++//! A wheel has no button of its own, so each detent runs the bindings of a
++//! virtual one: `WHEEL_UP` / `WHEEL_DOWN` for the vertical axis,
++//! `WHEEL_LEFT` / `WHEEL_RIGHT` for the horizontal one (tilt wheels). They
++//! bind through `MatchPointer` like any button, which keeps one matcher, one
++//! cascade and one execution path for every pointer trigger.
++//!
++//! A detent is a press with no motion and no release to wait for, so it runs
++//! Press bindings, and Click bindings - `MatchPointer`'s default action - when
++//! no Press binding ran. Release, Drag and DoubleClick never fire for it.
++//!
++//! Only discrete wheel sources step: a touchpad or other continuous scroll
++//! has no detents to count, and goes to the client as before.
++
++use smithay::backend::input::{Axis, AxisSource, PointerAxisEvent};
++
++use crate::input::{
++    BindingFlags, ButtonCode, CascadeLookup, EventAction, InputTrigger, PointerRegion, Timestamp,
++};
++use crate::state::{IonMain, PointerTarget};
++
++/// v120 units per wheel detent, from the `wl_pointer.axis_value120` spec.
++const V120_PER_DETENT: i32 = 120;
++
++/// The event actions a detent runs, in order; the first that runs wins.
++const WHEEL_ACTIONS: [EventAction; 2] = [EventAction::PRESS, EventAction::CLICK];
++
++impl IonMain {
++    /// Run wheel bindings for a pointer axis event, returning the axes whose
++    /// scroll a binding took, `[horizontal, vertical]`. The caller leaves
++    /// those out of the frame it sends the client.
++    ///
++    /// An axis with a binding for its direction is withheld even when the
++    /// event did not complete a detent: a high-resolution wheel reports
++    /// fractions of one, and the client must not scroll by the fractions of
++    /// a detent the compositor goes on to take.
++    pub(super) fn pointer_wheel_bindings<I: smithay::backend::input::InputBackend>(
++        &mut self,
++        event: &impl PointerAxisEvent<I>,
++    ) -> [bool; 2] {
++        let mut taken = [false; 2];
++        if !matches!(event.source(), AxisSource::Wheel | AxisSource::WheelTilt) || self.is_locked()
++        {
++            self.wm.event_state.wheel_v120 = [0; 2];
++            return taken;
++        }
++        let time = Timestamp::from_input_time(event.time());
++        let mod_mask = self.wm.event_state.keyboard_mod_mask;
++
++        for (index, axis) in [Axis::Horizontal, Axis::Vertical].into_iter().enumerate() {
++            let Some(v120) = event.amount_v120(axis).map(|v| v.round() as i32) else {
++                continue;
++            };
++            if v120 == 0 {
++                continue;
++            }
++            let button = wheel_button(axis, v120 > 0);
++            let lookup = self.cascade_lookup(InputTrigger::Pointer(button), mod_mask);
++            if !self.wheel_bound(&lookup) {
++                self.wm.event_state.wheel_v120[index] = 0;
++                continue;
++            }
++
++            // Carry partial detents over, dropping them on a reversal so a
++            // change of direction does not first unwind the old one.
++            let acc = &mut self.wm.event_state.wheel_v120[index];
++            if (*acc > 0) != (v120 > 0) {
++                *acc = 0;
++            }
++            *acc += v120;
++            let detents = *acc / V120_PER_DETENT;
++            *acc %= V120_PER_DETENT;
++
++            // Withheld until a detent shows otherwise: a binding that runs
++            // nothing (its operator passed through) or forwards leaves the
++            // scroll to the client, as with a button.
++            let mut consumed = detents == 0;
++            for _ in 0..detents.unsigned_abs() {
++                // An operator may have moved focus or the layout, so each
++                // detent looks up the keymaps afresh.
++                let lookup = self.cascade_lookup(InputTrigger::Pointer(button), mod_mask);
++                if self
++                    .wheel_detent_run(&lookup, time)
++                    .is_some_and(|flags| !flags.contains(BindingFlags::PASSTHROUGH))
++                {
++                    consumed = true;
++                }
++            }
++            taken[index] = consumed;
++        }
++        taken
++    }
++
++    /// Whether any keymap a detent would search binds `lookup`'s trigger.
++    fn wheel_bound(&self, lookup: &CascadeLookup) -> bool {
++        let probe = |km: &crate::input::Keymap| {
++            WHEEL_ACTIONS
++                .iter()
++                .any(|&action| {
++                    km.trigger_lookup(lookup.trigger, lookup.mod_mask, action)
++                        .is_some()
++                })
++                .then_some(())
++        };
++        if self
++            .registry
++            .keymaps
++            .global_lookup(&lookup.km_ctx, probe)
++            .is_some()
++        {
++            return true;
++        }
++        self.wheel_regions()
++            .iter()
++            .any(|region| self.region_keymap_get(region).and_then(probe).is_some())
++    }
++
++    /// Run one detent: the global keymaps, then the spatial regions under
++    /// the pointer, for each of `WHEEL_ACTIONS` in turn. Returns the flags of
++    /// the binding that ran, or `None` when none did.
++    fn wheel_detent_run(
++        &mut self,
++        lookup: &CascadeLookup,
++        time: Timestamp,
++    ) -> Option<BindingFlags> {
++        let event = self.wm.gen_event(lookup.trigger.to_event_kind(true), time);
++        for action in WHEEL_ACTIONS {
++            if let Some(data) =
++                self.region_cascade_run(lookup, &PointerRegion::Global, action, event)
++            {
++                return Some(data.flags);
++            }
++            for region in self.wheel_regions() {
++                if let Some(data) = self.region_cascade_run(lookup, &region, action, event) {
++                    return Some(data.flags);
++                }
++            }
++        }
++        None
++    }
++
++    /// The spatial regions under the pointer, in cascade order. None over a
++    /// layer surface above the windows or a fullscreen window, as for a
++    /// button press (see `press_spatial_cascade`).
++    fn wheel_regions(&self) -> Vec<PointerRegion> {
++        let blocked = self.pointer_over_cached().is_none_or(|po| {
++            matches!(po.target, PointerTarget::LayerSurfaceAbove) || po.fullscreen_covers
++        });
++        if blocked {
++            return Vec::new();
++        }
++        self.pointer_hit_context().regions().collect()
++    }
++}
++
++/// The virtual button for a detent on `axis`, `positive` being down or right
++/// (the sign the client sees, so natural scrolling flips it).
++fn wheel_button(axis: Axis, positive: bool) -> ButtonCode {
++    match (axis, positive) {
++        (Axis::Vertical, false) => ButtonCode::WHEEL_UP,
++        (Axis::Vertical, true) => ButtonCode::WHEEL_DOWN,
++        (Axis::Horizontal, false) => ButtonCode::WHEEL_LEFT,
++        (Axis::Horizontal, true) => ButtonCode::WHEEL_RIGHT,
++    }
++}
+diff --git a/src/input/binding.rs b/src/input/binding.rs
+index 769d9652..cda85597 100644
+--- a/src/input/binding.rs
++++ b/src/input/binding.rs
+@@ -23,6 +23,13 @@ string_int_map! {
+         FORWARD = 0x115,
+         BACK = 0x116,
+         TASK = 0x117,
++        // Virtual buttons for scroll-wheel detents, past the end of the
++        // Linux input code range (`KEY_MAX` is 0x2ff) so no device reports
++        // them. See `handler::input::pointer_wheel`.
++        WHEEL_UP = 0x1_0000,
++        WHEEL_DOWN = 0x1_0001,
++        WHEEL_LEFT = 0x1_0002,
++        WHEEL_RIGHT = 0x1_0003,
+     }
+ }
+ 
+diff --git a/src/state/mod.rs b/src/state/mod.rs
+index 626f4744..c1c5931a 100644
+--- a/src/state/mod.rs
++++ b/src/state/mod.rs
+@@ -483,6 +483,10 @@ pub struct EventState {
+     pub(crate) drag_held: Option<crate::input::InputTrigger>,
+     /// Last click release for double-click detection.
+     pub(crate) last_click: Option<crate::input::LastClick>,
++    /// Scroll-wheel v120 not yet making up a whole detent, `[horizontal,
++    /// vertical]`, for an axis with a wheel binding. Signed like the axis
++    /// value. See `handler::input::pointer_wheel`.
++    pub(crate) wheel_v120: [i32; 2],
+     /// Pending keymap prompt: when set, the next key press is looked up in this keymap
+     /// instead of the normal binding tables (leader key support).
+     pub(crate) keymap_pending: Option<crate::input::KeymapId>,
+@@ -615,6 +619,7 @@ impl EventState {
+             pending_press: None,
+             drag_held: None,
+             last_click: None,
++            wheel_v120: [0; 2],
+             keymap_pending: None,
+             keyboard_forwarded_keys: HashSet::new(),
+             keyboard_virtual_keymap: None,
+diff --git a/tests/integration/api/input_dispatch.rs b/tests/integration/api/input_dispatch.rs
+index 9c65f06f..b5ba2ba3 100644
+--- a/tests/integration/api/input_dispatch.rs
++++ b/tests/integration/api/input_dispatch.rs
+@@ -5,6 +5,7 @@
+ use crate::common::{
+     ClientId, DEFAULT_OUTPUT_H, DEFAULT_OUTPUT_W, Fixture, PointerAxisEvent, TouchEvent,
+ };
++use ionwl::input::EventAction;
+ use smithay::backend::input::{Axis, AxisRelativeDirection, AxisSource};
+ use smithay::utils::Rectangle;
+ use wayland_client::protocol::wl_pointer;
+@@ -433,3 +434,164 @@ fn touch_to_generator_as_pointer() {
+     );
+     assert_eq!(fixture.ionwl().generator_pending_count_test(), 0);
+ }
++
++/// `scroll_client_fixture` with the dispatch test operators registered and
++/// `button` (a `pointer_buttons` name) bound in the global keymap to `op`.
++fn wheel_binding_fixture(button: &str, event_action: EventAction, op: &str) -> (Fixture, ClientId) {
++    let (mut fixture, client_id) = scroll_client_fixture();
++    fixture
++        .python_call("keybinding_dispatch", "setup", ())
++        .expect("the test operators should register");
++    fixture
++        .python_call(
++            "keybinding_dispatch",
++            "pointer_binding_add",
++            (
++                "global",
++                button,
++                event_action as i32,
++                false,
++                true,
++                false,
++                Some(op),
++            ),
++        )
++        .expect("the wheel binding should register");
++    (fixture, client_id)
++}
++
++/// A wheel detent runs its virtual button's Press binding, and the client
++/// does not scroll by it as well.
++#[test]
++fn wheel_binding_takes_the_detent() {
++    let (mut fixture, client_id) =
++        wheel_binding_fixture("WHEEL_DOWN", EventAction::PRESS, "test_noop_a");
++    let events = scroll_to_client(
++        &mut fixture,
++        client_id,
++        AxisSource::Wheel,
++        Axis::Vertical,
++        Some(15.0),
++        Some(120.0),
++        AxisRelativeDirection::Identical,
++    );
++    assert_eq!(fixture.operator_log_take(), ["test_noop_a"]);
++    assert_eq!(events, []);
++}
++
++/// A detent has no release to wait for, so a Click binding - `MatchPointer`'s
++/// default action - runs on it too.
++#[test]
++fn wheel_binding_click_runs_on_the_detent() {
++    let (mut fixture, client_id) =
++        wheel_binding_fixture("WHEEL_UP", EventAction::CLICK, "test_noop_a");
++    scroll_to_client(
++        &mut fixture,
++        client_id,
++        AxisSource::Wheel,
++        Axis::Vertical,
++        Some(-15.0),
++        Some(-120.0),
++        AxisRelativeDirection::Identical,
++    );
++    assert_eq!(fixture.operator_log_take(), ["test_noop_a"]);
++}
++
++/// A high-resolution wheel's fractions of a detent add up to one binding run,
++/// and none of them scroll the client in the meantime.
++#[test]
++fn wheel_binding_accumulates_partial_detents() {
++    let (mut fixture, client_id) =
++        wheel_binding_fixture("WHEEL_DOWN", EventAction::PRESS, "test_noop_a");
++    let mut events = Vec::new();
++    for _ in 0..3 {
++        events.extend(scroll_to_client(
++            &mut fixture,
++            client_id,
++            AxisSource::Wheel,
++            Axis::Vertical,
++            Some(5.0),
++            Some(40.0),
++            AxisRelativeDirection::Identical,
++        ));
++        if fixture.operator_log_take().is_empty() {
++            continue;
++        }
++        assert!(events.is_empty(), "the client saw none of the detent");
++        return;
++    }
++    panic!("three thirds of a detent ran no binding");
++}
++
++/// Only the bound direction is taken: scrolling the other way reaches the
++/// client as before.
++#[test]
++fn wheel_binding_leaves_the_other_direction() {
++    let (mut fixture, client_id) =
++        wheel_binding_fixture("WHEEL_DOWN", EventAction::PRESS, "test_noop_a");
++    let events = scroll_to_client(
++        &mut fixture,
++        client_id,
++        AxisSource::Wheel,
++        Axis::Vertical,
++        Some(-15.0),
++        Some(-120.0),
++        AxisRelativeDirection::Identical,
++    );
++    assert_eq!(fixture.operator_log_take(), Vec::<String>::new());
++    assert!(
++        events.contains(&PointerAxisEvent::Value120(
++            wl_pointer::Axis::VerticalScroll,
++            -120
++        )),
++        "the client scrolled: {events:?}"
++    );
++}
++
++/// A binding whose operator passes through has run nothing, so the detent
++/// still scrolls the client, as an unbound one would.
++#[test]
++fn wheel_binding_passing_operator_forwards() {
++    let (mut fixture, client_id) =
++        wheel_binding_fixture("WHEEL_DOWN", EventAction::PRESS, "test_passthrough");
++    let events = scroll_to_client(
++        &mut fixture,
++        client_id,
++        AxisSource::Wheel,
++        Axis::Vertical,
++        Some(15.0),
++        Some(120.0),
++        AxisRelativeDirection::Identical,
++    );
++    assert!(
++        events.contains(&PointerAxisEvent::Value120(
++            wl_pointer::Axis::VerticalScroll,
++            120
++        )),
++        "the client scrolled: {events:?}"
++    );
++}
++
++/// Finger scrolling has no detents, so wheel bindings leave it alone.
++#[test]
++fn wheel_binding_ignores_finger_scroll() {
++    let (mut fixture, client_id) =
++        wheel_binding_fixture("WHEEL_DOWN", EventAction::PRESS, "test_noop_a");
++    let events = scroll_to_client(
++        &mut fixture,
++        client_id,
++        AxisSource::Finger,
++        Axis::Vertical,
++        Some(15.0),
++        None,
++        AxisRelativeDirection::Identical,
++    );
++    assert_eq!(fixture.operator_log_take(), Vec::<String>::new());
++    assert!(
++        events.contains(&PointerAxisEvent::Value(
++            wl_pointer::Axis::VerticalScroll,
++            15.0
++        )),
++        "the client scrolled: {events:?}"
++    );
++}
+-- 
+2.56.0
+
