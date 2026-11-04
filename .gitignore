@@ -1,3 +1,4 @@
 .flatpak-builder
 *.deb
 dsdt.*
+__pycache__/

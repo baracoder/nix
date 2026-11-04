@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Symlink every file under dotfiles/ into $HOME, with a leading dot on the first
+# path component (dotfiles/config/ionwl/ion_init.py -> ~/.config/ionwl/ion_init.py),
+# the layout ~/.dotfiles uses for cfgs/.
+#
+# The links point into this working copy rather than the nix store, so the
+# files stay writable and edits apply without a rebuild.
+#
+# A regular file in the way is replaced only when identical; otherwise it is
+# reported and left alone, and the script fails at the end.
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+src_dir=$root/dotfiles
+conflicts=0
+
+cd "$src_dir"
+while IFS= read -r -d '' rel; do
+    rel=${rel#./}
+    src=$src_dir/$rel
+    target=$HOME/.$rel
+
+    if [ -L "$target" ]; then
+        current=$(readlink "$target")
+        [ "$current" = "$src" ] && continue
+        echo "relink  ~/.$rel (was -> $current)"
+    elif [ -e "$target" ]; then
+        if ! cmp -s "$src" "$target"; then
+            printf '\033[31mconflict ~/.%s differs from dotfiles/%s, not linked\033[0m\n' "$rel" "$rel" >&2
+            conflicts=$((conflicts + 1))
+            continue
+        fi
+        echo "replace ~/.$rel (identical file)"
+    else
+        echo "link    ~/.$rel"
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    ln -sfn "$src" "$target"
+done < <(find . \( -type f -o -type l \) -print0 | sort -z)
+
+if [ "$conflicts" -gt 0 ]; then
+    echo "$conflicts conflict(s): merge the changes into dotfiles/ (or remove the file), then rerun." >&2
+    exit 1
+fi

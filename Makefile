@@ -1,4 +1,4 @@
-update:
+update: link
 	nix flake update
 	nh os boot .
 	git commit -m 'Update flake inputs' ./flake.lock
@@ -7,5 +7,11 @@ update:
 update-packages:
 	nix-update --flake nixosConfigurations.killswitch.pkgs.csharp-language-server
 
-switch:
+switch: link
 	nh os switch .
+
+# Symlink dotfiles/ into $HOME (see scripts/link-home).
+link:
+	./scripts/link-home
+
+.PHONY: update update-packages switch link
