@@ -1,0 +1,173 @@
+From 20b85170a80a98ffd0aca293426c7d64452dcd07 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Wed, 4 Nov 2026 20:12:38 +0100
+Subject: [PATCH] Add: idle detection via ext-idle-notify
+
+Clients such as swayidle and shells with idle timers bind
+ext_idle_notifier_v1 to lock or blank after their own timeouts. The
+notifier is fed the same input activity as the built-in idle timer, and
+idle-inhibit holds back its idle events as well.
+---
+ doc/python_api/rst/guide/features.rst |  5 +++--
+ src/handler/protocol/input_misc.rs    | 24 +++++++++++++++++++++++-
+ src/state/idle.rs                     | 11 +++++++++++
+ src/state/mod.rs                      | 10 +++++++++-
+ 4 files changed, 46 insertions(+), 4 deletions(-)
+
+diff --git a/doc/python_api/rst/guide/features.rst b/doc/python_api/rst/guide/features.rst
+index 5e7ced8d..34d4ff57 100644
+--- a/doc/python_api/rst/guide/features.rst
++++ b/doc/python_api/rst/guide/features.rst
+@@ -108,6 +108,9 @@ keyboard-shortcuts-inhibit
+    capture compositor shortcuts.
+ idle-inhibit
+    Clients suppress idle/screen-blanking (video players).
++ext-idle-notify
++   Idle detection for automatic screen locking (swayidle).
++   Idle-inhibit holds back its idle events as well.
+ 
+ Clipboard and Selection
+ -----------------------
+@@ -134,8 +137,6 @@ Not Yet Supported
+ 
+ text-input / input-method
+    Input-method editors for non-Latin scripts (fcitx5, ibus).
+-ext-idle-notify
+-   Idle detection for automatic screen locking (swayidle).
+ pointer-gestures
+    Touchpad swipe and pinch gestures reported to clients.
+ tearing-control
+diff --git a/src/handler/protocol/input_misc.rs b/src/handler/protocol/input_misc.rs
+index bd0093c2..082875af 100644
+--- a/src/handler/protocol/input_misc.rs
++++ b/src/handler/protocol/input_misc.rs
+@@ -1,6 +1,8 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ 
+-//! Assorted input handlers: idle-inhibit, keyboard-shortcuts-inhibit, tablet seat, and fractional scale.
++//! Assorted input handlers: idle-inhibit, idle-notify, keyboard-shortcuts-inhibit, tablet seat, and fractional scale.
++
++use smithay::wayland::idle_notify::{IdleNotifierHandler, IdleNotifierState};
+ 
+ use super::{
+     FractionalScaleHandler, IdleInhibitHandler, IonMain, KeyboardShortcutsInhibitHandler,
+@@ -14,11 +16,21 @@ impl IdleInhibitHandler for IonMain {
+     fn inhibit(&mut self, surface: WlSurface) {
+         debug!("Idle inhibit requested by surface: {:?}", surface.id());
+         self.wm.surfaces_idle_inhibiting.insert(surface);
++        self.idle_notifier_inhibit_sync();
+     }
+ 
+     fn uninhibit(&mut self, surface: WlSurface) {
+         debug!("Idle uninhibit by surface: {:?}", surface.id());
+         self.wm.surfaces_idle_inhibiting.remove(&surface);
++        self.idle_notifier_inhibit_sync();
++    }
++}
++
++// === Idle notify handler ===
++
++impl IdleNotifierHandler for IonMain {
++    fn idle_notifier_state(&mut self) -> &mut IdleNotifierState<Self> {
++        &mut self.wm.protocol_managers.idle_notifier_state
+     }
+ }
+ 
+@@ -68,6 +80,16 @@ impl IonMain {
+             .retain(smithay::reexports::wayland_server::Resource::is_alive);
+         !self.wm.surfaces_idle_inhibiting.is_empty()
+     }
++
++    /// Pass the idle-inhibit state on to `ext-idle-notify` clients, which
++    /// then hold back their idle events like ionwl's own timer does.
++    pub(crate) fn idle_notifier_inhibit_sync(&mut self) {
++        let inhibited = self.idle_inhibited();
++        let state = &mut self.wm.protocol_managers.idle_notifier_state;
++        if state.is_inhibited() != inhibited {
++            state.set_is_inhibited(inhibited);
++        }
++    }
+ }
+ 
+ // === Tablet seat handler (tablet tool cursor image + zwp_tablet_v2 protocol) ===
+diff --git a/src/state/idle.rs b/src/state/idle.rs
+index 7f2cf8f2..a34b488b 100644
+--- a/src/state/idle.rs
++++ b/src/state/idle.rs
+@@ -22,6 +22,14 @@ impl IonMain {
+     /// this in `unlock()`.
+     pub(crate) fn idle_activity_reset(&mut self, fresh: bool) {
+         self.wm.idle_timer.last_activity = Instant::now();
++        // `ext-idle-notify` clients run their own timeouts off the same input.
++        // `IonMain` reaches `wm` through `DerefMut`, so the two fields cannot
++        // be borrowed apart; the seat handle is a cheap reference clone.
++        let seat = self.wm.seat.clone();
++        self.wm
++            .protocol_managers
++            .idle_notifier_state
++            .notify_activity(&seat);
+ 
+         // Wake displays on input if they were powered off, restoring only the
+         // outputs idle blanked (not any turned off explicitly meanwhile).
+@@ -57,6 +65,9 @@ impl IonMain {
+     pub(crate) fn idle_check(&mut self) -> Duration {
+         let wait_max = Duration::from_secs(timing_const::IDLE_CHECK_INTERVAL_MAX_SEC);
+ 
++        // Inhibitors also go away with their surface, which reports nothing,
++        // so this periodic check is what notices those.
++        self.idle_notifier_inhibit_sync();
+         if self.idle_inhibited() {
+             self.wm.idle_timer.was_inhibited = true;
+             return wait_max;
+diff --git a/src/state/mod.rs b/src/state/mod.rs
+index c93afb94..626f4744 100644
+--- a/src/state/mod.rs
++++ b/src/state/mod.rs
+@@ -120,6 +120,7 @@ use smithay::{
+         dmabuf::{DmabufGlobal, DmabufState},
+         fractional_scale::FractionalScaleManagerState,
+         idle_inhibit::IdleInhibitManagerState,
++        idle_notify::IdleNotifierState,
+         keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState,
+         output::OutputManagerState as SmithayOutputManagerState,
+         pointer_constraints::PointerConstraintsState,
+@@ -1202,6 +1203,10 @@ pub(crate) struct ProtocolManagers {
+     /// `wlr-data-control` clipboard-manager state. See
+     /// [`Self::ext_data_control_state`].
+     pub(crate) wlr_data_control_state: WlrDataControlState,
++    /// `ext-idle-notify` state, telling clients such as swayidle when the
++    /// user goes idle. Fed the same activity and inhibit state as ionwl's own
++    /// idle timer (see `state::idle`), with each client's own timeouts.
++    pub(crate) idle_notifier_state: IdleNotifierState<IonMain>,
+ }
+ 
+ impl WaylandGlobals {
+@@ -1238,6 +1243,7 @@ impl ProtocolManagers {
+     /// the `can_view` default.
+     fn new(
+         display_handle: &DisplayHandle,
++        evlh: &calloop::LoopHandle<'static, IonMain>,
+         primary_selection_state: &PrimarySelectionState,
+     ) -> Self {
+         Self {
+@@ -1260,6 +1266,7 @@ impl ProtocolManagers {
+                 Some(primary_selection_state),
+                 |_| true,
+             ),
++            idle_notifier_state: IdleNotifierState::new(display_handle, evlh.clone()),
+         }
+     }
+ }
+@@ -1404,7 +1411,8 @@ impl IonCore {
+         let primary_selection_state = PrimarySelectionState::new::<IonMain>(&display_handle);
+         let wayland_globals = WaylandGlobals::new(&display_handle, clock.id() as u32);
+         // Built after the primary selection it lends to the clipboard managers.
+-        let protocol_managers = ProtocolManagers::new(&display_handle, &primary_selection_state);
++        let protocol_managers =
++            ProtocolManagers::new(&display_handle, evlh, &primary_selection_state);
+         let layer_shell_state = WlrLayerShellState::new::<IonMain>(&display_handle);
+         let session_lock_manager_state =
+             SessionLockManagerState::new::<IonMain, _>(&display_handle, |_| true);
+-- 
+2.56.0
+

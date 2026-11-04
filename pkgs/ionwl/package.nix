@@ -45,6 +45,8 @@ rustPlatform.buildRustPackage {
     # Touchpads were only detected via libinput's touch capability, which
     # only touchscreens have, so they got mouse prefs instead.
     ./touchpad-detection.patch
+    # Idle notifications for clients (swayidle, shells' idle timers).
+    ./ext-idle-notify.patch
   ];
 
   postPatch = ''
