@@ -56,10 +56,18 @@ in
       ];
     };
 
+    # dux-shell (`dms run`): its nixpkgs module adds quickshell, matugen and
+    # cava. Started from ion_init.py rather than by its unit, which would
+    # start it in every graphical session, next to the other shells.
+    programs.dux-shell = {
+      enable = true;
+      systemd.enable = false;
+    };
+
     environment.systemPackages = with pkgs; [
       cfg.package
-      # shell: bar, launcher, notifications; run one of the two shells,
-      # both own the notification daemon name
+      # shell: bar, launcher, notifications; run one shell at a time, all
+      # own the notification daemon name
       noctalia
       way-shell
       fuzzel

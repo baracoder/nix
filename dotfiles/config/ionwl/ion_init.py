@@ -171,8 +171,9 @@ def main() -> None:
         ion.utils.exec(('systemctl', '--user', 'start', '--no-block', 'ionwl-session.target'))
 
         ion.utils.exec(('kanshi',))
-        # One shell at a time: both are the notification daemon.
+        # One shell at a time: all are the notification daemon.
         # ion.utils.exec(('noctalia',))
+        # ion.utils.exec(('dms', 'run'))  # dux-shell
         ion.utils.exec(('way-shell',))
         # Locks on `loginctl lock-session` and before suspend; suspend waits
         # until the lock screen is up. (swayidle needs an idle protocol ionwl
