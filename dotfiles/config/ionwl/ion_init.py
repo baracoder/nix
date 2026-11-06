@@ -424,7 +424,7 @@ def main() -> None:
             (MatchKey(kbd.E, logo=True), ('spotlight', 'toggle')),  # app search
             (MatchKey(kbd.V, logo=True), ('clipboard', 'toggle')),
             (MatchKey(kbd.C, logo=True), ('control-center', 'toggle')),
-            (MatchKey(kbd.N, logo=True, ctrl=True), ('notifications', 'toggle')),
+            (MatchKey(kbd.N, logo=True), ('notifications', 'toggle')),
             (MatchKey(kbd.ESCAPE, logo=True, shift=True), ('powermenu', 'toggle')),
         )
         for match, args in dms_bindings:
