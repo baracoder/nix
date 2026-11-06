@@ -175,7 +175,9 @@ def main() -> None:
         # Otherwise: same for gtklock; suspend waits until it is up.
         if SHELL != 'dux':
             ion.utils.exec(('ionwl-lockd', 'gtklock', '-d'))
-        if not prefs.startup.use_xwayland:
+        # An ionwl without the hook (e.g. GDM still on the old one after a
+        # switch) starts it now, as before.
+        if not prefs.startup.use_xwayland or not hasattr(ion.app.hooks, 'xwayland_ready_post'):
             session_start()
 
     # What launches apps waits for XWayland: only then is DISPLAY known, and
@@ -188,7 +190,6 @@ def main() -> None:
         # One shell at a time: all are the notification daemon.
         ion.utils.exec(('dms', 'run') if SHELL == 'dux' else ('way-shell',))
 
-    @ion.app.hooks.xwayland_ready_post.append
     def on_xwayland_ready(display: str) -> None:
         for cmd in (
             ('systemctl', '--user', 'set-environment', f'DISPLAY={display}'),
@@ -197,9 +198,18 @@ def main() -> None:
             subprocess.call(cmd)
         session_start()
 
+    if hasattr(ion.app.hooks, 'xwayland_ready_post'):
+        ion.app.hooks.xwayland_ready_post.append(on_xwayland_ready)
+
     @ion.app.hooks.compositor_shutdown_pre.append
     def on_shutdown() -> None:
-        ion.utils.exec(('systemctl', '--user', 'stop', '--no-block', 'ionwl-session.target'))
+        # graphical-session.target too: the user manager outlives the session
+        # and units like the portal keep it needed, and while it's up GNOME
+        # refuses to start ("A graphical session is already running").
+        ion.utils.exec(
+            ('systemctl', '--user', 'stop', '--no-block', 'ionwl-session.target', 'graphical-session.target')
+        )
+        ion.utils.exec(('systemctl', '--user', 'unset-environment', 'DISPLAY'))
 
     # dux runs the idle timers (fade, lock, screen off) through ext-idle-notify
     # and its own settings; ionwl's would lock first, without the fade.
