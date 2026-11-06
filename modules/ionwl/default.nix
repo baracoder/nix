@@ -68,6 +68,20 @@ in
     programs.dux-shell = {
       enable = true;
       systemd.enable = false;
+      # QtWebSockets for plugins that talk to a websocket API (Home Assistant
+      # Monitor); the package only puts its own QML modules on the import
+      # path. Wrapped rather than overridden, which would rebuild it.
+      package = pkgs.symlinkJoin {
+        name = "dux-shell-${pkgs.dux-shell.version}";
+        paths = [ pkgs.dux-shell ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          rm $out/bin/dms
+          makeWrapper ${pkgs.dux-shell}/bin/dms $out/bin/dms \
+            --prefix NIXPKGS_QT6_QML_IMPORT_PATH : ${pkgs.kdePackages.qtwebsockets}/${pkgs.qt6.qtbase.qtQmlPrefix}
+        '';
+        inherit (pkgs.dux-shell) meta;
+      };
       # TDP bar/Control Center widget, on machines whose TDP PowerStation
       # controls. Installed to /etc/xdg/quickshell/dms-plugins; still needs
       # enabling under Settings > Plugins.
