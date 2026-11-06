@@ -13,6 +13,7 @@ __all__ = (
     "main",
 )
 
+import subprocess
 from typing import Annotated, NamedTuple
 
 import ion
@@ -168,17 +169,33 @@ def main() -> None:
             node.split(0, 1)
 
         ion_utils.config.setup_session(dbus=True, systemd=True)
-        # Activates graphical-session.target (portals, etc.). --no-block: what
-        # it starts may talk to the compositor, which waits on this hook.
-        ion.utils.exec(('systemctl', '--user', 'start', '--no-block', 'ionwl-session.target'))
 
         ion.utils.exec(('kanshi',))
-        # One shell at a time: all are the notification daemon.
-        ion.utils.exec(('dms', 'run') if SHELL == 'dux' else ('way-shell',))
         # dux locks itself (on `loginctl lock-session` and before suspend).
         # Otherwise: same for gtklock; suspend waits until it is up.
         if SHELL != 'dux':
             ion.utils.exec(('ionwl-lockd', 'gtklock', '-d'))
+        if not prefs.startup.use_xwayland:
+            session_start()
+
+    # What launches apps waits for XWayland: only then is DISPLAY known, and
+    # without it X11 apps (Steam) started from the shell or autostart fail.
+    def session_start() -> None:
+        # Activates graphical-session.target (portals, etc.) and through it
+        # XDG autostart. --no-block: what it starts may talk to the
+        # compositor, which waits on this hook.
+        ion.utils.exec(('systemctl', '--user', 'start', '--no-block', 'ionwl-session.target'))
+        # One shell at a time: all are the notification daemon.
+        ion.utils.exec(('dms', 'run') if SHELL == 'dux' else ('way-shell',))
+
+    @ion.app.hooks.xwayland_ready_post.append
+    def on_xwayland_ready(display: str) -> None:
+        for cmd in (
+            ('systemctl', '--user', 'set-environment', f'DISPLAY={display}'),
+            ('dbus-update-activation-environment', f'DISPLAY={display}'),
+        ):
+            subprocess.call(cmd)
+        session_start()
 
     @ion.app.hooks.compositor_shutdown_pre.append
     def on_shutdown() -> None:
