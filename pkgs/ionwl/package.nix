@@ -120,19 +120,21 @@ rustPlatform.buildRustPackage {
       --replace-fail "Exec=ionwl" "Exec=$out/bin/ionwl-session"
   '';
 
-  # EGL, wayland and xkb are dlopen'ed at runtime.
+  # EGL, wayland, xkb and the X11 libs are dlopen'ed at runtime. They go in
+  # the RPATH rather than LD_LIBRARY_PATH, which every program ionwl starts
+  # (the shell, and the apps it launches) would inherit.
   postFixup = ''
+    patchelf --add-rpath ${
+      lib.makeLibraryPath [
+        libglvnd
+        libxkbcommon
+        wayland
+        libxcursor
+        libxi
+        libx11
+      ]
+    } $out/bin/ionwl
     wrapProgram $out/bin/ionwl \
-      --prefix LD_LIBRARY_PATH : ${
-        lib.makeLibraryPath [
-          libglvnd
-          libxkbcommon
-          wayland
-          libxcursor
-          libxi
-          libx11
-        ]
-      } \
       --prefix PATH : ${lib.makeBinPath [ xwayland ]}
   '';
 
