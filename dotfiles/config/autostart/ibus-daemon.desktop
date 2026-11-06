@@ -1,0 +1,7 @@
+# Overrides /etc/xdg/autostart/ibus-daemon.desktop. ibus only autostarts
+# outside GNOME and KDE, and ionwl has no input-method support, so it would
+# only get in the way of X11 apps there.
+[Desktop Entry]
+Type=Application
+Name=IBus
+Hidden=true
