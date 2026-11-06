@@ -36,7 +36,13 @@ in
       description = "ionwl compositor session";
       documentation = [ "man:systemd.special(7)" ];
       bindsTo = [ "graphical-session.target" ];
-      wants = [ "graphical-session-pre.target" ];
+      # xdg-desktop-autostart.target starts the units systemd's generator
+      # makes from ~/.config/autostart and /etc/xdg/autostart (GNOME runs
+      # those itself and doesn't pull it in).
+      wants = [
+        "graphical-session-pre.target"
+        "xdg-desktop-autostart.target"
+      ];
       after = [ "graphical-session-pre.target" ];
     };
 
