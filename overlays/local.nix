@@ -22,6 +22,15 @@ final: prev:
     ];
   });
 
+  # Async page flips (wp_tearing_control_v1) for lower-latency fullscreen
+  # games. CachyOS's series rebased onto our mutter version; off unless the
+  # "tearing" experimental feature is enabled.
+  mutter = prev.mutter.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      ./patches/mutter-tearing.patch
+    ];
+  });
+
   gnomeExtensions = prev.gnomeExtensions // {
     upower-battery = prev.gnomeExtensions.upower-battery.overrideAttrs (old: {
       patches = (old.patches or [ ]) ++ [
