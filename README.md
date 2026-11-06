@@ -84,6 +84,9 @@ can be sent as it is.
   capability check; comment on the PR rather than send a new one
 - [ ] `pkgs/ionwl/pointer-gestures.patch`: touchpad swipe/pinch/hold for
   clients ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/xwayland-ready-hook.patch`: `xwayland_ready_post` hook, as
+  DISPLAY otherwise never reaches the session environment
+  ([ionwl](https://codeberg.org/ideasman42/ionwl))
 - [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series rebased
   onto mutter 50.5; not ours to send, drop it once mutter ships tearing
   ([mutter](https://gitlab.gnome.org/GNOME/mutter))

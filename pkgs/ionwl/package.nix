@@ -55,6 +55,8 @@ rustPlatform.buildRustPackage {
     ./tearing-control.patch
     # Touchpad swipe/pinch/hold reach clients.
     ./pointer-gestures.patch
+    # ion.app.hooks.xwayland_ready_post, to export DISPLAY to the session.
+    ./xwayland-ready-hook.patch
   ];
 
   # Async page flips in smithay's DrmCompositor, a backport of the unmerged

@@ -1,0 +1,86 @@
+From 1c18667efa1aa7aaef7f20c98076d807c5a49370 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 16:30:39 +0100
+Subject: [PATCH] Add: xwayland_ready_post hook
+
+DISPLAY only reaches children spawned once XWayland is ready, so programs
+started from compositor_startup_post, and the systemd/D-Bus activation
+environment, never get it: X11 apps launched from a shell or from XDG
+autostart fail. The hook passes the display name so the config can export
+it and start such programs then.
+---
+ src/python/hook_event.rs   | 12 ++++++++++++
+ src/python/hooks.rs        |  5 +++++
+ src/xwayland/mod.rs        |  3 +++
+ tests/python/test_hooks.py |  2 ++
+ 4 files changed, 22 insertions(+)
+
+diff --git a/src/python/hook_event.rs b/src/python/hook_event.rs
+index f1614b10..409f20a6 100644
+--- a/src/python/hook_event.rs
++++ b/src/python/hook_event.rs
+@@ -487,6 +487,18 @@ define_hooks! {
+             "",
+             "Callbacks receive no arguments.",
+         ],
++    XwaylandReadyPost(u32), "xwayland_ready_post",
++        [str],
++        [
++            "Fired once XWayland is ready and X11 clients can connect.",
++            "",
++            "Children spawned from now on have ``DISPLAY`` set; those spawned",
++            "before (e.g. from ``compositor_startup_post``) do not, nor does the",
++            "session environment. Use this hook to export it, or to start",
++            "programs that launch X11 applications.",
++            "",
++            "Callbacks receive the display name (e.g. ``\":0\"``).",
++        ],
+     CompositorShutdownPre, "compositor_shutdown_pre",
+         [],
+         [
+diff --git a/src/python/hooks.rs b/src/python/hooks.rs
+index d0ff002b..b21b43f0 100644
+--- a/src/python/hooks.rs
++++ b/src/python/hooks.rs
+@@ -382,6 +382,11 @@ fn hook_args_create(py: Python<'_>, event: &HookEvent) -> PyResult<Py<pyo3::type
+             PyTuple::new(py, [tablet.into_pyobject(py)?])?
+         }
+ 
++        // XWayland hook - the display name.
++        HookEvent::XwaylandReadyPost(display_number) => {
++            PyTuple::new(py, [format!(":{display_number}")])?
++        }
++
+         // Idle hooks - no arguments.
+         HookEvent::IdleLock
+         // Compositor hooks - no arguments.
+diff --git a/src/xwayland/mod.rs b/src/xwayland/mod.rs
+index 31a3faa9..3de8cf02 100644
+--- a/src/xwayland/mod.rs
++++ b/src/xwayland/mod.rs
+@@ -248,6 +248,9 @@ pub fn xwayland_spawn(
+                                 "DISPLAY",
+                                 Some(format!(":{display_number}")),
+                             );
++                            state.hook_invoke(crate::python::HookEvent::XwaylandReadyPost(
++                                display_number,
++                            ));
+                         }
+                         Err(e) => {
+                             error!("Failed to start X11 window manager: {:?}", e);
+diff --git a/tests/python/test_hooks.py b/tests/python/test_hooks.py
+index 91124fe4..2f67a1a1 100644
+--- a/tests/python/test_hooks.py
++++ b/tests/python/test_hooks.py
+@@ -39,6 +39,8 @@ HOOK_NAMES = (
+     "compositor_session_pause_pre", "compositor_session_pause_post",
+     "compositor_session_resume_pre", "compositor_session_resume_post",
+     "compositor_reload_pre", "compositor_reload_post",
++    # XWayland.
++    "xwayland_ready_post",
+ )
+ 
+ 
+-- 
+2.56.0
+
