@@ -93,6 +93,8 @@ can be sent as it is.
 - [ ] `pkgs/ionwl/desktop-swipe.patch`: switch desktops with a touchpad or
   touchscreen swipe, and the `gesture_swipe_*` hooks behind it
   ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/fullscreen-covers-top-layer.patch`: fullscreen windows cover
+  Top-layer surfaces such as bars ([ionwl](https://codeberg.org/ideasman42/ionwl))
 - [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series rebased
   onto mutter 50.5; not ours to send, drop it once mutter ships tearing
   ([mutter](https://gitlab.gnome.org/GNOME/mutter))

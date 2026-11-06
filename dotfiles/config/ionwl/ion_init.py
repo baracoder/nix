@@ -192,7 +192,15 @@ def main() -> None:
         # compositor, which waits on this hook.
         ion.utils.exec(('systemctl', '--user', 'start', '--no-block', 'ionwl-session.target'))
         # One shell at a time: all are the notification daemon.
-        ion.utils.exec(('dms', 'run') if SHELL == 'dux' else ('way-shell',))
+        # A fullscreen window covers dux's bar, which is on the Top layer
+        # (pkgs/ionwl/fullscreen-covers-top-layer.patch); its launcher, modals
+        # and popouts go on Overlay so they still show over one. Notification
+        # popups stay on Top, hidden while something is fullscreen.
+        dux = (
+            'env', 'DMS_MODAL_LAYER=overlay', 'DMS_POPOUT_LAYER=overlay',
+            'dms', 'run',
+        )
+        ion.utils.exec(dux if SHELL == 'dux' else ('way-shell',))
 
     def on_xwayland_ready(display: str) -> None:
         for cmd in (

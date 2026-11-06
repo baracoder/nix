@@ -1,0 +1,255 @@
+From b67b0472f01b77f8f15b33c25e04790bc556bff7 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 20:30:05 +0100
+Subject: [PATCH] Fix: let a fullscreen window cover Top layer surfaces
+
+Bars and panels go on layer-shell's Top layer, which is meant to sit
+under fullscreen windows: Overlay is for what must show over them.
+ionwl drew and hit-tested Top above a fullscreen window, so a bar
+stayed over a fullscreen video or game, and kept it from direct
+scanout.
+
+An output with a fullscreen window now leaves the Top band out of its
+foreground layer surfaces, both drawn and under the pointer, and brings
+it back when the window leaves fullscreen.
+---
+ src/backend/helpers.rs                | 20 ++++++-
+ src/handler/input/pointer.rs          | 18 +++---
+ src/handler/input/pointer_hit_test.rs |  7 ++-
+ src/state/layer.rs                    |  9 ++-
+ tests/integration/api/layer_shell.rs  | 79 +++++++++++++++++++++++++++
+ 5 files changed, 118 insertions(+), 15 deletions(-)
+
+diff --git a/src/backend/helpers.rs b/src/backend/helpers.rs
+index 01c674d6..171b6051 100644
+--- a/src/backend/helpers.rs
++++ b/src/backend/helpers.rs
+@@ -201,6 +201,17 @@ fn layer_loc_centered_for_anchor(
+ /// foreground pass draws them.
+ pub const LAYERS_FOREGROUND: [Layer; 2] = [Layer::Overlay, Layer::Top];
+ 
++/// The foreground z-bands an output shows, topmost first. A fullscreen
++/// window covers the Top band - panels and bars - leaving only Overlay above
++/// it, as layer-shell intends: Overlay is for what must show over fullscreen.
++pub fn layers_foreground(fullscreen_covers: bool) -> &'static [Layer] {
++    if fullscreen_covers {
++        &LAYERS_FOREGROUND[..1]
++    } else {
++        &LAYERS_FOREGROUND
++    }
++}
++
+ /// The z-bands drawn beneath the windows, topmost first: the order the
+ /// background pass draws them.
+ pub const LAYERS_BACKGROUND: [Layer; 2] = [Layer::Bottom, Layer::Background];
+@@ -218,9 +229,12 @@ pub const LAYERS_BACKGROUND: [Layer; 2] = [Layer::Bottom, Layer::Background];
+ /// Skipping it here also keeps its orphaned popups from being drawn at all.
+ ///
+ /// [`OutputLayerBands`]: crate::state::OutputLayerBands
++/// `fullscreen_covers` leaves out the Top band, which a fullscreen window
++/// on the output covers (see [`layers_foreground`]).
+ pub fn layer_bands_build(
+     layer_map: &LayerMap,
+     output_size: Size<i32, Logical>,
++    fullscreen_covers: bool,
+     bands: &mut LayerBandsScratch,
+ ) {
+     debug_assert!(
+@@ -228,10 +242,10 @@ pub fn layer_bands_build(
+         "the bands are built into an empty scratch"
+     );
+     for (out, band_layers) in [
+-        (&mut bands.foreground, LAYERS_FOREGROUND),
+-        (&mut bands.background, LAYERS_BACKGROUND),
++        (&mut bands.foreground, layers_foreground(fullscreen_covers)),
++        (&mut bands.background, &LAYERS_BACKGROUND[..]),
+     ] {
+-        for band in band_layers {
++        for &band in band_layers {
+             for layer in layer_map.layers_on(band).rev() {
+                 let surface = layer.wl_surface();
+                 if !surface_has_buffer(surface) {
+diff --git a/src/handler/input/pointer.rs b/src/handler/input/pointer.rs
+index 220ec527..1b839518 100644
+--- a/src/handler/input/pointer.rs
++++ b/src/handler/input/pointer.rs
+@@ -5,7 +5,6 @@
+ //! button, and debug-parity pieces live in the sibling `pointer_*` modules.
+ 
+ use smithay::input::pointer::CursorIcon;
+-use smithay::wayland::shell::wlr_layer::Layer;
+ use tracing::debug;
+ 
+ use crate::state::{FrameHit, PointerOverState, PointerTarget};
+@@ -317,11 +316,14 @@ impl IonMain {
+         //
+         // The layer-focus probe shares this read; the guard drops before the
+         // write below.
+-        let (active_output, layer_focused) = {
++        let (active_output, layer_focused, fullscreen_covers) = {
+             let scene = self.wm.scene.read();
++            let active_output = scene.layout.output_active_get();
+             (
+-                scene.layout.output_active_get(),
++                active_output,
+                 scene.layer_shell.surface_focused.is_some(),
++                active_output
++                    .is_some_and(|id| scene.layout.fullscreen_window_on_output(id).is_some()),
+             )
+         };
+         if matches!(target, PointerTarget::LayerSurfaceAbove)
+@@ -329,10 +331,12 @@ impl IonMain {
+         {
+             // Iterate Overlay before Top (higher z-order first), and within
+             // each layer topmost-first so the last-mapped surface wins on
+-            // overlap.
+-            if let Some(layer_surface) =
+-                self.layer_surface_at_point(output_id, &[Layer::Overlay, Layer::Top], pos)
+-            {
++            // overlap. A fullscreen window covers Top.
++            if let Some(layer_surface) = self.layer_surface_at_point(
++                output_id,
++                crate::backend::helpers::layers_foreground(fullscreen_covers),
++                pos,
++            ) {
+                 // Layer surface hit. OnDemand surfaces get keyboard focus;
+                 // either way, leave window focus alone.
+                 if layer_surface.can_receive_keyboard_focus() {
+diff --git a/src/handler/input/pointer_hit_test.rs b/src/handler/input/pointer_hit_test.rs
+index 60b41fdc..ebca0334 100644
+--- a/src/handler/input/pointer_hit_test.rs
++++ b/src/handler/input/pointer_hit_test.rs
+@@ -361,12 +361,13 @@ impl IonMain {
+             };
+         }
+ 
+-        // 1. Top/Overlay layer surfaces (above everything). When hit,
+-        // both target and surface latch to the same item.
++        // 1. Top/Overlay layer surfaces (above everything, bar a fullscreen
++        // window covering Top). When hit, both target and surface latch to
++        // the same item.
+         if let Some(surf) = Self::try_layer_types(
+             &scene,
+             output_id,
+-            &crate::backend::helpers::LAYERS_FOREGROUND,
++            crate::backend::helpers::layers_foreground(fullscreen_covers),
+             pos_f64,
+             output_rect,
+         ) {
+diff --git a/src/state/layer.rs b/src/state/layer.rs
+index de932ea8..4b82f951 100644
+--- a/src/state/layer.rs
++++ b/src/state/layer.rs
+@@ -102,8 +102,9 @@ impl LayerBandsScratch {
+ /// the per-surface state locks smithay's element walks take remain.
+ ///
+ /// Gated on the scene's write count paired with `IonWM::layer_maps_revision`,
+-/// which together cover everything the build reads: the output's rect and
+-/// the output set live under the scene guard, and each surface's committed
++/// which together cover everything the build reads: the output's rect, the
++/// output set and whether a fullscreen window covers the Top band live under
++/// the scene guard, and each surface's committed
+ /// buffer, arranged geometry and anchor live in its layer map, which only a
+ /// layer-surface commit, a layer-surface destroy or an output change
+ /// touches. A commit or a destroy moves the revision; an output change
+@@ -164,6 +165,10 @@ fn layer_bands_rebuild(
+         layer_bands_build(
+             &scene.layer_map(&compositor_output.output),
+             output_state.rect().size().to_smithay(),
++            scene
++                .layout
++                .fullscreen_window_on_output(output_id)
++                .is_some(),
+             scratch,
+         );
+         if let Some(bands) = scratch.replacement_for(&compositor_output.layer_bands) {
+diff --git a/tests/integration/api/layer_shell.rs b/tests/integration/api/layer_shell.rs
+index 976dd517..848532cb 100644
+--- a/tests/integration/api/layer_shell.rs
++++ b/tests/integration/api/layer_shell.rs
+@@ -1801,3 +1801,82 @@ fn remapped_layer_surface_reconfigures_instead_of_dying() {
+         "the surface must be mapped and taking hits again"
+     );
+ }
++
++/// A fullscreen window covers the `Top` band - a bar - and leaves `Overlay`
++/// above it: the bar neither draws nor takes the pointer until the window
++/// leaves fullscreen.
++#[test]
++fn fullscreen_covers_top_layer() {
++    let mut fixture = Fixture::new();
++    let output_id = fixture.output_add_default();
++    let client_id = fixture.add_client();
++    let spawn = |fixture: &mut Fixture, layer, width: i32| {
++        fixture.spawn_layer_surface(
++            client_id,
++            layer,
++            &LayerConfigureProps {
++                size: Some((width as u32, 200)),
++                anchor: Some(LayerAnchor::Top | LayerAnchor::Left | LayerAnchor::Right),
++                keyboard_interactivity: Some(KeyboardInteractivity::None),
++                ..Default::default()
++            },
++        )
++    };
++    let top_width = 401;
++    let overlay_width = 101;
++    let _top = spawn(&mut fixture, Layer::Top, top_width);
++    let _overlay = spawn(&mut fixture, Layer::Overlay, overlay_width);
++    let surface = fixture.spawn_window(client_id);
++    fixture.dispatch();
++
++    let centered = |width: i32| [(DEFAULT_OUTPUT_W - width) / 2, 0];
++    // Inside the Top surface, outside the Overlay one.
++    let bar_spot = [(DEFAULT_OUTPUT_W - top_width) / 2 + 1, 100];
++    let bands = |fixture: &mut Fixture| {
++        fixture.core().wm.render_inputs_sync_test();
++        fixture.core().wm.layer_bands_test(output_id)
++    };
++    assert_eq!(
++        bands(&mut fixture),
++        Some([
++            vec![centered(overlay_width), centered(top_width)],
++            Vec::new()
++        ]),
++        "precondition: both bands draw over a tiled window"
++    );
++
++    fixture.window_fullscreen_with_margin(client_id, &surface, 0);
++    assert_eq!(
++        bands(&mut fixture),
++        Some([vec![centered(overlay_width)], Vec::new()]),
++        "the fullscreen window covers the Top band, not Overlay"
++    );
++    let bar = fixture.ionwl().layer_surface_at_point_test(bar_spot);
++    assert!(bar.is_some(), "precondition: the bar is mapped there");
++    assert_ne!(
++        fixture.ionwl().pointer_surface_at_test(bar_spot),
++        bar,
++        "the covered bar takes no pointer"
++    );
++
++    fixture
++        .client(client_id)
++        .window_for_surface(&surface)
++        .unset_fullscreen();
++    fixture.roundtrip(client_id);
++    fixture.dispatch();
++    fixture.roundtrip(client_id);
++    assert_eq!(
++        bands(&mut fixture),
++        Some([
++            vec![centered(overlay_width), centered(top_width)],
++            Vec::new()
++        ]),
++        "leaving fullscreen brings the bar back"
++    );
++    assert_eq!(
++        fixture.ionwl().pointer_surface_at_test(bar_spot),
++        bar,
++        "the bar takes the pointer again"
++    );
++}
+-- 
+2.56.0
+

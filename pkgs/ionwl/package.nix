@@ -63,6 +63,8 @@ rustPlatform.buildRustPackage {
     # Swipes with gesture_swipe_fingers fingers, on a touchpad or touchscreen,
     # switch desktops.
     ./desktop-swipe.patch
+    # Fullscreen windows cover Top-layer bars, as layer-shell intends.
+    ./fullscreen-covers-top-layer.patch
   ];
 
   # Async page flips in smithay's DrmCompositor, a backport of the unmerged
