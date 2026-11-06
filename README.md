@@ -87,6 +87,12 @@ can be sent as it is.
 - [ ] `pkgs/ionwl/xwayland-ready-hook.patch`: `xwayland_ready_post` hook, as
   DISPLAY otherwise never reaches the session environment
   ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/tiled-drag.patch`: `window_drag` and `frame_resize_drag`, to
+  move and resize tiled windows with Super+drag from anywhere on them
+  ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/desktop-swipe.patch`: switch desktops with a touchpad or
+  touchscreen swipe, and the `gesture_swipe_*` hooks behind it
+  ([ionwl](https://codeberg.org/ideasman42/ionwl))
 - [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series rebased
   onto mutter 50.5; not ours to send, drop it once mutter ships tearing
   ([mutter](https://gitlab.gnome.org/GNOME/mutter))

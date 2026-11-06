@@ -1,0 +1,550 @@
+From 7c67ad87bc9842a7ba73446fa760d1ec62d58304 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 19:55:59 +0100
+Subject: [PATCH 1/2] Add: move and resize tiled windows by dragging them
+ anywhere
+
+A tiled window could only be moved by its tab (frame_tab_drag) and
+resized by its divider (tiling_divider_resize), each a narrow target,
+while floating_move and floating_resize, bound to Super+drag, ignore
+tiled windows.
+
+window_drag and frame_resize_drag take a window grabbed anywhere on
+it: a floating one moves or resizes as before, a tiled one is dragged
+as its tab into the frame it is released over, or has the dividers
+nearest the pointer moved, one per axis - the one on the side of the
+frame the pointer is in, or the other side's at the layout edge.
+
+ion._internal.tiled_frame_at_pointer() finds the frame, and
+frame_tab_drag's generator is split out so a drag can start from a
+stand-in tab.
+---
+ doc/python_api/rst/guide/features.rst         |   3 +
+ .../operators/frame_resize_drag_impl.py       | 108 ++++++++++++++++++
+ .../operators/frame_tab_drag_impl.py          |  16 +++
+ .../_internal/operators/window_drag_impl.py   |  48 ++++++++
+ .../python/ion_utils/builtins/operators.py    |  50 ++++++++
+ src/python/hit_tests.rs                       |  30 +++++
+ tests/integration/api/mod.rs                  |   1 +
+ tests/integration/api/tiled_drag.rs           | 103 +++++++++++++++++
+ .../integration/python/scripts/tiled_drag.py  |  51 +++++++++
+ 9 files changed, 410 insertions(+)
+ create mode 100644 share/ionwl/python/ion_utils/_internal/operators/frame_resize_drag_impl.py
+ create mode 100644 share/ionwl/python/ion_utils/_internal/operators/window_drag_impl.py
+ create mode 100644 tests/integration/api/tiled_drag.rs
+ create mode 100644 tests/integration/python/scripts/tiled_drag.py
+
+diff --git a/doc/python_api/rst/guide/features.rst b/doc/python_api/rst/guide/features.rst
+index d938021c..09ed6ef1 100644
+--- a/doc/python_api/rst/guide/features.rst
++++ b/doc/python_api/rst/guide/features.rst
+@@ -42,6 +42,9 @@ Dragging
+    - A floating frame or workspace can be dragged between desktops.
+    - A client's own drag-and-drop, can be dragged between desktops too.
+    - Drag delay can be tuned or disabled through :data:`ion.app.preferences.dnd`.
++   - ``window_drag`` grabs a window anywhere: a tiled one drops into the frame it is released over,
++     a floating one moves. ``frame_resize_drag`` likewise resizes a floating window, or moves the
++     dividers of a tiled frame nearest the pointer.
+ 
+ Wayland Protocols
+ =================
+diff --git a/share/ionwl/python/ion_utils/_internal/operators/frame_resize_drag_impl.py b/share/ionwl/python/ion_utils/_internal/operators/frame_resize_drag_impl.py
+new file mode 100644
+index 00000000..7d262062
+--- /dev/null
++++ b/share/ionwl/python/ion_utils/_internal/operators/frame_resize_drag_impl.py
+@@ -0,0 +1,108 @@
++# SPDX-License-Identifier: GPL-3.0-or-later
++
++"""Frame resize generator implementation.
++
++Resizes the window under the pointer, wherever it was grabbed: a floating
++item resizes as with ``floating_resize``, a tiled frame moves the dividers
++nearest the pointer - on each axis, the one on the side of the frame the
++pointer is in, or the other side's when the frame is at the layout edge.
++"""
++
++from __future__ import annotations
++
++__all__ = (
++    "exec_generator",
++)
++
++from collections.abc import Generator
++
++import ion
++from ion.types import (
++    Event,
++    EventCancel,
++    EventMotion,
++    EventPointer,
++    GeneratorStep,
++)
++
++from ion_utils._internal.operators import floating_resize_impl
++
++# Cursors by which edges move: (horizontal side, vertical side), each
++# -1 (min edge), 1 (max edge) or 0 (none on that axis).
++_CURSORS = {
++    (-1, 0): "w-resize", (1, 0): "e-resize",
++    (0, -1): "n-resize", (0, 1): "s-resize",
++    (-1, -1): "nw-resize", (1, -1): "ne-resize",
++    (-1, 1): "sw-resize", (1, 1): "se-resize",
++}
++
++
++def _divider_find(
++    node: ion.types.SplitNode,
++    axis: int,
++    node_is_min_child: bool,
++) -> ion.types.SplitNodeContainer | None:
++    """The divider on *node*'s max edge on *axis* (its min edge when not
++    *node_is_min_child*), or ``None`` at the layout edge."""
++    current = node
++    while (parent := current.parent) is not None:
++        if parent.split_axis == axis and (parent.child_min == current) == node_is_min_child:
++            return parent
++        current = parent
++    return None
++
++
++def exec_generator(
++    event: Event,
++) -> Generator[GeneratorStep, Event]:
++    """Resize the window under the pointer until the button is released."""
++    if ion._internal.floating_item_at_pointer() is not None:
++        return (yield from floating_resize_impl.exec_generator(event, border=False))
++
++    frame = ion._internal.tiled_frame_at_pointer()
++    if frame is None:
++        return None
++    node = frame.split_node
++    if node is None:
++        return None
++
++    assert isinstance(event, EventPointer)
++    grab_button = event.button
++    start = event.position.copy()
++    rect = node.rect
++
++    # (divider, axis, ratio at the start, pixels per unit ratio).
++    dividers = []
++    sides = [0, 0]
++    for axis in (0, 1):
++        towards_max = start[axis] * 2 >= rect.min[axis] + rect.max[axis]
++        divider = _divider_find(node, axis, towards_max)
++        if divider is None:
++            towards_max = not towards_max
++            divider = _divider_find(node, axis, towards_max)
++        if divider is None:
++            continue
++        dim = divider.rect.size[axis]
++        if dim <= 0:
++            continue
++        dividers.append((divider, axis, divider.split_ratio, dim))
++        sides[axis] = 1 if towards_max else -1
++
++    if not dividers:
++        return None
++
++    ion.wm.cursor_push(_CURSORS[(sides[0], sides[1])])
++
++    while True:
++        event = yield GeneratorStep(consume_event=True)
++
++        if isinstance(event, EventCancel):
++            return
++
++        if isinstance(event, EventPointer) and not event.press and event.button == grab_button:
++            return
++
++        if isinstance(event, (EventMotion, EventPointer)):
++            for divider, axis, ratio, dim in dividers:
++                if divider.is_valid:
++                    divider.split_ratio = ratio + (event.position[axis] - start[axis]) / dim
+diff --git a/share/ionwl/python/ion_utils/_internal/operators/frame_tab_drag_impl.py b/share/ionwl/python/ion_utils/_internal/operators/frame_tab_drag_impl.py
+index e05ae040..e027bdec 100644
+--- a/share/ionwl/python/ion_utils/_internal/operators/frame_tab_drag_impl.py
++++ b/share/ionwl/python/ion_utils/_internal/operators/frame_tab_drag_impl.py
+@@ -14,6 +14,7 @@ direction, so the tab can be dropped into a frame that lives there.
+ from __future__ import annotations
+ 
+ __all__ = (
++    "drag_generator",
+     "exec_generator",
+ )
+ 
+@@ -57,7 +58,22 @@ def exec_generator(
+         return None
+ 
+     window, source_frame, tab_rect, grab_offset = result
++    return (yield from drag_generator(event, window, source_frame, tab_rect, grab_offset))
+ 
++
++def drag_generator(
++    event: Event,
++    window: ion.types.Window,
++    source_frame: ion.types.Frame,
++    tab_rect: Rect,
++    grab_offset: Point,
++) -> Generator[GeneratorStep, Event]:
++    """Drag *window* out of *source_frame*, as a ghost tab of *tab_rect*'s
++    size held at *grab_offset* from its top-left.
++
++    The pressed tab for a tab drag, or a stand-in for a drag that started
++    elsewhere on the window.
++    """
+     assert isinstance(event, EventPointer)
+     grab_button = event.button
+ 
+diff --git a/share/ionwl/python/ion_utils/_internal/operators/window_drag_impl.py b/share/ionwl/python/ion_utils/_internal/operators/window_drag_impl.py
+new file mode 100644
+index 00000000..14679826
+--- /dev/null
++++ b/share/ionwl/python/ion_utils/_internal/operators/window_drag_impl.py
+@@ -0,0 +1,48 @@
++# SPDX-License-Identifier: GPL-3.0-or-later
++
++"""Window drag generator implementation.
++
++Moves the window under the pointer, wherever it was grabbed: a floating
++item moves as with ``floating_move``, a tiled window is dragged as its tab,
++to be dropped into another frame (or onto empty space to float it).
++"""
++
++from __future__ import annotations
++
++__all__ = (
++    "exec_generator",
++)
++
++from collections.abc import Generator
++
++import ion
++from ion.types import Event, EventPointer, GeneratorStep, Point, Rect
++
++from ion_utils._internal.operators import floating_move_impl, frame_tab_drag_impl
++
++# Ghost tab size when the frame shows no tabs to take it from.
++_GHOST_SIZE_FALLBACK = (200, 24)
++
++
++def exec_generator(
++    event: Event,
++) -> Generator[GeneratorStep, Event]:
++    """Move the window under the pointer until the button is released."""
++    if ion._internal.floating_item_at_pointer() is not None:
++        return (yield from floating_move_impl.exec_generator(event))
++
++    frame = ion._internal.tiled_frame_at_pointer()
++    if frame is None:
++        return None
++    window = frame.windows.active
++    if window is None:
++        return None
++
++    assert isinstance(event, EventPointer)
++    # The window's own tab gives the ghost its size; it is held by its
++    # middle, not where the window was grabbed, which may be far from it.
++    slot = ion._internal.tab_drop_slot(frame, frame.active_index, window)
++    size = Point(slot.size.to_tuple() if slot is not None else _GHOST_SIZE_FALLBACK)
++    grab_offset = Point((size.x // 2, size.y // 2))
++    tab_rect = Rect((0, 0), size)
++    return (yield from frame_tab_drag_impl.drag_generator(event, window, frame, tab_rect, grab_offset))
+diff --git a/share/ionwl/python/ion_utils/builtins/operators.py b/share/ionwl/python/ion_utils/builtins/operators.py
+index d3af4062..6025ca25 100644
+--- a/share/ionwl/python/ion_utils/builtins/operators.py
++++ b/share/ionwl/python/ion_utils/builtins/operators.py
+@@ -820,6 +820,54 @@ class _FrameTabDrag(_Operator):
+         return True
+ 
+ 
++class _WindowDrag(_Operator):
++    __slots__ = ()
++
++    idname = 'window_drag'
++    description = (
++        'Move the window under the pointer by dragging: a floating item moves, '
++        'a tiled window drops into the frame it is released over (pointer binding only).'
++    )
++    pointer_only = True
++
++    class Properties(NamedTuple):
++        pass
++
++    @staticmethod
++    def name(properties: _WindowDrag.Properties) -> str:
++        return 'Window Drag'
++
++    @staticmethod
++    def exec(properties: _WindowDrag.Properties, event: ion.types.Event) -> bool:
++        from ion_utils._internal.operators.window_drag_impl import exec_generator
++        ion.utils.exec_generator(exec_generator(event))
++        return True
++
++
++class _FrameResizeDrag(_Operator):
++    __slots__ = ()
++
++    idname = 'frame_resize_drag'
++    description = (
++        'Resize the window under the pointer by dragging: a floating item resizes, '
++        'a tiled frame moves the dividers nearest the pointer (pointer binding only).'
++    )
++    pointer_only = True
++
++    class Properties(NamedTuple):
++        pass
++
++    @staticmethod
++    def name(properties: _FrameResizeDrag.Properties) -> str:
++        return 'Frame Resize Drag'
++
++    @staticmethod
++    def exec(properties: _FrameResizeDrag.Properties, event: ion.types.Event) -> bool:
++        from ion_utils._internal.operators.frame_resize_drag_impl import exec_generator
++        ion.utils.exec_generator(exec_generator(event))
++        return True
++
++
+ class _FrameTabActivate(_Operator):
+     __slots__ = ()
+ 
+@@ -3462,6 +3510,8 @@ _operators: list[type[_Operator]] = [
+     _PythonExec,
+     _KeymapPrompt,
+     _FrameTabDrag,
++    _WindowDrag,
++    _FrameResizeDrag,
+     _FrameTabActivate,
+     _TilingDividerResize,
+ ]
+diff --git a/src/python/hit_tests.rs b/src/python/hit_tests.rs
+index f7dbf5f4..c24781c0 100644
+--- a/src/python/hit_tests.rs
++++ b/src/python/hit_tests.rs
+@@ -65,6 +65,7 @@ pub(super) fn internal_module_create(py: Python<'_>) -> PyResult<Bound<'_, PyMod
+     )?)?;
+     module.add_function(wrap_pyfunction!(internal_sloppy_focus_update, &module)?)?;
+     module.add_function(wrap_pyfunction!(internal_tab_at_pointer, &module)?)?;
++    module.add_function(wrap_pyfunction!(internal_tiled_frame_at_pointer, &module)?)?;
+     module.add_function(wrap_pyfunction!(internal_edge_direction_at, &module)?)?;
+     module.add_function(wrap_pyfunction!(internal_tab_drop_resolve, &module)?)?;
+     module.add_function(wrap_pyfunction!(internal_tab_drop_slot, &module)?)?;
+@@ -506,6 +507,35 @@ fn internal_tab_at_pointer() -> PyResult<Option<(PyWmWindow, PyWmFrame, PyRect,
+     )))
+ }
+ 
++/// .. function:: tiled_frame_at_pointer()
++///
++///    Query the tiled frame under the pointer, wherever in it the pointer is:
++///    its client, tab bar, border or empty content area.
++///
++///    ``None`` when a floating item, a divider, a layer surface or a
++///    fullscreen window is on top, or no frame is there.
++///
++///    :return: The frame, or ``None``.
++///    :rtype: :class:`~ion.types.Frame` | None
++#[pyfunction(name = "tiled_frame_at_pointer")]
++fn internal_tiled_frame_at_pointer() -> PyResult<Option<PyWmFrame>> {
++    let state = require_state_named("_internal")?;
++    let wm = state.wm();
++    // Cold cache: walk the tiled layout directly. See
++    // `internal_divider_at_pointer` for when the cache is cold.
++    let Some(po) = wm.pointer_over_checked(state.app()) else {
++        let pos = wm.event_state.pointer_location_floor();
++        if wm.floating_item_focus_at_pointer(state.app()).is_some() {
++            return Ok(None);
++        }
++        return Ok(tiled_frame_at(&state.layout(), pos).map(|id| PyWmFrame { id }));
++    };
++    Ok(match po.target {
++        PointerTarget::Tiled { frame_id, .. } => Some(PyWmFrame { id: frame_id }),
++        _ => None,
++    })
++}
++
+ /// .. function:: sloppy_focus_update()
+ ///
+ ///    Focus whatever the pointer is over, as a pointer motion would.
+diff --git a/tests/integration/api/mod.rs b/tests/integration/api/mod.rs
+index 9f654de5..c55d06a5 100644
+--- a/tests/integration/api/mod.rs
++++ b/tests/integration/api/mod.rs
+@@ -36,6 +36,7 @@ mod render_frame;
+ mod tab_drag;
+ mod tablet;
+ mod tags;
++mod tiled_drag;
+ mod tiling_lifecycle;
+ mod transient_windows;
+ mod urgency;
+diff --git a/tests/integration/api/tiled_drag.rs b/tests/integration/api/tiled_drag.rs
+new file mode 100644
+index 00000000..63f3aca2
+--- /dev/null
++++ b/tests/integration/api/tiled_drag.rs
+@@ -0,0 +1,103 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! Dragging tiled windows from anywhere on them: `window_drag` and
++//! `frame_resize_drag`.
++
++use super::helpers::{BTN_MIDDLE, pointer_move_to};
++use crate::common::Fixture;
++use ionwl::tiling::SplitAxis;
++
++/// Two windows tabbed in the left frame, the right frame empty, and the
++/// middle button bound to `operator` in the global keymap.
++fn two_frames(operator: &str) -> Fixture {
++    let mut fixture = Fixture::new();
++    fixture.output_add_default();
++    let client_id = fixture.add_client();
++    fixture.spawn_window_with(client_id, |window| window.set_title("first"));
++    fixture.spawn_window_with(client_id, |window| window.set_title("second"));
++    fixture.dispatch();
++    fixture.wm_op(|s| s.wm.frame_split(&s.app, SplitAxis::Horizontal));
++    fixture.dispatch();
++    fixture
++        .python_call("tiled_drag", "binding_add", (operator,))
++        .expect("the binding is added");
++    fixture
++}
++
++fn frame_titles(fixture: &mut Fixture) -> Vec<Vec<String>> {
++    fixture
++        .python_call_ret("tiled_drag", "frame_titles_get", ())
++        .expect("the frames are listed")
++}
++
++fn frame_centers(fixture: &mut Fixture) -> Vec<(i32, i32)> {
++    fixture
++        .python_call_ret("tiled_drag", "frame_centers_get", ())
++        .expect("the frames are listed")
++}
++
++fn split_ratio(fixture: &mut Fixture) -> f64 {
++    fixture
++        .python_call_ret("tiled_drag", "split_ratio_get", ())
++        .expect("the split has a ratio")
++}
++
++/// Press the middle button at `from`, drag to `to` and release.
++fn drag(fixture: &mut Fixture, from: [i32; 2], to: [i32; 2]) {
++    fixture.pointer_simulate_motion(from);
++    fixture.ionwl().pointer_focus_update_test();
++    fixture
++        .ionwl()
++        .pointer_button_input_event_test(BTN_MIDDLE, true);
++    fixture.ionwl().pointer_motion_simulate(5.0, 0.0);
++    assert_eq!(
++        fixture.ionwl().generator_pending_count_test(),
++        1,
++        "precondition: the drag binding started its generator"
++    );
++    pointer_move_to(fixture, to);
++    fixture
++        .ionwl()
++        .pointer_button_input_event_test(BTN_MIDDLE, false);
++    fixture.dispatch();
++}
++
++/// A tiled window grabbed by its content drops into the frame it is
++/// released over.
++#[test]
++fn window_drag_moves_a_tiled_window_to_another_frame() {
++    let mut fixture = two_frames("window_drag");
++    let before = frame_titles(&mut fixture);
++    assert_eq!(before.len(), 2, "precondition: two frames");
++    assert!(
++        !before[0].is_empty(),
++        "precondition: the left frame holds a window"
++    );
++    let centers = frame_centers(&mut fixture);
++    let (left, right) = (centers[0], centers[1]);
++    drag(&mut fixture, [left.0, left.1], [right.0, right.1]);
++    let after = frame_titles(&mut fixture);
++    assert_eq!(
++        (after[0].len() + 1, after[1].len()),
++        (before[0].len(), before[1].len() + 1),
++        "one window must move from the left frame to the right ({before:?} -> {after:?})"
++    );
++}
++
++/// Grabbing a tiled frame anywhere moves the divider beside it: from the
++/// left frame its right edge, from the right frame its left edge.
++#[test]
++fn frame_resize_drag_moves_the_nearest_divider() {
++    for frame in 0..2 {
++        let mut fixture = two_frames("frame_resize_drag");
++        let centers = frame_centers(&mut fixture);
++        let (x, y) = centers[frame];
++        let before = split_ratio(&mut fixture);
++        drag(&mut fixture, [x, y], [x + 105, y]);
++        let after = split_ratio(&mut fixture);
++        assert!(
++            after > before + 0.05,
++            "dragging right from frame {frame} must widen the left frame ({before} -> {after})"
++        );
++    }
++}
+diff --git a/tests/integration/python/scripts/tiled_drag.py b/tests/integration/python/scripts/tiled_drag.py
+new file mode 100644
+index 00000000..0b9ce76f
+--- /dev/null
++++ b/tests/integration/python/scripts/tiled_drag.py
+@@ -0,0 +1,51 @@
++# SPDX-License-Identifier: GPL-3.0-or-later
++
++# Python halves of the tests in `tiled_drag.rs`.
++
++import ion
++import ion.constants.event_actions as ea
++import ion.constants.pointer_buttons as btn
++import ion.ops as ops
++from ion.types import DesktopItemTilingWorkspace, Frame, MatchPointer, SplitNodeContainer
++
++
++def binding_add(operator: str) -> None:
++    ion.app.keymaps['global'].items.new(
++        MatchPointer(btn.MIDDLE, action=ea.DRAG),
++        operator=getattr(ops, operator)(),
++    )
++
++
++def _frames() -> list[Frame]:
++    item = ion.wm.desktops.active.items_tiling[0]
++    assert isinstance(item, DesktopItemTilingWorkspace), "the desktop tiles a workspace"
++    return list(item.workspace.frames)
++
++
++def _min_x(frame: Frame) -> int:
++    rect = frame.content_rect
++    assert rect is not None, "a tiled frame has a content rect"
++    return rect.min.x
++
++
++def frame_titles_get() -> list[list[str]]:
++    """The window titles of each frame, left to right."""
++    return [[w.title for w in f.windows] for f in sorted(_frames(), key=_min_x)]
++
++
++def frame_centers_get() -> list[tuple[int, int]]:
++    """Each frame's content center, left to right."""
++    centers = []
++    for frame in sorted(_frames(), key=_min_x):
++        rect = frame.content_rect
++        assert rect is not None
++        centers.append(rect.center_floor().to_tuple())
++    return centers
++
++
++def split_ratio_get() -> float:
++    node = _frames()[0].split_node
++    assert node is not None
++    parent = node.parent
++    assert isinstance(parent, SplitNodeContainer), "the frames share a split"
++    return parent.split_ratio
+-- 
+2.56.0
+

@@ -136,6 +136,10 @@ def main() -> None:
     # Touchpad: natural scrolling, 2/3 finger click for right/middle button.
     prefs.input.touchpad_defaults.natural_scroll = True
     prefs.input.touchpad_defaults.click_method = 'CLICKFINGER'
+    # GNOME-style four-finger swipes on the touchpad or touchscreen switch
+    # desktops (pkgs/ionwl/desktop-swipe.patch; older builds lack it).
+    if hasattr(prefs.input.touchpad_defaults, 'gesture_swipe_fingers'):
+        prefs.input.touchpad_defaults.gesture_swipe_fingers = 4
 
     # -------------------------------------------------------------------------
     # Keymaps
@@ -229,11 +233,18 @@ def main() -> None:
     ion_utils.config.setup_defaults()
 
     # GNOME-style Super+drag: left moves, right resizes (defaults are swapped).
+    # window_drag/frame_resize_drag also handle tiled windows: moving one into
+    # another frame and moving the dividers nearest the pointer
+    # (pkgs/ionwl/tiled-drag.patch; older builds lack them).
     for item in list(km_global.items):
         if item.operator_idname in {'floating_move', 'floating_resize'}:
             km_global.items.remove(item)
-    km_global.items.new(MatchPointer(btn.LEFT, logo=True, action=act.DRAG), ops.floating_move())
-    km_global.items.new(MatchPointer(btn.RIGHT, logo=True, action=act.DRAG), ops.floating_resize())
+    if hasattr(ops, 'window_drag'):
+        move_op, resize_op = ops.window_drag(), ops.frame_resize_drag()
+    else:
+        move_op, resize_op = ops.floating_move(), ops.floating_resize()
+    km_global.items.new(MatchPointer(btn.LEFT, logo=True, action=act.DRAG), move_op)
+    km_global.items.new(MatchPointer(btn.RIGHT, logo=True, action=act.DRAG), resize_op)
 
     # -------------------------------------------------------------------------
     # Window management

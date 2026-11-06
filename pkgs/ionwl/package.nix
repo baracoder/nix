@@ -57,6 +57,12 @@ rustPlatform.buildRustPackage {
     ./pointer-gestures.patch
     # ion.app.hooks.xwayland_ready_post, to export DISPLAY to the session.
     ./xwayland-ready-hook.patch
+    # window_drag / frame_resize_drag: Super+drag moves a tiled window to
+    # another frame, or resizes it by its nearest dividers.
+    ./tiled-drag.patch
+    # Swipes with gesture_swipe_fingers fingers, on a touchpad or touchscreen,
+    # switch desktops.
+    ./desktop-swipe.patch
   ];
 
   # Async page flips in smithay's DrmCompositor, a backport of the unmerged

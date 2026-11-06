@@ -1,0 +1,1005 @@
+From a15b2b43fecbf36e955576a2d6f6bc7855087615 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 19:56:00 +0100
+Subject: [PATCH 2/2] Add: switch desktops with a touchpad or touchscreen swipe
+
+TouchpadPreferences.gesture_swipe_fingers names a finger count whose
+swipes the compositor keeps rather than forwarding them to the client:
+on a touchpad, and as many fingers on a touchscreen, where the touches
+made before there were enough fingers are cancelled in the client.
+They fire the new gesture_swipe_begin/update/end hooks.
+
+setup_defaults() attaches a desktop switch to them: the desktops lie
+side by side, as the desktop slide draws them, and follow the fingers;
+lifting them past a quarter of a desktop, or flicking, finishes the
+switch, otherwise the view settles back. On a touchscreen the desktops
+stay under the fingers.
+---
+ doc/python_api/rst/guide/features.rst         |   2 +
+ .../ion_utils/_internal/desktop_swipe.py      | 282 ++++++++++++++++++
+ .../ionwl/python/ion_utils/config/__init__.py |  10 +-
+ src/handler/input/mod.rs                      |  30 +-
+ src/handler/input/pointer_gesture.rs          |  33 +-
+ src/handler/input/touch.rs                    | 105 ++++++-
+ src/prefs/mod.rs                              |   5 +
+ src/python/hook_event.rs                      |  31 ++
+ src/python/hooks.rs                           |   7 +
+ src/python/preferences.rs                     |  12 +
+ src/state/mod.rs                              |  17 ++
+ src/state/tests/devices_tests.rs              |   1 +
+ tests/integration/api/desktop_swipe.rs        | 168 +++++++++++
+ tests/integration/api/mod.rs                  |   1 +
+ .../python/scripts/desktop_swipe.py           |  13 +
+ 15 files changed, 707 insertions(+), 10 deletions(-)
+ create mode 100644 share/ionwl/python/ion_utils/_internal/desktop_swipe.py
+ create mode 100644 tests/integration/api/desktop_swipe.rs
+ create mode 100644 tests/integration/python/scripts/desktop_swipe.py
+
+diff --git a/doc/python_api/rst/guide/features.rst b/doc/python_api/rst/guide/features.rst
+index 09ed6ef1..e444cedc 100644
+--- a/doc/python_api/rst/guide/features.rst
++++ b/doc/python_api/rst/guide/features.rst
+@@ -21,6 +21,8 @@ Navigation
+    - Directional Focus: Vim-style focus and window movement between frames.
+    - Overviews: Zoomed desktop and window overviews.
+    - Window Switcher: A carousel for cycling windows.
++   - Touchpad Swipes: Switch desktops with a swipe, the view following the fingers
++     (``input.touchpad_defaults.gesture_swipe_fingers``).
+ Input
+    - Configurable Keymaps: Layered keymaps bound from Python.
+    - Focus Follows Pointer: Optional sloppy focus with pointer warping.
+diff --git a/share/ionwl/python/ion_utils/_internal/desktop_swipe.py b/share/ionwl/python/ion_utils/_internal/desktop_swipe.py
+new file mode 100644
+index 00000000..d24463ff
+--- /dev/null
++++ b/share/ionwl/python/ion_utils/_internal/desktop_swipe.py
+@@ -0,0 +1,282 @@
++# SPDX-License-Identifier: GPL-3.0-or-later
++
++"""Switch desktops with a touchpad or touchscreen swipe.
++
++The desktops lie side by side, as the desktop slide draws them, and follow
++the fingers: lifting them past a quarter of the way, or flicking, finishes
++the switch, and otherwise the view settles back. A swipe that starts while
++the view is still settling takes it from where it is. On a touchscreen the
++desktops stay under the fingers.
++
++Driven by the ``gesture_swipe_*`` hooks, which fire for swipes with
++``preferences.input.touchpad_defaults.gesture_swipe_fingers`` fingers.
++"""
++
++from __future__ import annotations
++
++__all__ = (
++    "hooks_attach",
++)
++
++import time
++from collections.abc import Generator
++from contextlib import suppress
++from typing import Final
++
++import ion
++from ion.types import (
++    ColorRGBA,
++    Desktop,
++    Event,
++    EventCancel,
++    EventTimer,
++    GeneratorStep,
++    OverlayDesktop,
++    OverlayRect,
++    Point,
++)
++
++from ion_utils._internal.desktop_layout import DesktopLayout
++from ion_utils._internal.operators import SLIDE_STEP_MS, OverlayScope
++
++# Touchpad units for a swipe across a whole desktop (GNOME's touchpad base
++# distance).
++_TOUCHPAD_DISTANCE: Final = 400.0
++# Units (touchpad units or pixels) the fingers travel before the swipe picks
++# its axis.
++_AXIS_LOCK_DISTANCE: Final = 8.0
++# Fraction of a desktop past which lifting the fingers switches.
++_SWITCH_THRESHOLD: Final = 0.25
++# Speed (desktops per second) past which a flick switches regardless.
++_FLICK_SPEED: Final = 1.5
++# How far the view gives past the last desktop, as a fraction of one.
++_OVERSHOOT: Final = 0.1
++# Window (seconds) of recent motion the release speed is measured over.
++_SPEED_WINDOW: Final = 0.1
++
++_ALIGN_MIN: Final = -1
++
++
++class _Swipe:
++    """The swipe in progress, shared between the hooks and the generator."""
++
++    __slots__ = (
++        "active", "axis", "cancelled", "distance", "fingers_down", "motion", "pending", "samples",
++    )
++
++    def __init__(self) -> None:
++        # The generator is running.
++        self.active = False
++        # The fingers are on the touchpad or screen.
++        self.fingers_down = False
++        # Units of finger motion across a whole desktop, per axis.
++        self.distance = (_TOUCHPAD_DISTANCE, _TOUCHPAD_DISTANCE)
++        # The swipe ended cancelled, so the view settles back.
++        self.cancelled = False
++        # Motion not yet picked up by the generator, (dx, dy).
++        self.pending = [0.0, 0.0]
++        # Locked axis, 0 horizontal, 1 vertical, once picked.
++        self.axis: int | None = None
++        # Motion before the axis is picked.
++        self.motion = [0.0, 0.0]
++        # (time, delta along the axis) of recent updates, for the release speed.
++        self.samples: list[tuple[float, float]] = []
++
++    def speed(self) -> float:
++        """Recent finger speed along the axis, in desktops per second."""
++        now = time.monotonic()
++        recent = [d for t, d in self.samples if now - t <= _SPEED_WINDOW]
++        axis = self.axis if self.axis is not None else 0
++        return sum(recent) / self.distance[axis] / _SPEED_WINDOW
++
++
++_swipe = _Swipe()
++
++
++def _on_begin(_fingers: int, touch: bool) -> None:
++    _swipe.distance = (_TOUCHPAD_DISTANCE, _TOUCHPAD_DISTANCE)
++    if touch and (bounds := ion.wm.outputs.bounds_calc()) is not None:
++        # Finger motion is in pixels: a desktop's width moves one desktop.
++        _swipe.distance = (float(max(bounds.size.x, 1)), float(max(bounds.size.y, 1)))
++    _swipe.fingers_down = True
++    _swipe.cancelled = False
++    _swipe.pending = [0.0, 0.0]
++    _swipe.samples.clear()
++    if _swipe.active:
++        # Caught while settling: the running generator picks the view up.
++        return
++    _swipe.axis = None
++    _swipe.motion = [0.0, 0.0]
++    _swipe.active = True
++    ion.utils.exec_generator(_generator())
++
++
++def _on_update(dx: float, dy: float) -> None:
++    if not _swipe.fingers_down:
++        return
++    if _swipe.axis is None:
++        _swipe.motion[0] += dx
++        _swipe.motion[1] += dy
++        mx, my = abs(_swipe.motion[0]), abs(_swipe.motion[1])
++        if max(mx, my) < _AXIS_LOCK_DISTANCE:
++            return
++        _swipe.axis = 0 if mx >= my else 1
++        dx, dy = _swipe.motion
++    _swipe.pending[0] += dx
++    _swipe.pending[1] += dy
++    _swipe.samples.append((time.monotonic(), (dx, dy)[_swipe.axis]))
++    del _swipe.samples[:-32]
++
++
++def _on_end(cancelled: bool) -> None:
++    if not _swipe.fingers_down:
++        return
++    _swipe.fingers_down = False
++    _swipe.cancelled = cancelled
++
++
++def hooks_attach() -> None:
++    """Attach the swipe to the ``gesture_swipe_*`` hooks, once however often
++    it is called."""
++    hooks = ion.app.hooks
++    for hook, callback in (
++        (hooks.gesture_swipe_begin, _on_begin),
++        (hooks.gesture_swipe_update, _on_update),
++        (hooks.gesture_swipe_end, _on_end),
++    ):
++        with suppress(ValueError):
++            hook.remove(callback)
++        hook.append(callback)
++
++
++def _ease_out(t: float) -> float:
++    return 1.0 - (1.0 - t) ** 3
++
++
++def _generator() -> Generator[GeneratorStep, Event]:
++    try:
++        yield from _run()
++    finally:
++        _swipe.active = False
++
++
++def _run() -> Generator[GeneratorStep, Event]:
++    active = ion.wm.desktops.active
++    bounds = ion.wm.outputs.bounds_calc()
++    desktops = list(ion.wm.desktops)
++    dl = DesktopLayout(ion.wm.desktops.layout_calc())
++    if bounds is None or dl.position(active) is None:
++        # Nothing to slide; the fingers still belong to the swipe.
++        while _swipe.fingers_down:
++            ev = yield GeneratorStep(time=SLIDE_STEP_MS, consume_event=True)
++            if isinstance(ev, EventCancel):
++                return
++        return
++
++    size = (bounds.size.x, bounds.size.y)
++
++    # The view's position along the axis, in desktops: +1 is the neighbor to
++    # the right (or below), whose content comes in as the fingers move left.
++    progress = 0.0
++    # Released: where the view settles, where it set off from, and how far
++    # into that it is (ms).
++    settle: tuple[float, float, int, int] | None = None
++
++    with OverlayScope() as scope:
++        overlays: list[tuple[OverlayDesktop, Point]] = []
++        for d in desktops:
++            if dl.position(d) is None:
++                continue
++            ox, oy = dl.desktop_offset(d, active)
++            start = bounds.min + Point((round(ox * size[0]), round(oy * size[1])))
++            ov = OverlayDesktop(d)
++            ov.position = start
++            ov.align = (_ALIGN_MIN, _ALIGN_MIN)
++            scope.append(ov)
++            overlays.append((ov, start))
++
++        # Opaque background hiding the live desktop beneath the overlays.
++        bg = OverlayRect()
++        bg.rect = bounds
++        bg.fill_color = ColorRGBA((0.0, 0.0, 0.0, 1.0))
++        scope.append(bg)
++
++        while True:
++            ev = yield GeneratorStep(time=SLIDE_STEP_MS, consume_event=True)
++            if isinstance(ev, EventCancel):
++                return
++            if not isinstance(ev, EventTimer):
++                continue
++
++            axis = _swipe.axis
++            if axis is None:
++                if not _swipe.fingers_down:
++                    # Lifted before choosing a direction.
++                    return
++                continue
++
++            back = dl.find_adjacent(active, "LEFT" if axis == 0 else "UP", wrap=False)
++            ahead = dl.find_adjacent(active, "RIGHT" if axis == 0 else "DOWN", wrap=False)
++            lo = -1.0 if back is not None else -_OVERSHOOT
++            hi = 1.0 if ahead is not None else _OVERSHOOT
++
++            if _swipe.fingers_down:
++                settle = None
++                # Content follows the fingers: moving them left brings in the
++                # desktop to the right.
++                delta = _swipe.pending[axis]
++                _swipe.pending = [0.0, 0.0]
++                progress = min(max(progress - delta / _swipe.distance[axis], lo), hi)
++            else:
++                if settle is None:
++                    target = 0.0 if _swipe.cancelled else _target_pick(
++                        progress, -_swipe.speed(), back, ahead,
++                    )
++                    distance = abs(target - progress)
++                    duration = max(
++                        round(ion.app.preferences.animate.desktop_slide_duration * distance),
++                        SLIDE_STEP_MS,
++                    )
++                    settle = (target, progress, duration, 0)
++                target, origin, duration, elapsed = settle
++                elapsed += SLIDE_STEP_MS
++                t = min(elapsed / duration, 1.0)
++                progress = origin + (target - origin) * _ease_out(t)
++                settle = (target, origin, duration, elapsed)
++                if t >= 1.0:
++                    if target > 0 and ahead is not None:
++                        ahead.focus()
++                    elif target < 0 and back is not None:
++                        back.focus()
++                    return
++
++            shift = [0, 0]
++            shift[axis] = -round(progress * size[axis])
++            for ov, start in overlays:
++                ov.position = start + Point((shift[0], shift[1]))
++
++
++def _target_pick(
++    progress: float,
++    speed: float,
++    back: Desktop | None,
++    ahead: Desktop | None,
++) -> float:
++    """Where a released view settles: -1, 0 or 1 desktops along the axis.
++
++    *speed* is the view's own, in desktops per second, positive towards
++    *ahead*.
++    """
++    if speed > _FLICK_SPEED and progress > -_SWITCH_THRESHOLD:
++        target = 1.0
++    elif speed < -_FLICK_SPEED and progress < _SWITCH_THRESHOLD:
++        target = -1.0
++    elif progress > _SWITCH_THRESHOLD:
++        target = 1.0
++    elif progress < -_SWITCH_THRESHOLD:
++        target = -1.0
++    else:
++        target = 0.0
++    if (target > 0 and ahead is None) or (target < 0 and back is None):
++        target = 0.0
++    return target
+diff --git a/share/ionwl/python/ion_utils/config/__init__.py b/share/ionwl/python/ion_utils/config/__init__.py
+index 217c579c..32a3c563 100644
+--- a/share/ionwl/python/ion_utils/config/__init__.py
++++ b/share/ionwl/python/ion_utils/config/__init__.py
+@@ -399,7 +399,9 @@ def setup_defaults() -> None:
+ 
+     This registers the standard context menus (tab, frame, root) and the
+     pointer interactions that all configurations need: tab activation,
+-    context menu triggers, divider resize, and decoration grab.
++    context menu triggers, divider resize, and decoration grab; and the
++    desktop switch for touchpad swipes with
++    ``preferences.input.touchpad_defaults.gesture_swipe_fingers`` fingers.
+     """
+     import ion
+     import ion.constants.event_actions as act
+@@ -407,6 +409,12 @@ def setup_defaults() -> None:
+     from ion import ops
+     from ion.types import MatchPointer
+ 
++    # Touchpad swipes switch desktops, once
++    # preferences.input.touchpad_defaults.gesture_swipe_fingers names the
++    # finger count.
++    from ion_utils._internal import desktop_swipe
++    desktop_swipe.hooks_attach()
++
+     # Context menus.
+     def _tab_menu(menu: ion.types.MenuBuilder) -> None:
+         layout = menu.layout
+diff --git a/src/handler/input/mod.rs b/src/handler/input/mod.rs
+index 53d521a0..8ee808fd 100644
+--- a/src/handler/input/mod.rs
++++ b/src/handler/input/mod.rs
+@@ -296,13 +296,19 @@ impl IonMain {
+             // forwarded, like a button release: smithay sends it only where
+             // the gesture began, which balances one begun before the
+             // generator took over and is a no-op otherwise.
++            // A swipe the compositor keeps goes to its hooks either way: the
++            // generator may be the one the swipe started.
+             InputEvent::GestureSwipeBegin { event } => {
+-                if !gen_consuming {
++                if !gen_consuming
++                    || self.gesture_swipe_holds(
++                        smithay::backend::input::GestureBeginEvent::fingers(&event),
++                    )
++                {
+                     self.handle_gesture_begin(GestureKind::Swipe, &event);
+                 }
+             }
+             InputEvent::GestureSwipeUpdate { event } => {
+-                if !gen_consuming {
++                if !gen_consuming || self.wm.event_state.gesture_swipe_held {
+                     self.handle_gesture_swipe_update(&event);
+                 }
+             }
+@@ -330,8 +336,12 @@ impl IonMain {
+             InputEvent::GestureHoldEnd { event } => {
+                 self.gesture_end_forward(GestureKind::Hold, &event);
+             }
++            // A touchscreen swipe the compositor keeps takes its fingers'
++            // events first, whatever else is running.
+             InputEvent::TouchDown { event } => {
+-                if gen_consuming {
++                let pos = self.event_position(&event);
++                if self.touch_swipe_down(event.slot(), pos, event.time()) {
++                } else if gen_consuming {
+                     // Map touch-down to motion + pointer press for generators,
+                     // both at the touch position rather than the stored one.
+                     let pos = self.event_position(&event);
+@@ -353,7 +363,9 @@ impl IonMain {
+             InputEvent::TouchUp { event } => {
+                 let slot = event.slot();
+                 let time = event.time();
+-                if gen_consuming {
++                let swiped = self.touch_swipe_up(slot);
++                if swiped {
++                } else if gen_consuming {
+                     // Map touch-up to pointer release for generators.
+                     self.gen_dispatch(
+                         crate::input::EventKind::Pointer {
+@@ -370,13 +382,18 @@ impl IonMain {
+                 // could, Smithay would otherwise keep the slot focused on
+                 // a stale surface. `touch.up` on an unfocused slot is a
+                 // no-op, so this is also safe on the gen-only path.
+-                if let Some(touch) = self.wm.seat.get_touch() {
++                //
++                // Not for a swipe's finger: the client had its touches
++                // cancelled, and an up now would read as a tap ending.
++                if !swiped && let Some(touch) = self.wm.seat.get_touch() {
+                     let serial = SERIAL_COUNTER.next_serial();
+                     touch.up(self, &smithay::input::touch::UpEvent { slot, serial, time });
+                 }
+             }
+             InputEvent::TouchMotion { event } => {
+-                if gen_consuming {
++                let pos = self.event_position(&event);
++                if self.touch_swipe_motion(event.slot(), pos) {
++                } else if gen_consuming {
+                     let pos = self.event_position(&event);
+                     self.gen_dispatch_at(
+                         Point::from_smithay_f64(pos),
+@@ -391,6 +408,7 @@ impl IonMain {
+                 self.handle_touch_frame();
+             }
+             InputEvent::TouchCancel { event: _ } => {
++                self.touch_swipe_cancel();
+                 self.handle_touch_cancel();
+             }
+             InputEvent::DeviceAdded { device } => {
+diff --git a/src/handler/input/pointer_gesture.rs b/src/handler/input/pointer_gesture.rs
+index bdb767c5..2ec3c14b 100644
+--- a/src/handler/input/pointer_gesture.rs
++++ b/src/handler/input/pointer_gesture.rs
+@@ -3,6 +3,10 @@
+ //! Touchpad gestures: swipe, pinch and hold, forwarded through
+ //! `pointer-gestures` to the client holding pointer focus.
+ //!
++//! Swipes with `TouchpadPrefs::gesture_swipe_fingers` fingers are the
++//! compositor's own instead: they fire the `gesture_swipe_*` hooks, for
++//! Python to switch desktops with, and no client sees them.
++//!
+ //! Gestures go where scroll goes, to the pointer focus, so the locked
+ //! hit-test confining that focus to the lock surface keeps them from the
+ //! windows behind it. Smithay tracks which surface each client's gesture
+@@ -34,6 +38,13 @@ pub(super) enum GestureKind {
+ }
+ 
+ impl IonMain {
++    /// Whether a swipe with *fingers* fingers is the compositor's to keep.
++    /// Never while the session is locked: the lock surface gets it.
++    pub(super) fn gesture_swipe_holds(&self, fingers: u32) -> bool {
++        let held_fingers = self.app.preferences.touchpad.gesture_swipe_fingers;
++        held_fingers != 0 && fingers == held_fingers && !self.wm.scene.read().is_locked()
++    }
++
+     /// Handle a gesture beginning: forward it to the pointer focus.
+     pub(super) fn handle_gesture_begin<I: InputBackend>(
+         &mut self,
+@@ -45,12 +56,20 @@ impl IonMain {
+         // Gesture activity invalidates a pending key click, as scrolling does.
+         self.wm.event_state.pending_key_click_invalidate();
+ 
++        let fingers = event.fingers();
++        if kind == GestureKind::Swipe {
++            self.wm.event_state.gesture_swipe_held = self.gesture_swipe_holds(fingers);
++            if self.wm.event_state.gesture_swipe_held {
++                self.hook_invoke(crate::python::HookEvent::GestureSwipeBegin(fingers, false));
++                return;
++            }
++        }
++
+         let Some(pointer) = self.wm.seat.get_pointer() else {
+             return;
+         };
+         let serial = SERIAL_COUNTER.next_serial();
+         let time = event.time();
+-        let fingers = event.fingers();
+         match kind {
+             GestureKind::Swipe => pointer.gesture_swipe_begin(
+                 self,
+@@ -84,6 +103,13 @@ impl IonMain {
+         &mut self,
+         event: &impl GestureSwipeUpdateEvent<I>,
+     ) {
++        if self.wm.event_state.gesture_swipe_held {
++            let delta = event.delta();
++            self.hook_invoke(crate::python::HookEvent::GestureSwipeUpdate(
++                delta.x, delta.y,
++            ));
++            return;
++        }
+         if let Some(pointer) = self.wm.seat.get_pointer() {
+             pointer.gesture_swipe_update(
+                 self,
+@@ -123,6 +149,11 @@ impl IonMain {
+         kind: GestureKind,
+         event: &impl GestureEndEvent<I>,
+     ) {
++        if kind == GestureKind::Swipe && std::mem::take(&mut self.wm.event_state.gesture_swipe_held)
++        {
++            self.hook_invoke(crate::python::HookEvent::GestureSwipeEnd(event.cancelled()));
++            return;
++        }
+         let Some(pointer) = self.wm.seat.get_pointer() else {
+             return;
+         };
+diff --git a/src/handler/input/touch.rs b/src/handler/input/touch.rs
+index 9a4e2259..354f5a26 100644
+--- a/src/handler/input/touch.rs
++++ b/src/handler/input/touch.rs
+@@ -1,13 +1,114 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ 
+ //! Touch event handlers.
++//!
++//! As many fingers on the touchscreen as
++//! `TouchpadPrefs::gesture_swipe_fingers` make a swipe the compositor keeps,
++//! as on a touchpad: the touches they made so far are cancelled in the
++//! client, and from then until the last finger lifts their mean motion fires
++//! the `gesture_swipe_*` hooks.
+ 
+-use smithay::backend::input::{TouchDownEvent, TouchMotionEvent};
+-use smithay::utils::SERIAL_COUNTER;
++use smithay::backend::input::{InputTime, TouchDownEvent, TouchMotionEvent, TouchSlot};
++use smithay::utils::{Logical, Point, SERIAL_COUNTER};
+ 
++use crate::python::HookEvent;
+ use crate::state::IonMain;
+ 
+ impl IonMain {
++    /// The mean position of the touch points down, `None` with none down.
++    fn touch_centroid(&self) -> Option<Point<f64, Logical>> {
++        let points = &self.wm.event_state.touch_points;
++        let count = points.len() as f64;
++        (count > 0.0).then(|| {
++            let sum = points
++                .values()
++                .fold(Point::from((0.0, 0.0)), |sum, p| sum + *p);
++            Point::from((sum.x / count, sum.y / count))
++        })
++    }
++
++    /// Record a touch point going down. Returns whether it belongs to a
++    /// touchscreen swipe, starting one when it is the finger that makes
++    /// enough, in which case it goes no further.
++    pub(super) fn touch_swipe_down(
++        &mut self,
++        slot: TouchSlot,
++        pos: Point<f64, Logical>,
++        time: InputTime,
++    ) -> bool {
++        self.wm.event_state.touch_points.insert(slot, pos);
++        if self.wm.event_state.touch_swipe_centroid.is_some() {
++            // A finger joining the swipe moves the mean, not the view.
++            self.wm.event_state.touch_swipe_centroid = self.touch_centroid();
++            return true;
++        }
++        let fingers = self.wm.event_state.touch_points.len() as u32;
++        if !self.gesture_swipe_holds(fingers) {
++            return false;
++        }
++        // The fingers so far were the client's: take them back. Smithay
++        // cancels only within a frame that has events, so this finger goes
++        // down in the client too, and is cancelled along with the rest.
++        if let Some(touch) = self.wm.seat.get_touch() {
++            let surface_under = self.surface_under(pos);
++            touch.down(
++                self,
++                surface_under,
++                &smithay::input::touch::DownEvent {
++                    slot,
++                    location: pos,
++                    serial: SERIAL_COUNTER.next_serial(),
++                    time,
++                },
++            );
++            touch.cancel(self);
++        }
++        self.wm.event_state.touch_swipe_centroid = self.touch_centroid();
++        self.hook_invoke(HookEvent::GestureSwipeBegin(fingers, true));
++        true
++    }
++
++    /// Record a touch point moving. Returns whether it belongs to a
++    /// touchscreen swipe, firing the update for the fingers' mean motion.
++    pub(super) fn touch_swipe_motion(&mut self, slot: TouchSlot, pos: Point<f64, Logical>) -> bool {
++        self.wm.event_state.touch_points.insert(slot, pos);
++        let Some(last) = self.wm.event_state.touch_swipe_centroid else {
++            return false;
++        };
++        let Some(centroid) = self.touch_centroid() else {
++            return true;
++        };
++        self.wm.event_state.touch_swipe_centroid = Some(centroid);
++        let delta = centroid - last;
++        if delta.x != 0.0 || delta.y != 0.0 {
++            self.hook_invoke(HookEvent::GestureSwipeUpdate(delta.x, delta.y));
++        }
++        true
++    }
++
++    /// Record a touch point lifting. Returns whether it belonged to a
++    /// touchscreen swipe, which the last finger lifting ends.
++    pub(super) fn touch_swipe_up(&mut self, slot: TouchSlot) -> bool {
++        self.wm.event_state.touch_points.remove(&slot);
++        if self.wm.event_state.touch_swipe_centroid.is_none() {
++            return false;
++        }
++        // A finger leaving moves the mean, not the view.
++        self.wm.event_state.touch_swipe_centroid = self.touch_centroid();
++        if self.wm.event_state.touch_swipe_centroid.is_none() {
++            self.hook_invoke(HookEvent::GestureSwipeEnd(false));
++        }
++        true
++    }
++
++    /// Forget every touch point, ending a touchscreen swipe as cancelled.
++    pub(super) fn touch_swipe_cancel(&mut self) {
++        self.wm.event_state.touch_points.clear();
++        if self.wm.event_state.touch_swipe_centroid.take().is_some() {
++            self.hook_invoke(HookEvent::GestureSwipeEnd(true));
++        }
++    }
++
+     /// Handle touch down event.
+     pub(super) fn handle_touch_down<I: smithay::backend::input::InputBackend>(
+         &mut self,
+diff --git a/src/prefs/mod.rs b/src/prefs/mod.rs
+index 84b122df..47f4c4a8 100644
+--- a/src/prefs/mod.rs
++++ b/src/prefs/mod.rs
+@@ -132,6 +132,10 @@ pub struct TouchpadPrefs {
+     pub(crate) scroll_method: ScrollMethod,
+     pub(crate) click_method: ClickMethod,
+     pub(crate) disable_while_typing: bool,
++    /// Finger count of the swipes the compositor keeps for itself, firing the
++    /// `gesture_swipe_*` hooks instead of forwarding them to the client.
++    /// 0 forwards every swipe.
++    pub(crate) gesture_swipe_fingers: u32,
+ }
+ 
+ impl Default for TouchpadPrefs {
+@@ -147,6 +151,7 @@ impl Default for TouchpadPrefs {
+             scroll_method: ScrollMethod::default(),
+             click_method: ClickMethod::default(),
+             disable_while_typing: true,
++            gesture_swipe_fingers: 0,
+         }
+     }
+ }
+diff --git a/src/python/hook_event.rs b/src/python/hook_event.rs
+index 409f20a6..6210de3c 100644
+--- a/src/python/hook_event.rs
++++ b/src/python/hook_event.rs
+@@ -499,6 +499,37 @@ define_hooks! {
+             "",
+             "Callbacks receive the display name (e.g. ``\":0\"``).",
+         ],
++    // Gesture hooks
++    GestureSwipeBegin(u32, bool), "gesture_swipe_begin",
++        [int, bool],
++        [
++            "Fired when a swipe the compositor keeps begins: one with",
++            ":attr:`TouchpadPreferences.gesture_swipe_fingers <ion.types.TouchpadPreferences.gesture_swipe_fingers>`",
++            "fingers on a touchpad, or as many on a touchscreen. The swipe is not",
++            "sent to any client; on a touchscreen, the touches the fingers made",
++            "before there were enough of them are cancelled.",
++            "",
++            "Callbacks receive the finger count and whether the swipe is on a",
++            "touchscreen.",
++        ],
++    GestureSwipeUpdate(f64, f64), "gesture_swipe_update",
++        [float, float],
++        [
++            "Fired as a swipe begun with :attr:`gesture_swipe_begin` moves.",
++            "",
++            "Callbacks receive the motion since the last update (``dx``, ``dy``):",
++            "on a touchpad in units comparable to pointer motion, natural",
++            "scrolling not applied; on a touchscreen the fingers' mean motion,",
++            "in logical pixels.",
++        ],
++    GestureSwipeEnd(bool), "gesture_swipe_end",
++        [bool],
++        [
++            "Fired when a swipe begun with :attr:`gesture_swipe_begin` ends.",
++            "",
++            "Callbacks receive whether the swipe was cancelled rather than",
++            "completed by lifting the fingers.",
++        ],
+     CompositorShutdownPre, "compositor_shutdown_pre",
+         [],
+         [
+diff --git a/src/python/hooks.rs b/src/python/hooks.rs
+index b21b43f0..78f6917d 100644
+--- a/src/python/hooks.rs
++++ b/src/python/hooks.rs
+@@ -387,6 +387,13 @@ fn hook_args_create(py: Python<'_>, event: &HookEvent) -> PyResult<Py<pyo3::type
+             PyTuple::new(py, [format!(":{display_number}")])?
+         }
+ 
++        // Gesture hooks.
++        HookEvent::GestureSwipeBegin(fingers, touch) => {
++            PyTuple::new(py, [fingers.into_pyobject(py)?.into_any(), touch.into_pyobject(py)?.to_owned().into_any()])?
++        }
++        HookEvent::GestureSwipeUpdate(dx, dy) => PyTuple::new(py, [*dx, *dy])?,
++        HookEvent::GestureSwipeEnd(cancelled) => PyTuple::new(py, [*cancelled])?,
++
+         // Idle hooks - no arguments.
+         HookEvent::IdleLock
+         // Compositor hooks - no arguments.
+diff --git a/src/python/preferences.rs b/src/python/preferences.rs
+index c0516fcf..a6c9c582 100644
+--- a/src/python/preferences.rs
++++ b/src/python/preferences.rs
+@@ -607,6 +607,18 @@ impl_pref_props! { PyTouchpadPreferences; PrefGroup::Touchpad;
+     /// :type: bool
+     disable_while_typing: disable_while_typing_get / disable_while_typing_set -> bool;
+ 
++    /// Finger count of the swipes the compositor keeps for itself
++    /// (default: 0, none).
++    ///
++    /// A swipe with this many fingers is not sent to the client under the
++    /// pointer; it fires :attr:`ion.app.hooks.gesture_swipe_begin`,
++    /// :attr:`~ion.app.hooks.gesture_swipe_update` and
++    /// :attr:`~ion.app.hooks.gesture_swipe_end` instead. Applies to every
++    /// touchpad, not just new ones.
++    ///
++    /// :type: int
++    gesture_swipe_fingers: gesture_swipe_fingers_get / gesture_swipe_fingers_set -> u32;
++
+     /// Scroll method (default: ``"TWO_FINGER"``).
+     ///
+     /// :type: Literal["TWO_FINGER", "EDGE", "BUTTON"]
+diff --git a/src/state/mod.rs b/src/state/mod.rs
+index b85fc3ab..48262551 100644
+--- a/src/state/mod.rs
++++ b/src/state/mod.rs
+@@ -567,6 +567,20 @@ pub struct EventState {
+     pub(crate) tablet_tool_buttons_forwarded:
+         HashSet<(smithay::backend::input::TabletToolDescriptor, u32)>,
+ 
++    /// Whether the touchpad swipe in progress is the compositor's: begun
++    /// with `TouchpadPrefs::gesture_swipe_fingers` fingers, its updates and
++    /// end fire the `gesture_swipe_*` hooks instead of reaching a client.
++    pub(crate) gesture_swipe_held: bool,
++    /// Where each touch point currently down is, for counting the fingers
++    /// of a touchscreen swipe.
++    pub(crate) touch_points: HashMap<
++        smithay::backend::input::TouchSlot,
++        smithay::utils::Point<f64, smithay::utils::Logical>,
++    >,
++    /// The fingers' mean position while a touchscreen swipe the compositor
++    /// keeps is in progress, `None` otherwise.
++    pub(crate) touch_swipe_centroid: Option<smithay::utils::Point<f64, smithay::utils::Logical>>,
++
+     /// Active floating resize for commit-time position fixup.
+     ///
+     /// Set by `floating_frame_resize_begin`, cleared by
+@@ -635,6 +649,9 @@ impl EventState {
+             dnd: None,
+             grab_button_forwarded: HashSet::new(),
+             tablet_tool_buttons_forwarded: HashSet::new(),
++            gesture_swipe_held: false,
++            touch_points: HashMap::new(),
++            touch_swipe_centroid: None,
+             active_floating_resize: None,
+             #[cfg(any(test, feature = "test_support"))]
+             operator_log: Vec::new(),
+diff --git a/src/state/tests/devices_tests.rs b/src/state/tests/devices_tests.rs
+index 2d44c45e..eca15bb2 100644
+--- a/src/state/tests/devices_tests.rs
++++ b/src/state/tests/devices_tests.rs
+@@ -318,6 +318,7 @@ fn pointer_apply_touchpad_prefs_copies_pointer_and_touchpad_fields() {
+         scroll_method: ScrollMethod::EDGE,
+         click_method: ClickMethod::BUTTON_AREAS,
+         disable_while_typing: false,
++        gesture_swipe_fingers: 0,
+     };
+ 
+     dev.apply_touchpad_prefs(&tp);
+diff --git a/tests/integration/api/desktop_swipe.rs b/tests/integration/api/desktop_swipe.rs
+new file mode 100644
+index 00000000..90a13b3b
+--- /dev/null
++++ b/tests/integration/api/desktop_swipe.rs
+@@ -0,0 +1,168 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! Switching desktops with a touchpad or touchscreen swipe: the
++//! `gesture_swipe_*` hooks and the desktop switch `setup_defaults` attaches
++//! to them.
++
++use std::time::Duration;
++
++use super::helpers::{desktop_active_name, desktop_add};
++use crate::common::{ClientId, DEFAULT_OUTPUT_W, Fixture, PointerGestureEvent, TouchEvent};
++
++/// Long enough for a swipe's settle animation to finish.
++const SETTLE_WAIT: Duration = Duration::from_millis(3000);
++
++/// A gesture client on a desktop beside a second one, with swipes of
++/// `fingers` fingers switching desktops.
++fn swipe_fixture(fingers: u32) -> (Fixture, ClientId) {
++    let mut fixture = Fixture::new();
++    fixture.output_add_default();
++    let client_id = fixture.add_client();
++    fixture.spawn_window(client_id);
++    fixture.deferred_process();
++    fixture.client(client_id).pointer_gestures_get();
++    fixture.pointer_simulate_motion([100, 100]);
++    fixture.ionwl().pointer_focus_update_test();
++    fixture.roundtrip(client_id);
++    desktop_add(&mut fixture, "right");
++    fixture
++        .python_call("desktop_swipe", "setup", (fingers,))
++        .expect("the swipe is set up");
++    (fixture, client_id)
++}
++
++fn swipe(fixture: &mut Fixture, fingers: u32, dx: f64, cancelled: bool) {
++    fixture.ionwl().gesture_swipe_begin_simulate(fingers);
++    for _ in 0..10 {
++        fixture
++            .ionwl()
++            .gesture_swipe_update_simulate(dx / 10.0, 0.0);
++    }
++    // Let the view follow the fingers before they lift.
++    fixture
++        .ionwl()
++        .generators_run_until_test(Duration::from_millis(50), |_| false);
++    fixture.ionwl().gesture_swipe_end_simulate(cancelled);
++    fixture
++        .ionwl()
++        .generators_run_until_test(SETTLE_WAIT, |s| s.generator_pending_count_test() == 0);
++}
++
++/// A swipe with the configured finger count switches to the desktop it
++/// brings in and never reaches the client; one with another count does.
++#[test]
++fn gesture_swipe_switches_desktop() {
++    let (mut fixture, client_id) = swipe_fixture(4);
++    let name = desktop_active_name(&mut fixture);
++    swipe(&mut fixture, 4, -300.0, false);
++    assert_eq!(desktop_active_name(&mut fixture), "right", "from {name}");
++    fixture.roundtrip(client_id);
++    assert_eq!(
++        fixture.client(client_id).pointer_gesture_events_take(),
++        [],
++        "the client must not see the compositor's swipe"
++    );
++
++    // Back again, the other way.
++    swipe(&mut fixture, 4, 300.0, false);
++    assert_eq!(desktop_active_name(&mut fixture), name);
++
++    // A three-finger swipe is the client's.
++    swipe(&mut fixture, 3, -300.0, false);
++    assert_eq!(desktop_active_name(&mut fixture), name);
++    fixture.roundtrip(client_id);
++    assert_eq!(
++        fixture
++            .client(client_id)
++            .pointer_gesture_events_take()
++            .first(),
++        Some(&PointerGestureEvent::SwipeBegin { fingers: 3 }),
++    );
++}
++
++/// A short swipe, a cancelled one, or one towards no desktop settles back.
++#[test]
++fn gesture_swipe_settles_back() {
++    let (mut fixture, _client_id) = swipe_fixture(4);
++    let name = desktop_active_name(&mut fixture);
++    swipe(&mut fixture, 4, -40.0, false);
++    assert_eq!(desktop_active_name(&mut fixture), name, "too short");
++    swipe(&mut fixture, 4, -300.0, true);
++    assert_eq!(desktop_active_name(&mut fixture), name, "cancelled");
++    swipe(&mut fixture, 4, 300.0, false);
++    assert_eq!(
++        desktop_active_name(&mut fixture),
++        name,
++        "no desktop to the left"
++    );
++}
++
++/// Put `fingers` fingers down on the touchscreen in a row, move them all by
++/// `dx` and lift them, then let the view settle.
++fn touch_swipe(fixture: &mut Fixture, fingers: u32, dx: i32) {
++    let at = |finger: u32, offset: i32| [400 + 60 * finger as i32 + offset, 400];
++    for finger in 0..fingers {
++        fixture.ionwl().touch_down_simulate(finger, at(finger, 0));
++        fixture.ionwl().touch_frame_simulate();
++    }
++    for step in 1..=10 {
++        for finger in 0..fingers {
++            fixture
++                .ionwl()
++                .touch_motion_simulate(finger, at(finger, dx * step / 10));
++        }
++        fixture.ionwl().touch_frame_simulate();
++    }
++    fixture
++        .ionwl()
++        .generators_run_until_test(Duration::from_millis(50), |_| false);
++    for finger in 0..fingers {
++        fixture.ionwl().touch_up_simulate(finger);
++        fixture.ionwl().touch_frame_simulate();
++    }
++    fixture
++        .ionwl()
++        .generators_run_until_test(SETTLE_WAIT, |s| s.generator_pending_count_test() == 0);
++}
++
++/// Four fingers on the touchscreen switch desktop, the desktops following
++/// them; the client sees its touches cancelled as the fourth goes down, and
++/// nothing after. Three fingers stay the client's.
++#[test]
++fn touch_swipe_switches_desktop() {
++    let (mut fixture, client_id) = swipe_fixture(4);
++    let name = desktop_active_name(&mut fixture);
++    fixture.roundtrip(client_id);
++    fixture.client(client_id).touch_events_take();
++
++    touch_swipe(&mut fixture, 4, -DEFAULT_OUTPUT_W / 2);
++    assert_eq!(desktop_active_name(&mut fixture), "right", "from {name}");
++    fixture.roundtrip(client_id);
++    let events = fixture.client(client_id).touch_events_take();
++    let downs = events
++        .iter()
++        .filter(|e| matches!(e, TouchEvent::Down(..)))
++        .count();
++    assert_eq!(
++        downs, 4,
++        "the fingers go down in the client before the cancel: {events:?}"
++    );
++    assert!(
++        events.contains(&TouchEvent::Cancel),
++        "the client's touches must be cancelled: {events:?}"
++    );
++    assert!(
++        !events
++            .iter()
++            .any(|e| matches!(e, TouchEvent::Motion(..) | TouchEvent::Up(..))),
++        "nothing after the cancel reaches the client: {events:?}"
++    );
++
++    // Too short a swipe settles back.
++    touch_swipe(&mut fixture, 4, DEFAULT_OUTPUT_W / 10);
++    assert_eq!(desktop_active_name(&mut fixture), "right");
++
++    // Three fingers switch nothing.
++    touch_swipe(&mut fixture, 3, DEFAULT_OUTPUT_W / 2);
++    assert_eq!(desktop_active_name(&mut fixture), "right");
++}
+diff --git a/tests/integration/api/mod.rs b/tests/integration/api/mod.rs
+index c55d06a5..01b903c2 100644
+--- a/tests/integration/api/mod.rs
++++ b/tests/integration/api/mod.rs
+@@ -8,6 +8,7 @@ mod activation;
+ mod clipboard;
+ mod compositor_lifecycle;
+ mod decor;
++mod desktop_swipe;
+ mod dnd;
+ mod dnd_hover;
+ mod edge_cases;
+diff --git a/tests/integration/python/scripts/desktop_swipe.py b/tests/integration/python/scripts/desktop_swipe.py
+new file mode 100644
+index 00000000..595d2277
+--- /dev/null
++++ b/tests/integration/python/scripts/desktop_swipe.py
+@@ -0,0 +1,13 @@
++# SPDX-License-Identifier: GPL-3.0-or-later
++
++# Python halves of the tests in `desktop_swipe.rs`.
++
++import ion
++
++
++def setup(fingers: int) -> None:
++    from ion_utils._internal import desktop_swipe
++    # Twice: attaching must not double the callbacks.
++    desktop_swipe.hooks_attach()
++    desktop_swipe.hooks_attach()
++    ion.app.preferences.input.touchpad_defaults.gesture_swipe_fingers = fingers
+-- 
+2.56.0
+
