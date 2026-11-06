@@ -76,6 +76,17 @@ can be sent as it is.
   `MatchPointer(btn.WHEEL_UP)` etc. ([ionwl](https://codeberg.org/ideasman42/ionwl))
 - [ ] `pkgs/ionwl/ext-workspace.patch`: ext-workspace, for workspace switchers
   in bars ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/tearing-control.patch`: wp-tearing-control, async page flips
+  for fullscreen games ([ionwl](https://codeberg.org/ideasman42/ionwl)); needs
+  the smithay patch below first
+- [ ] `pkgs/ionwl/smithay-drm-async-page-flip.patch`: backport of the unmerged
+  [Smithay/smithay#1948](https://github.com/Smithay/smithay/pull/1948) plus a
+  capability check; comment on the PR rather than send a new one
+- [ ] `pkgs/ionwl/pointer-gestures.patch`: touchpad swipe/pinch/hold for
+  clients ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series rebased
+  onto mutter 50.5; not ours to send, drop it once mutter ships tearing
+  ([mutter](https://gitlab.gnome.org/GNOME/mutter))
 - [ ] `pkgs/way-shell/ionwl-backend.patch`: ionwl window-manager backend
   ([way-shell](https://github.com/ldelossa/way-shell))
 - [ ] `pkgs/linzone-hub/package.nix` `postPatch`: the udev rule assigns
