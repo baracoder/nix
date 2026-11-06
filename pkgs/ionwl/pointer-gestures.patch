@@ -1,0 +1,1002 @@
+From b76ff95598c58f3994ff3e9784854540e3d2b60c Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 14:02:30 +0100
+Subject: [PATCH 2/2] Add: touchpad gestures via pointer-gestures
+
+Clients such as image viewers and browsers bind zwp_pointer_gestures_v1
+to zoom on a pinch or navigate on a swipe. libinput's swipe, pinch and
+hold gestures now reach the client holding pointer focus, where scroll
+goes, so while the session is locked only the lock surface can receive
+them. A gesture in progress on a surface that loses pointer focus, to a
+lock say, ends cancelled.
+
+A consuming generator owns the pointer, so a gesture neither begins nor
+moves in a client meanwhile; its end is always forwarded, which balances
+one begun before the generator took over.
+---
+ doc/architecture/readme.rst             |   1 +
+ doc/python_api/rst/guide/features.rst   |   5 +-
+ src/handler/input/mod.rs                |  42 ++++++
+ src/handler/input/pointer_gesture.rs    | 159 +++++++++++++++++++++++
+ src/handler/input/test_helpers.rs       |  79 +++++++++++-
+ src/handler/input/test_input.rs         | 155 +++++++++++++++++++---
+ src/state/mod.rs                        |   5 +
+ tests/integration/api/input_dispatch.rs | 141 +++++++++++++++++++-
+ tests/integration/common/client.rs      | 163 ++++++++++++++++++++++++
+ tests/integration/common/mod.rs         |   2 +-
+ 10 files changed, 728 insertions(+), 24 deletions(-)
+ create mode 100644 src/handler/input/pointer_gesture.rs
+
+diff --git a/doc/architecture/readme.rst b/doc/architecture/readme.rst
+index 7b986363..7296eb7b 100644
+--- a/doc/architecture/readme.rst
++++ b/doc/architecture/readme.rst
+@@ -88,6 +88,7 @@ Source Layout
+   |   |   +- keyboard.rs          Keyboard event handler
+   |   |   +- pointer.rs           Pointer-over cache accessors, cursor-icon selection (resize-edge and
+   |   |   +- pointer_button.rs    Pointer button event handling: press/release dispatch, popup
++  |   |   +- pointer_gesture.rs   Touchpad gestures: swipe, pinch and hold, forwarded through
+   |   |   +- pointer_hit_test.rs  Pointer z-order hit-test resolver: walks popup, fullscreen, floating,
+   |   |   +- pointer_motion.rs    Pointer motion event handlers: relative/absolute motion, axis
+   |   |   +- pointer_parity.rs    Debug-only parity assertions for the pointer-over cache
+diff --git a/doc/python_api/rst/guide/features.rst b/doc/python_api/rst/guide/features.rst
+index 7d1a9bf7..d938021c 100644
+--- a/doc/python_api/rst/guide/features.rst
++++ b/doc/python_api/rst/guide/features.rst
+@@ -105,6 +105,9 @@ relative-pointer / pointer-constraints
+    Pointer locking and warp-free relative motion (games, 3D viewports).
+ cursor-shape
+    Clients name a cursor from the theme instead of supplying a bitmap.
++pointer-gestures
++   Touchpad swipe, pinch and hold gestures reported to the client under the
++   pointer (image viewers, browsers).
+ tablet
+    Graphics-tablet input.
+ virtual-keyboard
+@@ -149,8 +152,6 @@ Not Yet Supported
+ 
+ text-input / input-method
+    Input-method editors for non-Latin scripts (fcitx5, ibus).
+-pointer-gestures
+-   Touchpad swipe and pinch gestures reported to clients.
+ security-context
+    Sandbox identification, letting the compositor restrict privileged
+    protocols per client (Flatpak).
+diff --git a/src/handler/input/mod.rs b/src/handler/input/mod.rs
+index f7f8630e..53d521a0 100644
+--- a/src/handler/input/mod.rs
++++ b/src/handler/input/mod.rs
+@@ -10,6 +10,7 @@ mod hit_test;
+ mod keyboard;
+ mod pointer;
+ mod pointer_button;
++mod pointer_gesture;
+ mod pointer_hit_test;
+ mod pointer_motion;
+ #[cfg(debug_assertions)]
+@@ -29,6 +30,8 @@ pub mod test_input;
+ 
+ pub use pointer_hit_test::ConfineScratch;
+ 
++use pointer_gesture::GestureKind;
++
+ use crate::geom::Point;
+ 
+ use smithay::{
+@@ -288,6 +291,45 @@ impl IonMain {
+                     self.handle_pointer_axis(&event);
+                 }
+             }
++            // A consuming generator owns the pointer, so a gesture does not
++            // begin or move in the client meanwhile. Its end is always
++            // forwarded, like a button release: smithay sends it only where
++            // the gesture began, which balances one begun before the
++            // generator took over and is a no-op otherwise.
++            InputEvent::GestureSwipeBegin { event } => {
++                if !gen_consuming {
++                    self.handle_gesture_begin(GestureKind::Swipe, &event);
++                }
++            }
++            InputEvent::GestureSwipeUpdate { event } => {
++                if !gen_consuming {
++                    self.handle_gesture_swipe_update(&event);
++                }
++            }
++            InputEvent::GestureSwipeEnd { event } => {
++                self.gesture_end_forward(GestureKind::Swipe, &event);
++            }
++            InputEvent::GesturePinchBegin { event } => {
++                if !gen_consuming {
++                    self.handle_gesture_begin(GestureKind::Pinch, &event);
++                }
++            }
++            InputEvent::GesturePinchUpdate { event } => {
++                if !gen_consuming {
++                    self.handle_gesture_pinch_update(&event);
++                }
++            }
++            InputEvent::GesturePinchEnd { event } => {
++                self.gesture_end_forward(GestureKind::Pinch, &event);
++            }
++            InputEvent::GestureHoldBegin { event } => {
++                if !gen_consuming {
++                    self.handle_gesture_begin(GestureKind::Hold, &event);
++                }
++            }
++            InputEvent::GestureHoldEnd { event } => {
++                self.gesture_end_forward(GestureKind::Hold, &event);
++            }
+             InputEvent::TouchDown { event } => {
+                 if gen_consuming {
+                     // Map touch-down to motion + pointer press for generators,
+diff --git a/src/handler/input/pointer_gesture.rs b/src/handler/input/pointer_gesture.rs
+new file mode 100644
+index 00000000..bdb767c5
+--- /dev/null
++++ b/src/handler/input/pointer_gesture.rs
+@@ -0,0 +1,159 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! Touchpad gestures: swipe, pinch and hold, forwarded through
++//! `pointer-gestures` to the client holding pointer focus.
++//!
++//! Gestures go where scroll goes, to the pointer focus, so the locked
++//! hit-test confining that focus to the lock surface keeps them from the
++//! windows behind it. Smithay tracks which surface each client's gesture
++//! began on and cancels it when that surface loses pointer focus, so a
++//! gesture cut short by a lock, or by the pointer focus moving, ends there
++//! rather than running on in the client.
++
++use smithay::backend::input::{
++    GestureBeginEvent, GestureEndEvent, GesturePinchUpdateEvent, GestureSwipeUpdateEvent,
++    InputBackend,
++};
++use smithay::input::pointer::{
++    GestureHoldBeginEvent, GestureHoldEndEvent, GesturePinchBeginEvent, GesturePinchEndEvent,
++    GesturePinchUpdateEvent as PinchUpdate, GestureSwipeBeginEvent, GestureSwipeEndEvent,
++    GestureSwipeUpdateEvent as SwipeUpdate,
++};
++use smithay::utils::SERIAL_COUNTER;
++
++use super::device_ptr_extract;
++use crate::state::IonMain;
++
++/// Which gesture a begin or end event belongs to. Their payloads are the
++/// same for all three, so one handler each serves every kind.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub(super) enum GestureKind {
++    Swipe,
++    Pinch,
++    Hold,
++}
++
++impl IonMain {
++    /// Handle a gesture beginning: forward it to the pointer focus.
++    pub(super) fn handle_gesture_begin<I: InputBackend>(
++        &mut self,
++        kind: GestureKind,
++        event: &impl GestureBeginEvent<I>,
++    ) {
++        self.pointer_active_update(device_ptr_extract(&event.device()));
++
++        // Gesture activity invalidates a pending key click, as scrolling does.
++        self.wm.event_state.pending_key_click_invalidate();
++
++        let Some(pointer) = self.wm.seat.get_pointer() else {
++            return;
++        };
++        let serial = SERIAL_COUNTER.next_serial();
++        let time = event.time();
++        let fingers = event.fingers();
++        match kind {
++            GestureKind::Swipe => pointer.gesture_swipe_begin(
++                self,
++                &GestureSwipeBeginEvent {
++                    serial,
++                    time,
++                    fingers,
++                },
++            ),
++            GestureKind::Pinch => pointer.gesture_pinch_begin(
++                self,
++                &GesturePinchBeginEvent {
++                    serial,
++                    time,
++                    fingers,
++                },
++            ),
++            GestureKind::Hold => pointer.gesture_hold_begin(
++                self,
++                &GestureHoldBeginEvent {
++                    serial,
++                    time,
++                    fingers,
++                },
++            ),
++        }
++    }
++
++    /// Handle a swipe moving: forward its delta to the pointer focus.
++    pub(super) fn handle_gesture_swipe_update<I: InputBackend>(
++        &mut self,
++        event: &impl GestureSwipeUpdateEvent<I>,
++    ) {
++        if let Some(pointer) = self.wm.seat.get_pointer() {
++            pointer.gesture_swipe_update(
++                self,
++                &SwipeUpdate {
++                    time: event.time(),
++                    delta: event.delta(),
++                },
++            );
++        }
++    }
++
++    /// Handle a pinch changing: forward its delta, scale and rotation to the
++    /// pointer focus.
++    pub(super) fn handle_gesture_pinch_update<I: InputBackend>(
++        &mut self,
++        event: &impl GesturePinchUpdateEvent<I>,
++    ) {
++        if let Some(pointer) = self.wm.seat.get_pointer() {
++            pointer.gesture_pinch_update(
++                self,
++                &PinchUpdate {
++                    time: event.time(),
++                    delta: event.delta(),
++                    scale: event.scale(),
++                    rotation: event.rotation(),
++                },
++            );
++        }
++    }
++
++    /// Handle a gesture ending, completed or cancelled.
++    ///
++    /// Smithay sends the end only to a client whose gesture began, so this is
++    /// safe to call for one that never reached a client.
++    pub(super) fn gesture_end_forward<I: InputBackend>(
++        &mut self,
++        kind: GestureKind,
++        event: &impl GestureEndEvent<I>,
++    ) {
++        let Some(pointer) = self.wm.seat.get_pointer() else {
++            return;
++        };
++        let serial = SERIAL_COUNTER.next_serial();
++        let time = event.time();
++        let cancelled = event.cancelled();
++        match kind {
++            GestureKind::Swipe => pointer.gesture_swipe_end(
++                self,
++                &GestureSwipeEndEvent {
++                    serial,
++                    time,
++                    cancelled,
++                },
++            ),
++            GestureKind::Pinch => pointer.gesture_pinch_end(
++                self,
++                &GesturePinchEndEvent {
++                    serial,
++                    time,
++                    cancelled,
++                },
++            ),
++            GestureKind::Hold => pointer.gesture_hold_end(
++                self,
++                &GestureHoldEndEvent {
++                    serial,
++                    time,
++                    cancelled,
++                },
++            ),
++        }
++    }
++}
+diff --git a/src/handler/input/test_helpers.rs b/src/handler/input/test_helpers.rs
+index 0666738a..a73c5aed 100644
+--- a/src/handler/input/test_helpers.rs
++++ b/src/handler/input/test_helpers.rs
+@@ -26,10 +26,12 @@ use smithay::backend::input::{
+ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
+ 
+ use super::test_input::{
+-    TestDevice, TestDeviceKind, TestInputBackend, TestKeyboardEvent, TestPointerAxisEvent,
+-    TestPointerButtonEvent, TestPointerMotionAbsoluteEvent, TestPointerMotionEvent, TestTabletAxes,
+-    TestTabletToolAxisEvent, TestTabletToolButtonEvent, TestTabletToolProximityEvent,
+-    TestTabletToolTipEvent, TestTouchFrameEvent, TestTouchPositionEvent, TestTouchUpEvent,
++    TestDevice, TestDeviceKind, TestGestureBeginEvent, TestGestureEndEvent,
++    TestGesturePinchUpdateEvent, TestGestureSwipeUpdateEvent, TestInputBackend, TestKeyboardEvent,
++    TestPointerAxisEvent, TestPointerButtonEvent, TestPointerMotionAbsoluteEvent,
++    TestPointerMotionEvent, TestTabletAxes, TestTabletToolAxisEvent, TestTabletToolButtonEvent,
++    TestTabletToolProximityEvent, TestTabletToolTipEvent, TestTouchFrameEvent,
++    TestTouchPositionEvent, TestTouchUpEvent,
+ };
+ use crate::state::IonMain;
+ 
+@@ -439,6 +441,75 @@ impl IonMain {
+         });
+     }
+ 
++    /// Simulate a touchpad swipe beginning through the production handler.
++    pub fn gesture_swipe_begin_simulate(&mut self, fingers: u32) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GestureSwipeBegin {
++            event: TestGestureBeginEvent { fingers },
++        });
++    }
++
++    /// Simulate a touchpad swipe moving by a delta.
++    pub fn gesture_swipe_update_simulate(&mut self, delta_x: f64, delta_y: f64) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GestureSwipeUpdate {
++            event: TestGestureSwipeUpdateEvent { delta_x, delta_y },
++        });
++    }
++
++    /// Simulate a touchpad swipe ending, completed or cancelled.
++    pub fn gesture_swipe_end_simulate(&mut self, cancelled: bool) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GestureSwipeEnd {
++            event: TestGestureEndEvent { cancelled },
++        });
++    }
++
++    /// Simulate a touchpad pinch beginning through the production handler.
++    pub fn gesture_pinch_begin_simulate(&mut self, fingers: u32) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GesturePinchBegin {
++            event: TestGestureBeginEvent { fingers },
++        });
++    }
++
++    /// Simulate a touchpad pinch changing. See `TestGesturePinchUpdateEvent`
++    /// for the units of `scale` and `rotation`.
++    pub fn gesture_pinch_update_simulate(
++        &mut self,
++        delta_x: f64,
++        delta_y: f64,
++        scale: f64,
++        rotation: f64,
++    ) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GesturePinchUpdate {
++            event: TestGesturePinchUpdateEvent {
++                delta_x,
++                delta_y,
++                scale,
++                rotation,
++            },
++        });
++    }
++
++    /// Simulate a touchpad pinch ending, completed or cancelled.
++    pub fn gesture_pinch_end_simulate(&mut self, cancelled: bool) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GesturePinchEnd {
++            event: TestGestureEndEvent { cancelled },
++        });
++    }
++
++    /// Simulate fingers coming to rest on the touchpad.
++    pub fn gesture_hold_begin_simulate(&mut self, fingers: u32) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GestureHoldBegin {
++            event: TestGestureBeginEvent { fingers },
++        });
++    }
++
++    /// Simulate a hold ending, completed (the fingers lifted) or cancelled
++    /// (another gesture took over).
++    pub fn gesture_hold_end_simulate(&mut self, cancelled: bool) {
++        self.handle_input_event::<TestInputBackend>(InputEvent::GestureHoldEnd {
++            event: TestGestureEndEvent { cancelled },
++        });
++    }
++
+     /// The cursor position the input handlers work from.
+     pub fn pointer_location_test(&self) -> smithay::utils::Point<i32, smithay::utils::Logical> {
+         self.wm.event_state.pointer_location_floor()
+diff --git a/src/handler/input/test_input.rs b/src/handler/input/test_input.rs
+index f925e5ab..1ddcf565 100644
+--- a/src/handler/input/test_input.rs
++++ b/src/handler/input/test_input.rs
+@@ -15,16 +15,19 @@ use std::path::PathBuf;
+ 
+ use smithay::backend::input::{
+     AbsolutePositionEvent, Axis, AxisRelativeDirection, AxisSource, ButtonState, Device,
+-    DeviceCapability, Event, InputBackend, InputTime, KeyState, KeyboardKeyEvent, Keycode,
+-    PointerAxisEvent, PointerButtonEvent, PointerMotionAbsoluteEvent, PointerMotionEvent,
+-    ProximityState, TabletToolAxisEvent, TabletToolButtonEvent, TabletToolDescriptor,
+-    TabletToolEvent, TabletToolProximityEvent, TabletToolTipEvent, TabletToolTipState,
+-    TouchCancelEvent, TouchDownEvent, TouchEvent, TouchFrameEvent, TouchMotionEvent, TouchSlot,
+-    TouchUpEvent, UnusedEvent,
++    DeviceCapability, Event, GestureBeginEvent, GestureEndEvent, GestureHoldBeginEvent,
++    GestureHoldEndEvent, GesturePinchBeginEvent, GesturePinchEndEvent, GesturePinchUpdateEvent,
++    GestureSwipeBeginEvent, GestureSwipeEndEvent, GestureSwipeUpdateEvent, InputBackend, InputTime,
++    KeyState, KeyboardKeyEvent, Keycode, PointerAxisEvent, PointerButtonEvent,
++    PointerMotionAbsoluteEvent, PointerMotionEvent, ProximityState, TabletToolAxisEvent,
++    TabletToolButtonEvent, TabletToolDescriptor, TabletToolEvent, TabletToolProximityEvent,
++    TabletToolTipEvent, TabletToolTipState, TouchCancelEvent, TouchDownEvent, TouchEvent,
++    TouchFrameEvent, TouchMotionEvent, TouchSlot, TouchUpEvent, UnusedEvent,
+ };
+ 
+ /// Marker backend whose only inhabited event types are `TestKeyboardEvent`
+-/// and the `TestPointer*`, `TestTouch*` and `TestTabletTool*` families.
++/// and the `TestPointer*`, `TestGesture*`, `TestTouch*` and `TestTabletTool*`
++/// families.
+ #[derive(Debug)]
+ pub struct TestInputBackend;
+ 
+@@ -35,14 +38,14 @@ impl InputBackend for TestInputBackend {
+     type PointerButtonEvent = TestPointerButtonEvent;
+     type PointerMotionEvent = TestPointerMotionEvent;
+     type PointerMotionAbsoluteEvent = TestPointerMotionAbsoluteEvent;
+-    type GestureSwipeBeginEvent = UnusedEvent;
+-    type GestureSwipeUpdateEvent = UnusedEvent;
+-    type GestureSwipeEndEvent = UnusedEvent;
+-    type GesturePinchBeginEvent = UnusedEvent;
+-    type GesturePinchUpdateEvent = UnusedEvent;
+-    type GesturePinchEndEvent = UnusedEvent;
+-    type GestureHoldBeginEvent = UnusedEvent;
+-    type GestureHoldEndEvent = UnusedEvent;
++    type GestureSwipeBeginEvent = TestGestureBeginEvent;
++    type GestureSwipeUpdateEvent = TestGestureSwipeUpdateEvent;
++    type GestureSwipeEndEvent = TestGestureEndEvent;
++    type GesturePinchBeginEvent = TestGestureBeginEvent;
++    type GesturePinchUpdateEvent = TestGesturePinchUpdateEvent;
++    type GesturePinchEndEvent = TestGestureEndEvent;
++    type GestureHoldBeginEvent = TestGestureBeginEvent;
++    type GestureHoldEndEvent = TestGestureEndEvent;
+     type TouchDownEvent = TestTouchPositionEvent;
+     type TouchUpEvent = TestTouchUpEvent;
+     type TouchMotionEvent = TestTouchPositionEvent;
+@@ -320,6 +323,128 @@ impl PointerButtonEvent<TestInputBackend> for TestPointerButtonEvent {
+     }
+ }
+ 
++/// A touchpad gesture beginning, of whichever kind the `InputEvent` variant
++/// carrying it names.
++#[derive(Debug)]
++pub struct TestGestureBeginEvent {
++    pub fingers: u32,
++}
++
++impl Event<TestInputBackend> for TestGestureBeginEvent {
++    fn time(&self) -> InputTime {
++        InputTime::from_micros(0)
++    }
++
++    fn device(&self) -> TestDevice {
++        TestDevice(TestDeviceKind::Pointer)
++    }
++}
++
++impl GestureBeginEvent<TestInputBackend> for TestGestureBeginEvent {
++    fn fingers(&self) -> u32 {
++        self.fingers
++    }
++}
++
++impl GestureSwipeBeginEvent<TestInputBackend> for TestGestureBeginEvent {}
++
++impl GesturePinchBeginEvent<TestInputBackend> for TestGestureBeginEvent {}
++
++impl GestureHoldBeginEvent<TestInputBackend> for TestGestureBeginEvent {}
++
++/// A swipe moving its logical center by a delta.
++#[derive(Debug)]
++pub struct TestGestureSwipeUpdateEvent {
++    pub delta_x: f64,
++    pub delta_y: f64,
++}
++
++impl Event<TestInputBackend> for TestGestureSwipeUpdateEvent {
++    fn time(&self) -> InputTime {
++        InputTime::from_micros(0)
++    }
++
++    fn device(&self) -> TestDevice {
++        TestDevice(TestDeviceKind::Pointer)
++    }
++}
++
++impl GestureSwipeUpdateEvent<TestInputBackend> for TestGestureSwipeUpdateEvent {
++    fn delta_x(&self) -> f64 {
++        self.delta_x
++    }
++
++    fn delta_y(&self) -> f64 {
++        self.delta_y
++    }
++}
++
++/// A pinch moving by a delta, with its scale relative to the begin (`1.0`
++/// unchanged) and its rotation in degrees since the previous update.
++#[derive(Debug)]
++pub struct TestGesturePinchUpdateEvent {
++    pub delta_x: f64,
++    pub delta_y: f64,
++    pub scale: f64,
++    pub rotation: f64,
++}
++
++impl Event<TestInputBackend> for TestGesturePinchUpdateEvent {
++    fn time(&self) -> InputTime {
++        InputTime::from_micros(0)
++    }
++
++    fn device(&self) -> TestDevice {
++        TestDevice(TestDeviceKind::Pointer)
++    }
++}
++
++impl GesturePinchUpdateEvent<TestInputBackend> for TestGesturePinchUpdateEvent {
++    fn delta_x(&self) -> f64 {
++        self.delta_x
++    }
++
++    fn delta_y(&self) -> f64 {
++        self.delta_y
++    }
++
++    fn scale(&self) -> f64 {
++        self.scale
++    }
++
++    fn rotation(&self) -> f64 {
++        self.rotation
++    }
++}
++
++/// A touchpad gesture ending, completed or cancelled.
++#[derive(Debug)]
++pub struct TestGestureEndEvent {
++    pub cancelled: bool,
++}
++
++impl Event<TestInputBackend> for TestGestureEndEvent {
++    fn time(&self) -> InputTime {
++        InputTime::from_micros(0)
++    }
++
++    fn device(&self) -> TestDevice {
++        TestDevice(TestDeviceKind::Pointer)
++    }
++}
++
++impl GestureEndEvent<TestInputBackend> for TestGestureEndEvent {
++    fn cancelled(&self) -> bool {
++        self.cancelled
++    }
++}
++
++impl GestureSwipeEndEvent<TestInputBackend> for TestGestureEndEvent {}
++
++impl GesturePinchEndEvent<TestInputBackend> for TestGestureEndEvent {}
++
++impl GestureHoldEndEvent<TestInputBackend> for TestGestureEndEvent {}
++
+ /// A touch point going down or moving.
+ ///
+ /// `x` / `y` are relative to the top-left of the bounds spanning every
+diff --git a/src/state/mod.rs b/src/state/mod.rs
+index 145c81ce..b85fc3ab 100644
+--- a/src/state/mod.rs
++++ b/src/state/mod.rs
+@@ -125,6 +125,7 @@ use smithay::{
+         keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState,
+         output::OutputManagerState as SmithayOutputManagerState,
+         pointer_constraints::PointerConstraintsState,
++        pointer_gestures::PointerGesturesState,
+         presentation::PresentationState,
+         relative_pointer::RelativePointerManagerState,
+         selection::{
+@@ -1180,6 +1181,7 @@ pub(crate) struct WaylandGlobals {
+     xdg_output_manager_state: SmithayOutputManagerState,
+     pointer_constraints_state: PointerConstraintsState,
+     relative_pointer_manager_state: RelativePointerManagerState,
++    pointer_gestures_state: PointerGesturesState,
+     screencopy_manager_state: ScreencopyManagerState,
+     cursor_shape_manager_state: CursorShapeManagerState,
+     /// `None` with `IONWL_NO_TEARING` set: unadvertised, clients cannot ask
+@@ -1240,6 +1242,9 @@ impl WaylandGlobals {
+             relative_pointer_manager_state: RelativePointerManagerState::new::<IonMain>(
+                 display_handle,
+             ),
++            // Touchpad swipe, pinch and hold gestures, see
++            // `handler::input::pointer_gesture`.
++            pointer_gestures_state: PointerGesturesState::new::<IonMain>(display_handle),
+             screencopy_manager_state: ScreencopyManagerState::new::<IonMain>(display_handle),
+             cursor_shape_manager_state: CursorShapeManagerState::new::<IonMain>(display_handle),
+             tearing_control_state: crate::constants::paths::env_var_nonempty("IONWL_NO_TEARING")
+diff --git a/tests/integration/api/input_dispatch.rs b/tests/integration/api/input_dispatch.rs
+index b5ba2ba3..74a0c7a4 100644
+--- a/tests/integration/api/input_dispatch.rs
++++ b/tests/integration/api/input_dispatch.rs
+@@ -1,9 +1,11 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ 
+-//! Scroll, pointer motion and touch through the input dispatcher.
++//! Scroll, pointer motion, touchpad gestures and touch through the input
++//! dispatcher.
+ 
+ use crate::common::{
+-    ClientId, DEFAULT_OUTPUT_H, DEFAULT_OUTPUT_W, Fixture, PointerAxisEvent, TouchEvent,
++    ClientId, DEFAULT_OUTPUT_H, DEFAULT_OUTPUT_W, Fixture, PointerAxisEvent, PointerGestureEvent,
++    TouchEvent,
+ };
+ use ionwl::input::EventAction;
+ use smithay::backend::input::{Axis, AxisRelativeDirection, AxisSource};
+@@ -595,3 +597,138 @@ fn wheel_binding_ignores_finger_scroll() {
+         "the client scrolled: {events:?}"
+     );
+ }
++
++/// `scroll_client_fixture` with the client listening for touchpad gestures.
++fn gesture_client_fixture() -> (Fixture, ClientId) {
++    let (mut fixture, client_id) = scroll_client_fixture();
++    fixture.client(client_id).pointer_gestures_get();
++    fixture.roundtrip(client_id);
++    (fixture, client_id)
++}
++
++/// Roundtrip and return the gesture events the client received since the
++/// last call.
++fn gesture_events_take(fixture: &mut Fixture, client_id: ClientId) -> Vec<PointerGestureEvent> {
++    fixture.roundtrip(client_id);
++    fixture.client(client_id).pointer_gesture_events_take()
++}
++
++/// A swipe reaches the client holding pointer focus, begin to end.
++#[test]
++fn gesture_swipe_to_client() {
++    let (mut fixture, client_id) = gesture_client_fixture();
++    fixture.ionwl().gesture_swipe_begin_simulate(3);
++    fixture.ionwl().gesture_swipe_update_simulate(5.0, -2.5);
++    fixture.ionwl().gesture_swipe_update_simulate(1.0, 0.0);
++    fixture.ionwl().gesture_swipe_end_simulate(false);
++    assert_eq!(
++        gesture_events_take(&mut fixture, client_id),
++        [
++            PointerGestureEvent::SwipeBegin { fingers: 3 },
++            PointerGestureEvent::SwipeUpdate(5.0, -2.5),
++            PointerGestureEvent::SwipeUpdate(1.0, 0.0),
++            PointerGestureEvent::SwipeEnd { cancelled: false },
++        ],
++    );
++}
++
++/// A pinch carries its scale and rotation through to the client.
++#[test]
++fn gesture_pinch_to_client() {
++    let (mut fixture, client_id) = gesture_client_fixture();
++    fixture.ionwl().gesture_pinch_begin_simulate(2);
++    fixture
++        .ionwl()
++        .gesture_pinch_update_simulate(1.0, 2.0, 1.5, 10.0);
++    fixture
++        .ionwl()
++        .gesture_pinch_update_simulate(0.0, 0.0, 0.75, -4.0);
++    fixture.ionwl().gesture_pinch_end_simulate(false);
++    assert_eq!(
++        gesture_events_take(&mut fixture, client_id),
++        [
++            PointerGestureEvent::PinchBegin { fingers: 2 },
++            PointerGestureEvent::PinchUpdate(1.0, 2.0, 1.5, 10.0),
++            PointerGestureEvent::PinchUpdate(0.0, 0.0, 0.75, -4.0),
++            PointerGestureEvent::PinchEnd { cancelled: false },
++        ],
++    );
++}
++
++/// A gesture libinput cancels ends cancelled in the client too, so it can
++/// undo what the gesture did.
++#[test]
++fn gesture_cancelled_end_to_client() {
++    let (mut fixture, client_id) = gesture_client_fixture();
++    fixture.ionwl().gesture_hold_begin_simulate(2);
++    fixture.ionwl().gesture_hold_end_simulate(true);
++    fixture.ionwl().gesture_swipe_begin_simulate(4);
++    fixture.ionwl().gesture_swipe_end_simulate(true);
++    assert_eq!(
++        gesture_events_take(&mut fixture, client_id),
++        [
++            PointerGestureEvent::HoldBegin { fingers: 2 },
++            PointerGestureEvent::HoldEnd { cancelled: true },
++            PointerGestureEvent::SwipeBegin { fingers: 4 },
++            PointerGestureEvent::SwipeEnd { cancelled: true },
++        ],
++    );
++}
++
++/// Gestures go to the pointer focus only: a client listening for them
++/// without a surface under the pointer sees none.
++#[test]
++fn gesture_only_to_pointer_focus() {
++    let (mut fixture, client_id) = gesture_client_fixture();
++    let other = fixture.add_client();
++    fixture.roundtrip(other);
++    fixture.client(other).pointer_gestures_get();
++    fixture.roundtrip(other);
++
++    fixture.ionwl().gesture_swipe_begin_simulate(3);
++    fixture.ionwl().gesture_swipe_end_simulate(false);
++
++    assert_eq!(gesture_events_take(&mut fixture, other), []);
++    assert_eq!(gesture_events_take(&mut fixture, client_id).len(), 2);
++}
++
++/// A consuming generator owns the pointer, so a gesture neither begins nor
++/// moves in the client meanwhile.
++#[test]
++fn gesture_withheld_from_client_while_generator_consumes() {
++    let (mut fixture, client_id) = gesture_client_fixture();
++    generator_record_start(&mut fixture, 1);
++    fixture.ionwl().gesture_swipe_begin_simulate(3);
++    fixture.ionwl().gesture_swipe_update_simulate(5.0, 0.0);
++    fixture.ionwl().gesture_swipe_end_simulate(false);
++    assert_eq!(gesture_events_take(&mut fixture, client_id), []);
++}
++
++/// Locking the session cancels a gesture in progress on a window behind
++/// the lock, and nothing further reaches that window while locked.
++#[test]
++fn gesture_not_to_client_while_locked() {
++    let (mut fixture, client_id) = gesture_client_fixture();
++    fixture.ionwl().gesture_swipe_begin_simulate(3);
++    assert_eq!(
++        gesture_events_take(&mut fixture, client_id),
++        [PointerGestureEvent::SwipeBegin { fingers: 3 }],
++    );
++
++    let _locker = fixture.session_lock_and_confirm();
++    fixture.ionwl().gesture_swipe_update_simulate(5.0, 0.0);
++    fixture.ionwl().gesture_swipe_end_simulate(false);
++    fixture.pointer_simulate_motion([110, 110]);
++    fixture.ionwl().pointer_focus_update_test();
++    fixture.ionwl().gesture_pinch_begin_simulate(2);
++    fixture
++        .ionwl()
++        .gesture_pinch_update_simulate(0.0, 0.0, 2.0, 0.0);
++    fixture.ionwl().gesture_pinch_end_simulate(false);
++
++    assert_eq!(
++        gesture_events_take(&mut fixture, client_id),
++        [PointerGestureEvent::SwipeEnd { cancelled: true }],
++        "the lock cancels the swipe, and the window sees nothing after it"
++    );
++}
+diff --git a/tests/integration/common/client.rs b/tests/integration/common/client.rs
+index 34bd4ff8..307ee3db 100644
+--- a/tests/integration/common/client.rs
++++ b/tests/integration/common/client.rs
+@@ -137,6 +137,16 @@ use smithay::reexports::wayland_protocols::wp::pointer_constraints::zv1::client:
+ use smithay::reexports::wayland_protocols::wp::keyboard_shortcuts_inhibit::zv1::client::zwp_keyboard_shortcuts_inhibitor_v1::{
+     self, ZwpKeyboardShortcutsInhibitorV1,
+ };
++use smithay::reexports::wayland_protocols::wp::pointer_gestures::zv1::client::zwp_pointer_gesture_hold_v1::{
++    self, ZwpPointerGestureHoldV1,
++};
++use smithay::reexports::wayland_protocols::wp::pointer_gestures::zv1::client::zwp_pointer_gesture_pinch_v1::{
++    self, ZwpPointerGesturePinchV1,
++};
++use smithay::reexports::wayland_protocols::wp::pointer_gestures::zv1::client::zwp_pointer_gesture_swipe_v1::{
++    self, ZwpPointerGestureSwipeV1,
++};
++use smithay::reexports::wayland_protocols::wp::pointer_gestures::zv1::client::zwp_pointer_gestures_v1::ZwpPointerGesturesV1;
+ use smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::client::zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1;
+ use smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::client::zwp_virtual_keyboard_v1::ZwpVirtualKeyboardV1;
+ 
+@@ -266,6 +276,33 @@ pub enum PointerAxisEvent {
+     Frame,
+ }
+ 
++/// A `pointer-gestures` event, as the client received it. `End`s carry
++/// whether the gesture was cancelled.
++#[derive(Debug, Clone, Copy, PartialEq)]
++pub enum PointerGestureEvent {
++    SwipeBegin {
++        fingers: u32,
++    },
++    SwipeUpdate(f64, f64),
++    SwipeEnd {
++        cancelled: bool,
++    },
++    PinchBegin {
++        fingers: u32,
++    },
++    /// Delta x and y, scale, rotation.
++    PinchUpdate(f64, f64, f64, f64),
++    PinchEnd {
++        cancelled: bool,
++    },
++    HoldBegin {
++        fingers: u32,
++    },
++    HoldEnd {
++        cancelled: bool,
++    },
++}
++
+ /// A `wl_touch` event, as the client received it, positions surface-local.
+ #[derive(Debug, Clone, Copy, PartialEq)]
+ pub enum TouchEvent {
+@@ -425,6 +462,20 @@ struct ClientState {
+     /// The confined pointer created for a surface, once requested.
+     confined_pointer: Option<ZwpConfinedPointerV1>,
+ 
++    // Pointer gestures (zwp_pointer_gestures_v1)
++    /// The bound pointer-gestures manager, if advertised.
++    pointer_gestures: Option<ZwpPointerGesturesV1>,
++    /// The swipe, pinch and hold gesture objects, once requested. Held so
++    /// the compositor keeps sending to them.
++    pointer_gesture_objects: Option<(
++        ZwpPointerGestureSwipeV1,
++        ZwpPointerGesturePinchV1,
++        ZwpPointerGestureHoldV1,
++    )>,
++    /// Gesture events not yet taken by `pointer_gesture_events_take`, oldest
++    /// first.
++    pointer_gesture_events: Vec<PointerGestureEvent>,
++
+     // Toplevel icon (xdg-toplevel-icon-v1)
+     /// The bound shm global, used to back icon pixel buffers.
+     shm: Option<WlShm>,
+@@ -775,6 +826,9 @@ impl Client {
+             virtual_keyboard_manager: None,
+             virtual_keyboard: None,
+             pointer_constraints: None,
++            pointer_gestures: None,
++            pointer_gesture_objects: None,
++            pointer_gesture_events: Vec::new(),
+             locked_pointer: None,
+             confined_pointer: None,
+             shm: None,
+@@ -1675,6 +1729,29 @@ impl Client {
+         self.state.conn.flush().expect("Failed to flush");
+     }
+ 
++    /// Create a swipe, a pinch and a hold gesture object on the pointer, so
++    /// the compositor sends this client touchpad gestures. Roundtrip after.
++    pub fn pointer_gestures_get(&mut self) {
++        let manager = self
++            .state
++            .pointer_gestures
++            .as_ref()
++            .expect("pointer-gestures manager not available");
++        let pointer = self.state.pointer.as_ref().expect("pointer not available");
++        let qh = &self.state.qh;
++        self.state.pointer_gesture_objects = Some((
++            manager.get_swipe_gesture(pointer, qh, ()),
++            manager.get_pinch_gesture(pointer, qh, ()),
++            manager.get_hold_gesture(pointer, qh, ()),
++        ));
++        self.state.conn.flush().expect("Failed to flush");
++    }
++
++    /// The gesture events received since the last call, oldest first.
++    pub fn pointer_gesture_events_take(&mut self) -> Vec<PointerGestureEvent> {
++        std::mem::take(&mut self.state.pointer_gesture_events)
++    }
++
+     /// Whether the `zwp_pointer_constraints_v1` global was advertised and bound.
+     pub fn has_pointer_constraints_support(&self) -> bool {
+         self.state.pointer_constraints.is_some()
+@@ -2675,6 +2752,9 @@ impl Dispatch<WlRegistry, ()> for ClientState {
+                 } else if interface == ZwpPointerConstraintsV1::interface().name {
+                     let version = min(version, ZwpPointerConstraintsV1::interface().version);
+                     state.pointer_constraints = Some(registry.bind(name, version, qh, ()));
++                } else if interface == ZwpPointerGesturesV1::interface().name {
++                    let version = min(version, ZwpPointerGesturesV1::interface().version);
++                    state.pointer_gestures = Some(registry.bind(name, version, qh, ()));
+                 } else if interface == WlShm::interface().name {
+                     let version = min(version, WlShm::interface().version);
+                     state.shm = Some(registry.bind(name, version, qh, ()));
+@@ -3353,6 +3433,88 @@ impl Dispatch<WlPointer, ()> for ClientState {
+     }
+ }
+ 
++impl Dispatch<ZwpPointerGestureSwipeV1, ()> for ClientState {
++    fn event(
++        state: &mut Self,
++        _proxy: &ZwpPointerGestureSwipeV1,
++        event: zwp_pointer_gesture_swipe_v1::Event,
++        _data: &(),
++        _conn: &Connection,
++        _qhandle: &QueueHandle<Self>,
++    ) {
++        let event = match event {
++            zwp_pointer_gesture_swipe_v1::Event::Begin { fingers, .. } => {
++                PointerGestureEvent::SwipeBegin { fingers }
++            }
++            zwp_pointer_gesture_swipe_v1::Event::Update { dx, dy, .. } => {
++                PointerGestureEvent::SwipeUpdate(dx, dy)
++            }
++            zwp_pointer_gesture_swipe_v1::Event::End { cancelled, .. } => {
++                PointerGestureEvent::SwipeEnd {
++                    cancelled: cancelled != 0,
++                }
++            }
++            _ => return,
++        };
++        state.pointer_gesture_events.push(event);
++    }
++}
++
++impl Dispatch<ZwpPointerGesturePinchV1, ()> for ClientState {
++    fn event(
++        state: &mut Self,
++        _proxy: &ZwpPointerGesturePinchV1,
++        event: zwp_pointer_gesture_pinch_v1::Event,
++        _data: &(),
++        _conn: &Connection,
++        _qhandle: &QueueHandle<Self>,
++    ) {
++        let event = match event {
++            zwp_pointer_gesture_pinch_v1::Event::Begin { fingers, .. } => {
++                PointerGestureEvent::PinchBegin { fingers }
++            }
++            zwp_pointer_gesture_pinch_v1::Event::Update {
++                dx,
++                dy,
++                scale,
++                rotation,
++                ..
++            } => PointerGestureEvent::PinchUpdate(dx, dy, scale, rotation),
++            zwp_pointer_gesture_pinch_v1::Event::End { cancelled, .. } => {
++                PointerGestureEvent::PinchEnd {
++                    cancelled: cancelled != 0,
++                }
++            }
++            _ => return,
++        };
++        state.pointer_gesture_events.push(event);
++    }
++}
++
++impl Dispatch<ZwpPointerGestureHoldV1, ()> for ClientState {
++    fn event(
++        state: &mut Self,
++        _proxy: &ZwpPointerGestureHoldV1,
++        event: zwp_pointer_gesture_hold_v1::Event,
++        _data: &(),
++        _conn: &Connection,
++        _qhandle: &QueueHandle<Self>,
++    ) {
++        let event = match event {
++            zwp_pointer_gesture_hold_v1::Event::Begin { fingers, .. } => {
++                PointerGestureEvent::HoldBegin { fingers }
++            }
++            zwp_pointer_gesture_hold_v1::Event::End { cancelled, .. } => {
++                PointerGestureEvent::HoldEnd {
++                    cancelled: cancelled != 0,
++                }
++            }
++            _ => return,
++        };
++        state.pointer_gesture_events.push(event);
++    }
++}
++
+ impl Dispatch<WlTouch, ()> for ClientState {
+     fn event(
+         state: &mut Self,
+@@ -4009,6 +4171,7 @@ impl Dispatch<ZwlrGammaControlV1, ()> for ClientState {
+ }
+ delegate_noop!(ClientState: ZwpKeyboardShortcutsInhibitManagerV1);
+ delegate_noop!(ClientState: ZwpPointerConstraintsV1);
++delegate_noop!(ClientState: ZwpPointerGesturesV1);
+ delegate_noop!(ClientState: ignore ZwpLockedPointerV1);
+ delegate_noop!(ClientState: ignore ZwpConfinedPointerV1);
+ delegate_noop!(ClientState: ExtSessionLockManagerV1);
+diff --git a/tests/integration/common/mod.rs b/tests/integration/common/mod.rs
+index d60370bd..7bda07e0 100644
+--- a/tests/integration/common/mod.rs
++++ b/tests/integration/common/mod.rs
+@@ -12,7 +12,7 @@ pub mod temp_script;
+ #[allow(unused_imports)]
+ pub use client::{
+     Client, ClientId, GammaControlEvent, OutputManagementEvent, OutputPowerEvent, PointerAxisEvent,
+-    TestWindow, TouchEvent, WorkspaceEntry,
++    PointerGestureEvent, TestWindow, TouchEvent, WorkspaceEntry,
+ };
+ pub use fixture::{DEFAULT_OUTPUT_H, DEFAULT_OUTPUT_W, Fixture};
+ #[allow(unused_imports)]
+-- 
+2.56.0
+

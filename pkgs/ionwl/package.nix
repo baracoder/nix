@@ -53,6 +53,8 @@ rustPlatform.buildRustPackage {
     ./ext-workspace.patch
     # Games can opt out of vsync; needs the smithay patch below.
     ./tearing-control.patch
+    # Touchpad swipe/pinch/hold reach clients.
+    ./pointer-gestures.patch
   ];
 
   # Async page flips in smithay's DrmCompositor, a backport of the unmerged
