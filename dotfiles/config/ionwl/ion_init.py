@@ -175,14 +175,20 @@ def main() -> None:
         ion.utils.exec(('kanshi',))
         # One shell at a time: all are the notification daemon.
         ion.utils.exec(('dms', 'run') if SHELL == 'dux' else ('way-shell',))
-        # Locks on `loginctl lock-session` and before suspend; suspend waits
-        # until the lock screen is up. (swayidle needs an idle protocol ionwl
-        # lacks.)
-        ion.utils.exec(('ionwl-lockd', 'gtklock', '-d'))
+        # dux locks itself (on `loginctl lock-session` and before suspend).
+        # Otherwise: same for gtklock; suspend waits until it is up.
+        if SHELL != 'dux':
+            ion.utils.exec(('ionwl-lockd', 'gtklock', '-d'))
 
     @ion.app.hooks.compositor_shutdown_pre.append
     def on_shutdown() -> None:
         ion.utils.exec(('systemctl', '--user', 'stop', '--no-block', 'ionwl-session.target'))
+
+    # dux runs the idle timers (fade, lock, screen off) through ext-idle-notify
+    # and its own settings; ionwl's would lock first, without the fade.
+    if SHELL == 'dux':
+        prefs.idle.timeout = 0
+        prefs.idle.dpms_timeout = 0
 
     # After prefs.idle.timeout seconds without input (unless a client, e.g. a
     # video player, inhibits idle); the screens blank at prefs.idle.dpms_timeout.
