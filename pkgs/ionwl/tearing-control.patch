@@ -1,0 +1,1080 @@
+From 3f2045e5452666a4f394005bc422a477fb08b413 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 14:11:56 +0100
+Subject: [PATCH 1/2] Add: tearing control via wp-tearing-control
+
+Games bind wp_tearing_control_manager_v1 (through Vulkan's immediate
+present mode or a zero swap interval, or Xwayland for X clients) to ask
+that a surface be presented with tearing for lower latency. The hint is
+double-buffered surface state, applied on commit.
+
+On the DRM backend a frame may tear when the output shows a window
+fullscreen whose surface asked for it, and is then submitted for an
+asynchronous page flip. The flip falls back to vsync when the kernel
+lacks async atomic flips (Linux 6.8), when more than the primary plane's
+buffer changes, or when the kernel rejects it, which is remembered until
+the plane's configuration changes. While flips tear, renders are not
+held back for a VBlank, and their presentation feedback drops `vsync`.
+
+IONWL_NO_TEARING leaves the global unadvertised.
+
+Requires smithay's DRM async page flip support (Smithay/smithay#1948).
+---
+ doc/python_api/rst/guide/features.rst         |  10 +-
+ src/backend/helpers.rs                        |   9 +-
+ src/backend/tests/helpers_tests.rs            |  22 +-
+ src/backend/udev/mod.rs                       |  33 ++-
+ src/backend/udev/render.rs                    |  10 +-
+ src/backend/udev/render_thread.rs             |  10 +-
+ src/backend/udev/render_timings.rs            |  13 +
+ .../udev/tests/render_timings_tests.rs        |  17 ++
+ src/handler/protocol.rs                       |   1 +
+ src/main.rs                                   |   2 +
+ src/protocols/mod.rs                          |   2 +
+ src/protocols/tearing_control.rs              | 225 ++++++++++++++++++
+ src/render/frame.rs                           |  32 ++-
+ src/render/test_helpers.rs                    |   5 +-
+ src/state/mod.rs                              |   7 +
+ tests/integration/common/client.rs            |  39 +++
+ tests/integration/protocol/mod.rs             |   1 +
+ tests/integration/protocol/tearing_control.rs | 142 +++++++++++
+ 18 files changed, 565 insertions(+), 15 deletions(-)
+ create mode 100644 src/protocols/tearing_control.rs
+ create mode 100644 tests/integration/protocol/tearing_control.rs
+
+diff --git a/doc/python_api/rst/guide/features.rst b/doc/python_api/rst/guide/features.rst
+index 62aafb76..7d1a9bf7 100644
+--- a/doc/python_api/rst/guide/features.rst
++++ b/doc/python_api/rst/guide/features.rst
+@@ -89,6 +89,14 @@ wlr-output-management
+    External display configuration (kanshi, wlr-randr, nwg-displays).
+ wlr-output-power-management
+    Display power control (wlopm).
++tearing-control
++   Opt-in screen tearing for latency-sensitive fullscreen games (a Vulkan
++   immediate present mode, a zero swap interval). Honored on the DRM/KMS
++   backend for a window shown fullscreen, where the kernel supports
++   asynchronous atomic page flips (Linux 6.8). Frames flip with vsync
++   otherwise, and on any frame that changes more than the primary plane's
++   buffer (e.g. switching between direct scan-out and composition). Set
++   ``IONWL_NO_TEARING`` to not offer it to clients.
+ 
+ Input
+ -----
+@@ -143,8 +151,6 @@ text-input / input-method
+    Input-method editors for non-Latin scripts (fcitx5, ibus).
+ pointer-gestures
+    Touchpad swipe and pinch gestures reported to clients.
+-tearing-control
+-   Opt-in screen tearing for latency-sensitive fullscreen games.
+ security-context
+    Sandbox identification, letting the compositor restrict privileged
+    protocols per client (Flatpak).
+diff --git a/src/backend/helpers.rs b/src/backend/helpers.rs
+index e2068a13..01c674d6 100644
+--- a/src/backend/helpers.rs
++++ b/src/backend/helpers.rs
+@@ -502,17 +502,19 @@ pub fn output_refresh_interval(output: &Output) -> std::time::Duration {
+ /// `Realtime` clock). `HwCompletion` is advertised either way, cosmic's
+ /// flags: the display hardware did signal this flip's completion - only the
+ /// timestamp's source is in question. Missing metadata yields sequence 0 and
+-/// the clock fallback.
++/// the clock fallback. A `tearing` flip (asynchronous) drops `Vsync`: it
++/// landed mid-scanout rather than at a vertical blank.
+ pub fn presentation_from_metadata(
+     metadata: Option<&DrmEventMetadata>,
+     clock: &Clock<Monotonic>,
++    tearing: bool,
+ ) -> (Time<Monotonic>, u64, wp_presentation_feedback::Kind) {
+     let hw_time = match metadata.map(|m| m.time) {
+         Some(DrmEventTime::Monotonic(tp)) if !tp.is_zero() => Some(tp),
+         _ => None,
+     };
+     let sequence = metadata.map_or(0, |m| m.sequence as u64);
+-    let (time, flags) = hw_time.map_or_else(
++    let (time, mut flags) = hw_time.map_or_else(
+         || {
+             (
+                 clock.now(),
+@@ -529,6 +531,9 @@ pub fn presentation_from_metadata(
+             )
+         },
+     );
++    if tearing {
++        flags.remove(wp_presentation_feedback::Kind::Vsync);
++    }
+     (time, sequence, flags)
+ }
+ 
+diff --git a/src/backend/tests/helpers_tests.rs b/src/backend/tests/helpers_tests.rs
+index 6bbc6cc2..6c94873c 100644
+--- a/src/backend/tests/helpers_tests.rs
++++ b/src/backend/tests/helpers_tests.rs
+@@ -130,7 +130,7 @@ fn presentation_from_metadata_hw_monotonic_advertises_hardware_timing() {
+         time: DrmEventTime::Monotonic(std::time::Duration::from_millis(1234)),
+         sequence: 42,
+     };
+-    let (time, seq, flags) = presentation_from_metadata(Some(&meta), &clock);
++    let (time, seq, flags) = presentation_from_metadata(Some(&meta), &clock, false);
+     assert_eq!(seq, 42);
+     assert_eq!(time, std::time::Duration::from_millis(1234).into());
+     assert!(flags.contains(wp_presentation_feedback::Kind::Vsync));
+@@ -149,7 +149,7 @@ fn presentation_from_metadata_zero_monotonic_falls_back_to_clock() {
+         time: DrmEventTime::Monotonic(std::time::Duration::ZERO),
+         sequence: 7,
+     };
+-    let (_time, seq, flags) = presentation_from_metadata(Some(&meta), &clock);
++    let (_time, seq, flags) = presentation_from_metadata(Some(&meta), &clock, false);
+     assert_eq!(seq, 7);
+     assert_eq!(
+         flags,
+@@ -162,7 +162,7 @@ fn presentation_from_metadata_none_is_sequence_zero_no_hw_clock() {
+     // Missing metadata: sequence 0, clock-fallback time, and no `HwClock`
+     // (`HwCompletion` is still advertised, see the zero-monotonic test).
+     let clock: Clock<Monotonic> = Clock::new();
+-    let (_time, seq, flags) = presentation_from_metadata(None, &clock);
++    let (_time, seq, flags) = presentation_from_metadata(None, &clock, false);
+     assert_eq!(seq, 0);
+     assert_eq!(
+         flags,
+@@ -170,6 +170,22 @@ fn presentation_from_metadata_none_is_sequence_zero_no_hw_clock() {
+     );
+ }
+ 
++#[test]
++fn presentation_from_metadata_tearing_drops_vsync() {
++    // An asynchronous flip did not wait for a vertical blank; the hardware
++    // timing it reports is still advertised.
++    let clock: Clock<Monotonic> = Clock::new();
++    let meta = DrmEventMetadata {
++        time: DrmEventTime::Monotonic(std::time::Duration::from_millis(1234)),
++        sequence: 42,
++    };
++    let (_time, _seq, flags) = presentation_from_metadata(Some(&meta), &clock, true);
++    assert_eq!(
++        flags,
++        wp_presentation_feedback::Kind::HwClock | wp_presentation_feedback::Kind::HwCompletion
++    );
++}
++
+ // -- output_mode_set ---------------------------------------------------
+ 
+ /// An output with no globals, standing in for a resizable winit window.
+diff --git a/src/backend/udev/mod.rs b/src/backend/udev/mod.rs
+index a03f0665..bd32970a 100644
+--- a/src/backend/udev/mod.rs
++++ b/src/backend/udev/mod.rs
+@@ -20,6 +20,7 @@ use smithay::{
+             output::{DrmOutput, DrmOutputManager},
+         },
+         renderer::{
++            PresentationMode,
+             element::RenderElementStates,
+             glow::GlowRenderer,
+             multigpu::{GpuManager, gbm::GbmGlesBackend},
+@@ -484,6 +485,14 @@ enum SubmitOutcome {
+ 
+ /// Composite one frame, wait on the swapchain fence, and queue the page flip.
+ ///
++/// A `tearing` frame asks for an asynchronous flip. The compositor attempts
++/// one only when the flip changes nothing but the primary plane's buffer
++/// (overlay planes are left unused for it), the kernel reports async-flip
++/// support (`DRM_CAP_ATOMIC_ASYNC_PAGE_FLIP`, Linux 6.8, on atomic devices),
++/// and the last attempt on this plane configuration did not fail; one the
++/// kernel rejects is retried with vsync at once. In every other case the frame
++/// flips with vsync, which the protocol allows.
++///
+ /// Shared by the inline render path ([`DrmBackend::render`]) and the per-output
+ /// render threads ([`render_thread`]), which run this sequence identically. No
+ /// test reaches it: a step that lands on only one path shows up as a wedged
+@@ -499,9 +508,21 @@ fn frame_submit(
+     elements: &[IonRenderElement],
+     background_color: [f32; 4],
+     flags: FrameFlags,
++    tearing: bool,
+     output_id: OutputId,
+ ) -> SubmitOutcome {
+-    let render_result = match compositor.render_frame(renderer, elements, background_color, flags) {
++    let presentation_mode = if tearing {
++        PresentationMode::Async
++    } else {
++        PresentationMode::VSync
++    };
++    let render_result = match compositor.render_frame(
++        renderer,
++        elements,
++        background_color,
++        flags,
++        presentation_mode,
++    ) {
+         Ok(render_result) => render_result,
+         Err(e) => {
+             warn!("render_frame failed for output {:?}: {:?}", output_id, e);
+@@ -536,6 +557,16 @@ fn frame_submit(
+     }
+ }
+ 
++/// Whether the flip in flight on `compositor` was asynchronous (tore).
++///
++/// Read at its VBlank, before `frame_submitted` retires it, for the
++/// presentation feedback.
++fn flip_pending_tearing(compositor: &GbmDrmOutput) -> bool {
++    compositor.with_pending_frame(|frame| {
++        frame.is_some_and(|frame| frame.presentation_mode == PresentationMode::Async)
++    })
++}
++
+ /// Record a presented frame's element states main-side: refresh the scan-out
+ /// tracking, then build and park this frame's presentation feedback.
+ ///
+diff --git a/src/backend/udev/render.rs b/src/backend/udev/render.rs
+index 501e4611..891f1344 100644
+--- a/src/backend/udev/render.rs
++++ b/src/backend/udev/render.rs
+@@ -29,7 +29,7 @@ use crate::tiling::OutputId;
+ 
+ use super::{
+     DeviceSurfaceMut, DpmsState, DrmBackend, SubmitOutcome, Surface, SurfaceInline, SurfaceRole,
+-    frame_submit, render_thread, render_trace_enabled,
++    flip_pending_tearing, frame_submit, render_thread, render_trace_enabled,
+ };
+ 
+ impl DrmBackend {
+@@ -85,6 +85,7 @@ impl DrmBackend {
+             is_locked,
+             background_color,
+             cursor_visible,
++            tearing,
+         } = crate::render::frame::frame_elements_collect(
+             renderer.as_mut(),
+             &mut inline.render_state,
+@@ -104,6 +105,7 @@ impl DrmBackend {
+             renderer.as_mut(),
+             background_color,
+             flags,
++            tearing,
+             &self.loop_handle,
+             &output,
+         );
+@@ -410,12 +412,14 @@ impl DrmBackend {
+     /// recovery through a forced redraw on its own event loop. Presentation
+     /// feedback and frame callbacks differ between the two arms and stay with
+     /// the caller.
++    #[expect(clippy::too_many_arguments)]
+     fn submit_and_pace(
+         inline: &mut SurfaceInline,
+         output_id: OutputId,
+         renderer: &mut GlowRenderer,
+         background_color: [f32; 4],
+         flags: FrameFlags,
++        tearing: bool,
+         loop_handle: &LoopHandle<'static, IonMain>,
+         output: &Output,
+     ) -> SubmitOutcome {
+@@ -425,6 +429,7 @@ impl DrmBackend {
+             &inline.render_state.render_buffers.elements,
+             background_color,
+             flags,
++            tearing,
+             output_id,
+         );
+ 
+@@ -657,6 +662,7 @@ impl DrmBackend {
+         // moving. Calling it with nothing pending is a no-op (`Ok(None)`),
+         // which is why it runs on every VBlank rather than only after a frame
+         // this path rendered.
++        let tearing = flip_pending_tearing(&inline.compositor);
+         let frame_submitted = inline.compositor.frame_submitted();
+         if let Err(e) = &frame_submitted {
+             warn!("Failed to submit frame completion: {:?}", e);
+@@ -686,7 +692,7 @@ impl DrmBackend {
+             None
+         } else {
+             let (time, sequence, flags) =
+-                presentation_from_metadata(metadata.as_ref(), &state.wm.clock);
++                presentation_from_metadata(metadata.as_ref(), &state.wm.clock, tearing);
+             Some(render_thread::PresentationInfo {
+                 time,
+                 sequence,
+diff --git a/src/backend/udev/render_thread.rs b/src/backend/udev/render_thread.rs
+index 1cb5e887..878da8a9 100644
+--- a/src/backend/udev/render_thread.rs
++++ b/src/backend/udev/render_thread.rs
+@@ -47,7 +47,7 @@ use smithay::{
+ use tracing::{debug, error, warn};
+ 
+ use super::render_timings::{Timings, gpu_vendor};
+-use super::{DrmBackend, GbmDrmOutput, SubmitOutcome, frame_submit};
++use super::{DrmBackend, GbmDrmOutput, SubmitOutcome, flip_pending_tearing, frame_submit};
+ use crate::backend::helpers::{
+     clock_ms, frame_flags_for, output_refresh_interval, presentation_from_metadata,
+ };
+@@ -779,6 +779,7 @@ impl SurfaceThreadState {
+             is_locked,
+             background_color,
+             cursor_visible,
++            tearing,
+         } = crate::render::frame::frame_elements_collect(
+             renderer.as_mut(),
+             &mut self.render_state,
+@@ -797,6 +798,7 @@ impl SurfaceThreadState {
+             &self.render_state.render_buffers.elements,
+             background_color,
+             flags,
++            tearing,
+             output_id,
+         );
+         let submit_ms = t_submit.elapsed().as_millis();
+@@ -1072,6 +1074,10 @@ impl SurfaceThreadState {
+         };
+ 
+         // A real flip completed.
++        let tearing = flip_pending_tearing(&self.compositor);
++        rtrace!(self, "on_vblank tearing={}", tearing);
++        // While flips tear, the next render starts as soon as it is asked for.
++        self.timings.tearing_set(tearing);
+         let frame_submitted = self.compositor.frame_submitted();
+         if let Err(err) = &frame_submitted {
+             warn!("frame_submitted failed for {:?}: {:?}", self.output_id, err);
+@@ -1082,7 +1088,7 @@ impl SurfaceThreadState {
+         // discards it (the flip was not presented).
+         let present = if frame_submitted.is_ok() {
+             let (time, sequence, flags) =
+-                presentation_from_metadata(metadata.as_ref(), &self.clock);
++                presentation_from_metadata(metadata.as_ref(), &self.clock, tearing);
+             // Close the predictor's history entry for this frame with its actual
+             // scan-out time, so the next render is scheduled against it.
+             self.timings.presented(time);
+diff --git a/src/backend/udev/render_timings.rs b/src/backend/udev/render_timings.rs
+index 6712584d..3974ccdf 100644
+--- a/src/backend/udev/render_timings.rs
++++ b/src/backend/udev/render_timings.rs
+@@ -71,6 +71,9 @@ pub(super) struct Timings {
+     /// 1 Hz-or-slower mode degrades to "render immediately" instead of panicking.
+     refresh_interval_ns: Option<NonZeroU64>,
+     vrr: bool,
++    /// The last flip tore: the next one lands the moment it is submitted, so
++    /// there is no VBlank to hold its render back for.
++    tearing: bool,
+     /// PCI vendor id of the render node, read once at construction. Only used to
+     /// special-case Nvidia (see [`Self::next_render_time`]).
+     vendor: Option<u32>,
+@@ -84,6 +87,7 @@ impl Timings {
+         Self {
+             refresh_interval_ns: interval_to_nonzero_ns(refresh_interval),
+             vrr,
++            tearing: false,
+             vendor,
+             pending_frame: None,
+             previous_frames: VecDeque::new(),
+@@ -102,6 +106,10 @@ impl Timings {
+         self.vrr = vrr;
+     }
+ 
++    pub(super) fn tearing_set(&mut self, tearing: bool) {
++        self.tearing = tearing;
++    }
++
+     /// Begin timing a new frame. Replaces any unfinished pending frame (an empty
+     /// or failed render that never submitted), which is the intended discard.
+     pub(super) fn start_render(&mut self, clock: &Clock<Monotonic>) {
+@@ -240,6 +248,11 @@ impl Timings {
+             return Duration::ZERO;
+         }
+ 
++        // A tearing frame flips on submit, not at the VBlank estimated below.
++        if self.tearing {
++            return Duration::ZERO;
++        }
++
+         let estimated_presentation_time = self.next_presentation_time_since(now);
+         if estimated_presentation_time.is_zero() {
+             return Duration::ZERO;
+diff --git a/src/backend/udev/tests/render_timings_tests.rs b/src/backend/udev/tests/render_timings_tests.rs
+index 6e2700f6..b394302d 100644
+--- a/src/backend/udev/tests/render_timings_tests.rs
++++ b/src/backend/udev/tests/render_timings_tests.rs
+@@ -242,3 +242,20 @@ fn next_render_time_is_immediate_on_nvidia() {
+         Duration::ZERO
+     );
+ }
++
++#[test]
++fn next_render_time_is_immediate_while_tearing() {
++    // A tearing frame flips on submit rather than at the VBlank the estimate
++    // aims for, so holding its render back would only add latency.
++    let mut timings = full_history(100);
++    timings.tearing_set(true);
++    assert_eq!(
++        timings.next_render_time_since(Duration::from_millis(105)),
++        Duration::ZERO
++    );
++    timings.tearing_set(false);
++    assert_eq!(
++        timings.next_render_time_since(Duration::from_millis(105)),
++        Duration::from_millis(6)
++    );
++}
+diff --git a/src/handler/protocol.rs b/src/handler/protocol.rs
+index 78178df1..b751f260 100644
+--- a/src/handler/protocol.rs
++++ b/src/handler/protocol.rs
+@@ -144,3 +144,4 @@ crate::delegate_output_power!(IonMain);
+ crate::delegate_foreign_toplevel!(IonMain);
+ crate::delegate_ext_workspace!(IonMain);
+ crate::delegate_screencopy!(IonMain);
++crate::delegate_tearing_control!(IonMain);
+diff --git a/src/main.rs b/src/main.rs
+index 818444d4..5a093a1c 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -32,6 +32,8 @@ Environment variables:
+   IONWL_TIMING            Enable render and operator timing probes
+   IONWL_NO_RENDER_THREAD  Use the inline render path instead of per-output
+                           render threads (DRM/KMS backend)
++  IONWL_NO_TEARING        Present with vsync always, not offering clients
++                          tearing-control
+   IONWL_NOTIFY_COMMAND    Program run to show desktop notifications
+                           (default: notify-send)";
+ 
+diff --git a/src/protocols/mod.rs b/src/protocols/mod.rs
+index 158ba63a..f819bc01 100644
+--- a/src/protocols/mod.rs
++++ b/src/protocols/mod.rs
+@@ -8,6 +8,7 @@ pub mod gamma_control;
+ pub mod output_management;
+ pub mod output_power;
+ pub mod screencopy;
++pub mod tearing_control;
+ pub mod virtual_keyboard;
+ 
+ pub use ext_workspace::{
+@@ -20,3 +21,4 @@ pub use gamma_control::{GammaControlHandler, GammaControlManagerState};
+ pub use output_management::{OutputConfiguration, OutputManagementHandler, OutputManagementState};
+ pub use output_power::{OutputPowerHandler, OutputPowerState};
+ pub use screencopy::{Screencopy, ScreencopyHandler, ScreencopyManagerState};
++pub use tearing_control::{TearingControlManagerState, tearing_requested};
+diff --git a/src/protocols/tearing_control.rs b/src/protocols/tearing_control.rs
+new file mode 100644
+index 00000000..58ea703f
+--- /dev/null
++++ b/src/protocols/tearing_control.rs
+@@ -0,0 +1,225 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! tearing-control-v1 protocol implementation.
++//!
++//! Lets a client hint that a surface's content may be presented with tearing
++//! (an asynchronous page flip) for lower latency, as games do. Vulkan and EGL
++//! drivers bind it themselves for an immediate present mode or a zero swap
++//! interval, and Xwayland for X clients flipping asynchronously.
++//!
++//! The hint is double-buffered surface state, applied on `wl_surface.commit`
++//! like the rest. Nothing reacts to the commit: the DRM backend reads the
++//! committed hint of the window an output shows fullscreen when it renders
++//! (see [`tearing_requested`]), and is free to present with vsync anyway.
++//!
++//! Smithay has no implementation, so this follows the shape of its
++//! `content_type` module, another per-surface hint.
++
++use std::sync::atomic::{AtomicBool, Ordering};
++
++use smithay::{
++    reexports::{
++        wayland_protocols::wp::tearing_control::v1::server::{
++            wp_tearing_control_manager_v1::{self, WpTearingControlManagerV1},
++            wp_tearing_control_v1::{self, PresentationHint, WpTearingControlV1},
++        },
++        wayland_server::{
++            Client, DataInit, Dispatch, DisplayHandle, GlobalDispatch, New, Resource, WEnum, Weak,
++            protocol::wl_surface::WlSurface,
++        },
++    },
++    wayland::compositor::{self, Cacheable},
++};
++
++const VERSION: u32 = 1;
++
++/// A surface's committed presentation hint.
++#[derive(Clone, Copy, Debug, Default)]
++struct TearingCachedState {
++    /// The client accepts tearing (`async`); `vsync`, the default, otherwise.
++    tearing: bool,
++}
++
++impl Cacheable for TearingCachedState {
++    fn commit(&mut self, _dh: &DisplayHandle) -> Self {
++        *self
++    }
++
++    fn merge_into(self, into: &mut Self, _dh: &DisplayHandle) {
++        *into = self;
++    }
++}
++
++/// Whether the surface has a `wp_tearing_control_v1`, which it may have only
++/// one of at a time.
++#[derive(Default)]
++struct TearingControlAttached(AtomicBool);
++
++/// Dispatch data of a `wp_tearing_control_v1`: the surface it extends.
++pub struct TearingControlData {
++    surface: Weak<WlSurface>,
++}
++
++/// State for the tearing-control protocol: its global.
++pub struct TearingControlManagerState;
++
++impl TearingControlManagerState {
++    /// Create the state and register the global.
++    pub(crate) fn new<D>(display: &DisplayHandle) -> Self
++    where
++        D: GlobalDispatch<WpTearingControlManagerV1, ()>
++            + Dispatch<WpTearingControlManagerV1, ()>
++            + 'static,
++    {
++        display.create_global::<D, WpTearingControlManagerV1, _>(VERSION, ());
++        Self
++    }
++}
++
++/// Whether `surface`'s committed presentation hint accepts tearing.
++pub fn tearing_requested(surface: &WlSurface) -> bool {
++    compositor::with_states(surface, |states| {
++        states
++            .cached_state
++            .get::<TearingCachedState>()
++            .current()
++            .tearing
++    })
++}
++
++/// Set the pending presentation hint of the surface a control extends, unless
++/// the surface is gone (the control is inert then).
++fn tearing_pending_set(data: &TearingControlData, tearing: bool) {
++    if let Ok(surface) = data.surface.upgrade() {
++        compositor::with_states(&surface, |states| {
++            states
++                .cached_state
++                .get::<TearingCachedState>()
++                .pending()
++                .tearing = tearing;
++        });
++    }
++}
++
++impl<D> GlobalDispatch<WpTearingControlManagerV1, (), D> for TearingControlManagerState
++where
++    D: GlobalDispatch<WpTearingControlManagerV1, ()>
++        + Dispatch<WpTearingControlManagerV1, ()>
++        + 'static,
++{
++    fn bind(
++        _state: &mut D,
++        _handle: &DisplayHandle,
++        _client: &Client,
++        resource: New<WpTearingControlManagerV1>,
++        _global_data: &(),
++        data_init: &mut DataInit<'_, D>,
++    ) {
++        data_init.init(resource, ());
++    }
++}
++
++impl<D> Dispatch<WpTearingControlManagerV1, (), D> for TearingControlManagerState
++where
++    D: Dispatch<WpTearingControlManagerV1, ()>
++        + Dispatch<WpTearingControlV1, TearingControlData>
++        + 'static,
++{
++    fn request(
++        _state: &mut D,
++        _client: &Client,
++        manager: &WpTearingControlManagerV1,
++        request: wp_tearing_control_manager_v1::Request,
++        _data: &(),
++        _dhandle: &DisplayHandle,
++        data_init: &mut DataInit<'_, D>,
++    ) {
++        match request {
++            wp_tearing_control_manager_v1::Request::GetTearingControl { id, surface } => {
++                let exists = compositor::with_states(&surface, |states| {
++                    states
++                        .data_map
++                        .insert_if_missing_threadsafe(TearingControlAttached::default);
++                    states
++                        .data_map
++                        .get::<TearingControlAttached>()
++                        .unwrap()
++                        .0
++                        .swap(true, Ordering::AcqRel)
++                });
++                data_init.init(
++                    id,
++                    TearingControlData {
++                        surface: surface.downgrade(),
++                    },
++                );
++                if exists {
++                    manager.post_error(
++                        wp_tearing_control_manager_v1::Error::TearingControlExists,
++                        "the surface already has a tearing control object",
++                    );
++                }
++            }
++            // The controls it created outlive it.
++            wp_tearing_control_manager_v1::Request::Destroy => {}
++            _ => unreachable!("unhandled wp_tearing_control_manager_v1 request"),
++        }
++    }
++}
++
++impl<D> Dispatch<WpTearingControlV1, TearingControlData, D> for TearingControlManagerState
++where
++    D: Dispatch<WpTearingControlV1, TearingControlData>,
++{
++    fn request(
++        _state: &mut D,
++        _client: &Client,
++        _resource: &WpTearingControlV1,
++        request: wp_tearing_control_v1::Request,
++        data: &TearingControlData,
++        _dhandle: &DisplayHandle,
++        _data_init: &mut DataInit<'_, D>,
++    ) {
++        match request {
++            wp_tearing_control_v1::Request::SetPresentationHint { hint } => {
++                // An unknown value is a newer protocol's hint: leave the
++                // current one in place.
++                let tearing = match hint {
++                    WEnum::Value(PresentationHint::Async) => true,
++                    WEnum::Value(PresentationHint::Vsync) => false,
++                    _ => return,
++                };
++                tearing_pending_set(data, tearing);
++            }
++            // Reverts to vsync on the next commit, and frees the surface for
++            // another control.
++            wp_tearing_control_v1::Request::Destroy => {
++                tearing_pending_set(data, false);
++                if let Ok(surface) = data.surface.upgrade() {
++                    compositor::with_states(&surface, |states| {
++                        if let Some(attached) = states.data_map.get::<TearingControlAttached>() {
++                            attached.0.store(false, Ordering::Release);
++                        }
++                    });
++                }
++            }
++            _ => unreachable!("unhandled wp_tearing_control_v1 request"),
++        }
++    }
++}
++
++/// Delegate macro for tearing-control.
++#[macro_export]
++macro_rules! delegate_tearing_control {
++    ($ty:ty) => {
++        smithay::reexports::wayland_server::delegate_global_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::wp::tearing_control::v1::server::wp_tearing_control_manager_v1::WpTearingControlManagerV1: ()
++        ] => $crate::protocols::tearing_control::TearingControlManagerState);
++        smithay::reexports::wayland_server::delegate_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::wp::tearing_control::v1::server::wp_tearing_control_manager_v1::WpTearingControlManagerV1: ()
++        ] => $crate::protocols::tearing_control::TearingControlManagerState);
++        smithay::reexports::wayland_server::delegate_dispatch!($ty: [
++            smithay::reexports::wayland_protocols::wp::tearing_control::v1::server::wp_tearing_control_v1::WpTearingControlV1: $crate::protocols::tearing_control::TearingControlData
++        ] => $crate::protocols::tearing_control::TearingControlManagerState);
++    };
++}
+diff --git a/src/render/frame.rs b/src/render/frame.rs
+index c97e99ea..69d555ee 100644
+--- a/src/render/frame.rs
++++ b/src/render/frame.rs
+@@ -80,6 +80,10 @@ pub struct CollectedFrame {
+     /// this into its plane-scanout flags: a frame with a cursor drawn into
+     /// it must not scan one out as well.
+     pub(crate) cursor_visible: bool,
++    /// Whether the frame may tear: the output shows a window fullscreen whose
++    /// surface asked for tearing (`tearing_requested`). The DRM backend flips
++    /// such a frame asynchronously where the hardware allows.
++    pub(crate) tearing: bool,
+ }
+ 
+ /// Collect this frame's render elements into `render_state` and report what
+@@ -135,7 +139,7 @@ pub fn frame_elements_collect(
+     let timing_start = crate::constants::paths::timing_enabled().then(Instant::now);
+     let acquired;
+     // What the build after the guard reads, taken under it.
+-    let (inputs, lock_surface, background_color, is_locked) = {
++    let (inputs, lock_surface, fullscreen_surface, background_color, is_locked) = {
+         let scene = scene.read();
+         acquired = timing_start.is_some().then(Instant::now);
+         let is_locked = scene.is_locked();
+@@ -174,6 +178,7 @@ pub fn frame_elements_collect(
+                 is_locked,
+                 background_color,
+                 cursor_visible: false,
++                tearing: false,
+             };
+         };
+         let output_scale = compositor_output.scale;
+@@ -197,6 +202,20 @@ pub fn frame_elements_collect(
+             None
+         };
+ 
++        // The window covering the output, whose hint decides whether the
++        // frame may tear. An exclusive overlay draws in its place.
++        let fullscreen_surface = if is_locked || scene.layout.overlay_order_flags.exclusive {
++            None
++        } else {
++            scene
++                .layout
++                .fullscreen_window_on_output(output_id)
++                .and_then(|window_id| {
++                    let surface = scene.layout.windows.get(window_id)?.wl_surface()?;
++                    Some(surface.into_owned())
++                })
++        };
++
+         // Ahead of `inputs`, which borrows it. A locked frame draws no
+         // decoration, so it has nothing to sync.
+         if !is_locked {
+@@ -225,7 +244,13 @@ pub fn frame_elements_collect(
+             };
+             scene_elements_collect(renderer, &ctx, render_buffers);
+         }
+-        (inputs, lock_surface, background_color, is_locked)
++        (
++            inputs,
++            lock_surface,
++            fullscreen_surface,
++            background_color,
++            is_locked,
++        )
+     };
+     let released = timing_start.is_some().then(Instant::now);
+ 
+@@ -300,5 +325,8 @@ pub fn frame_elements_collect(
+         is_locked,
+         background_color,
+         cursor_visible,
++        tearing: fullscreen_surface
++            .as_ref()
++            .is_some_and(crate::protocols::tearing_requested),
+     }
+ }
+diff --git a/src/render/test_helpers.rs b/src/render/test_helpers.rs
+index 3dd611ff..369acf81 100644
+--- a/src/render/test_helpers.rs
++++ b/src/render/test_helpers.rs
+@@ -71,6 +71,8 @@ pub struct FrameCollected {
+     pub elements: Vec<FrameElement>,
+     /// Each overlay composite, in the order the frame made them.
+     pub composites: Vec<OverlayComposite>,
++    /// Whether the frame may tear (see `CollectedFrame::tearing`).
++    pub tearing: bool,
+ }
+ 
+ impl IonMain {
+@@ -89,7 +91,7 @@ impl IonMain {
+         let mut render_state = OutputRenderState::new();
+ 
+         self.wm.render_inputs_sync();
+-        frame_elements_collect(
++        let collected = frame_elements_collect(
+             &mut renderer,
+             &mut render_state,
+             &self.wm.scene,
+@@ -106,6 +108,7 @@ impl IonMain {
+                 .map(|element| FrameElement::of(element, scale))
+                 .collect(),
+             composites: render_buffers.overlay.composites,
++            tearing: collected.tearing,
+         }
+     }
+ }
+diff --git a/src/state/mod.rs b/src/state/mod.rs
+index 32fdb0ce..145c81ce 100644
+--- a/src/state/mod.rs
++++ b/src/state/mod.rs
+@@ -162,6 +162,7 @@ use crate::input::KeymapRegistry;
+ use crate::protocols::{
+     ExtWorkspaceManagerState, ForeignToplevelManagerState, GammaControlManagerState,
+     OutputManagementState, OutputPowerState, Screencopy, ScreencopyManagerState,
++    TearingControlManagerState,
+ };
+ use crate::render::FontManager;
+ use crate::tiling::{FocusState, FrameId, LayoutManager, OutputId, ResizeEdge, WindowId};
+@@ -1181,6 +1182,9 @@ pub(crate) struct WaylandGlobals {
+     relative_pointer_manager_state: RelativePointerManagerState,
+     screencopy_manager_state: ScreencopyManagerState,
+     cursor_shape_manager_state: CursorShapeManagerState,
++    /// `None` with `IONWL_NO_TEARING` set: unadvertised, clients cannot ask
++    /// for tearing.
++    tearing_control_state: Option<TearingControlManagerState>,
+ }
+ 
+ /// Protocol-manager state objects grouped to shrink the [`IonWM`] field list.
+@@ -1238,6 +1242,9 @@ impl WaylandGlobals {
+             ),
+             screencopy_manager_state: ScreencopyManagerState::new::<IonMain>(display_handle),
+             cursor_shape_manager_state: CursorShapeManagerState::new::<IonMain>(display_handle),
++            tearing_control_state: crate::constants::paths::env_var_nonempty("IONWL_NO_TEARING")
++                .is_none()
++                .then(|| TearingControlManagerState::new::<IonMain>(display_handle)),
+         }
+     }
+ }
+diff --git a/tests/integration/common/client.rs b/tests/integration/common/client.rs
+index 2abefc83..34bd4ff8 100644
+--- a/tests/integration/common/client.rs
++++ b/tests/integration/common/client.rs
+@@ -37,6 +37,8 @@ use smithay::reexports::wayland_protocols::wp::presentation_time::client::wp_pre
+     self, WpPresentation,
+ };
+ use smithay::reexports::wayland_protocols::wp::single_pixel_buffer::v1::client::wp_single_pixel_buffer_manager_v1::WpSinglePixelBufferManagerV1;
++use smithay::reexports::wayland_protocols::wp::tearing_control::v1::client::wp_tearing_control_manager_v1::WpTearingControlManagerV1;
++use smithay::reexports::wayland_protocols::wp::tearing_control::v1::client::wp_tearing_control_v1::WpTearingControlV1;
+ use smithay::reexports::wayland_protocols::wp::viewporter::client::wp_viewport::WpViewport;
+ use smithay::reexports::wayland_protocols::wp::viewporter::client::wp_viewporter::WpViewporter;
+ use smithay::reexports::wayland_protocols::xdg::shell::client::xdg_popup::{self, XdgPopup};
+@@ -144,6 +146,9 @@ pub use smithay::reexports::wayland_protocols_wlr::layer_shell::v1::client::zwlr
+     Anchor as LayerAnchor, KeyboardInteractivity,
+ };
+ 
++// Re-export the tearing-control hint for tests.
++pub use smithay::reexports::wayland_protocols::wp::tearing_control::v1::client::wp_tearing_control_v1::PresentationHint;
++
+ // Re-export popup positioner types for tests.
+ pub use smithay::reexports::wayland_protocols::xdg::shell::client::xdg_positioner::{
+     Anchor as PopupAnchor, ConstraintAdjustment as PopupConstraintAdjustment,
+@@ -403,6 +408,9 @@ struct ClientState {
+     /// Set by the inhibitor's `active`/`inactive` events.
+     keyboard_shortcuts_inhibitor_active: bool,
+ 
++    /// The bound tearing-control manager, if advertised.
++    tearing_control_manager: Option<WpTearingControlManagerV1>,
++
+     // Virtual keyboard (zwp_virtual_keyboard_v1)
+     /// The bound virtual-keyboard manager, if advertised.
+     virtual_keyboard_manager: Option<ZwpVirtualKeyboardManagerV1>,
+@@ -763,6 +771,7 @@ impl Client {
+             keyboard_shortcuts_inhibit_manager: None,
+             keyboard_shortcuts_inhibitor: None,
+             keyboard_shortcuts_inhibitor_active: false,
++            tearing_control_manager: None,
+             virtual_keyboard_manager: None,
+             virtual_keyboard: None,
+             pointer_constraints: None,
+@@ -1581,6 +1590,31 @@ impl Client {
+         self.state.keyboard_shortcuts_inhibitor_active
+     }
+ 
++    /// Create a tearing control for `surface`
++    /// (`wp_tearing_control_manager_v1.get_tearing_control`).
++    pub fn tearing_control_get(&self, surface: &WlSurface) -> WpTearingControlV1 {
++        let control = self
++            .state
++            .tearing_control_manager
++            .as_ref()
++            .expect("tearing-control manager not advertised")
++            .get_tearing_control(surface, &self.state.qh, ());
++        self.state.conn.flush().expect("Failed to flush");
++        control
++    }
++
++    /// Set `control`'s presentation hint, applied on its surface's next commit.
++    pub fn tearing_control_hint_set(&self, control: &WpTearingControlV1, hint: PresentationHint) {
++        control.set_presentation_hint(hint);
++        self.state.conn.flush().expect("Failed to flush");
++    }
++
++    /// Destroy `control`, which reverts its surface to vsync on the next commit.
++    pub fn tearing_control_destroy(&self, control: &WpTearingControlV1) {
++        control.destroy();
++        self.state.conn.flush().expect("Failed to flush");
++    }
++
+     /// Create a virtual keyboard on the bound seat
+     /// (`zwp_virtual_keyboard_manager_v1.create_virtual_keyboard`).
+     pub fn virtual_keyboard_create(&mut self) {
+@@ -2632,6 +2666,9 @@ impl Dispatch<WlRegistry, ()> for ClientState {
+                     );
+                     state.keyboard_shortcuts_inhibit_manager =
+                         Some(registry.bind(name, version, qh, ()));
++                } else if interface == WpTearingControlManagerV1::interface().name {
++                    let version = min(version, WpTearingControlManagerV1::interface().version);
++                    state.tearing_control_manager = Some(registry.bind(name, version, qh, ()));
+                 } else if interface == ZwpVirtualKeyboardManagerV1::interface().name {
+                     let version = min(version, ZwpVirtualKeyboardManagerV1::interface().version);
+                     state.virtual_keyboard_manager = Some(registry.bind(name, version, qh, ()));
+@@ -3993,5 +4030,7 @@ delegate_noop!(ClientState: ZwlrOutputPowerManagerV1);
+ delegate_noop!(ClientState: ZwlrGammaControlManagerV1);
+ delegate_noop!(ClientState: ignore ZwlrOutputModeV1);
+ delegate_noop!(ClientState: ZwlrOutputConfigurationHeadV1);
++delegate_noop!(ClientState: WpTearingControlManagerV1);
++delegate_noop!(ClientState: WpTearingControlV1);
+ delegate_noop!(ClientState: ZwpVirtualKeyboardManagerV1);
+ delegate_noop!(ClientState: ZwpVirtualKeyboardV1);
+diff --git a/tests/integration/protocol/mod.rs b/tests/integration/protocol/mod.rs
+index 589973a0..a0f89d94 100644
+--- a/tests/integration/protocol/mod.rs
++++ b/tests/integration/protocol/mod.rs
+@@ -11,6 +11,7 @@ mod pointer_constraints;
+ mod presentation;
+ mod screencopy;
+ mod session_lock;
++mod tearing_control;
+ mod virtual_keyboard;
+ mod xdg_shell;
+ // mod layer_shell;  // TODO: Add layer shell tests.
+diff --git a/tests/integration/protocol/tearing_control.rs b/tests/integration/protocol/tearing_control.rs
+new file mode 100644
+index 00000000..975c117f
+--- /dev/null
++++ b/tests/integration/protocol/tearing_control.rs
+@@ -0,0 +1,142 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++
++//! Tearing-control (`wp_tearing_control_manager_v1`) tests: a surface's
++//! double-buffered presentation hint, as the frames of an output showing it
++//! fullscreen report it.
++//!
++//! Whether a frame then really flips asynchronously is the DRM backend's
++//! decision against the hardware, which the harness has none of; what is
++//! asserted is the frame's `tearing`, the request the backend acts on.
++
++use ionwl::tiling::OutputId;
++use wayland_client::protocol::wl_surface::WlSurface;
++
++use crate::common::client::PresentationHint;
++use crate::common::{ClientId, Fixture};
++
++/// One output with a client's window fullscreen on it.
++fn fullscreen_fixture() -> (Fixture, OutputId, ClientId, WlSurface) {
++    let mut fixture = Fixture::new();
++    let output_id = fixture.output_add_default();
++    let client = fixture.add_client();
++    let surface = fixture.spawn_window(client);
++    fixture.window_fullscreen_with_margin(client, &surface, 0);
++    (fixture, output_id, client, surface)
++}
++
++/// Commit `surface`, applying its pending hint.
++fn commit(fixture: &mut Fixture, client: ClientId, surface: &WlSurface) {
++    fixture.client(client).window_for_surface(surface).commit();
++    fixture.roundtrip(client);
++}
++
++/// Whether a frame of `output_id` may tear.
++fn tearing(fixture: &mut Fixture, output_id: OutputId) -> bool {
++    fixture.ionwl().frame_collect_test(output_id).tearing
++}
++
++/// The hint applies on the commit after it is set, and `vsync` takes it back.
++#[test]
++fn tearing_control_hint_applies_on_commit() {
++    let (mut fixture, output_id, client, surface) = fullscreen_fixture();
++    assert!(!tearing(&mut fixture, output_id), "vsync is the default");
++
++    let control = fixture.client(client).tearing_control_get(&surface);
++    fixture
++        .client(client)
++        .tearing_control_hint_set(&control, PresentationHint::Async);
++    fixture.roundtrip(client);
++    assert!(
++        !tearing(&mut fixture, output_id),
++        "the hint must wait for the surface's commit"
++    );
++
++    commit(&mut fixture, client, &surface);
++    assert!(tearing(&mut fixture, output_id));
++
++    fixture
++        .client(client)
++        .tearing_control_hint_set(&control, PresentationHint::Vsync);
++    commit(&mut fixture, client, &surface);
++    assert!(!tearing(&mut fixture, output_id));
++}
++
++/// Destroying the control reverts to vsync on the next commit, and frees the
++/// surface for another control.
++#[test]
++fn tearing_control_destroy_reverts_to_vsync() {
++    let (mut fixture, output_id, client, surface) = fullscreen_fixture();
++    let control = fixture.client(client).tearing_control_get(&surface);
++    fixture
++        .client(client)
++        .tearing_control_hint_set(&control, PresentationHint::Async);
++    commit(&mut fixture, client, &surface);
++    assert!(tearing(&mut fixture, output_id));
++
++    fixture.client(client).tearing_control_destroy(&control);
++    fixture.roundtrip(client);
++    assert!(
++        tearing(&mut fixture, output_id),
++        "the revert must wait for the surface's commit"
++    );
++    commit(&mut fixture, client, &surface);
++    assert!(!tearing(&mut fixture, output_id));
++
++    let control = fixture.client(client).tearing_control_get(&surface);
++    fixture
++        .client(client)
++        .tearing_control_hint_set(&control, PresentationHint::Async);
++    commit(&mut fixture, client, &surface);
++    assert!(fixture.client(client).protocol_error().is_none());
++    assert!(tearing(&mut fixture, output_id));
++}
++
++/// Only a window covering the output fullscreen tears: not one in a tile, and
++/// not one hidden behind the lock screen.
++#[test]
++fn tearing_control_only_fullscreen_tears() {
++    let mut fixture = Fixture::new();
++    let output_id = fixture.output_add_default();
++    let client = fixture.add_client();
++    let surface = fixture.spawn_window(client);
++    let control = fixture.client(client).tearing_control_get(&surface);
++    fixture
++        .client(client)
++        .tearing_control_hint_set(&control, PresentationHint::Async);
++    commit(&mut fixture, client, &surface);
++    assert!(
++        !tearing(&mut fixture, output_id),
++        "a tiled window must not tear"
++    );
++
++    fixture.window_fullscreen_with_margin(client, &surface, 0);
++    assert!(tearing(&mut fixture, output_id));
++
++    fixture.session_lock_and_confirm();
++    assert!(
++        !tearing(&mut fixture, output_id),
++        "the lock screen must not tear"
++    );
++}
++
++/// A surface has at most one control: a second is the
++/// `tearing_control_exists` protocol error.
++#[test]
++fn tearing_control_second_control_is_a_protocol_error() {
++    let mut fixture = Fixture::new();
++    fixture.output_add_default();
++    let client = fixture.add_client();
++    let surface = fixture.spawn_window(client);
++    fixture.client(client).tearing_control_get(&surface);
++    fixture.roundtrip(client);
++
++    fixture.client(client).protocol_error_expect();
++    fixture.client(client).tearing_control_get(&surface);
++    fixture.dispatch_until(|fixture| fixture.client(client).protocol_error().is_some());
++    let error = fixture.client(client).protocol_error().unwrap();
++    assert_eq!(
++        (error.object_interface.as_str(), error.code),
++        ("wp_tearing_control_manager_v1", 0),
++        "expected `tearing_control_exists`, got {error:?}"
++    );
++}
+-- 
+2.56.0
+

@@ -1,0 +1,980 @@
+From 770841f9600e174cdfa9dbdd8d69055dd2177fcb Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 14:12:06 +0100
+Subject: [PATCH] drm: Initial support for async page flips
+
+Backport of Smithay/smithay#1948 ("Initial support for DRM async page
+flip v2", head f8a8f0fa) onto rev f581531d, for ionwl's tearing control.
+
+`DrmCompositor::render_frame` takes the desired `PresentationMode`. A
+frame asking for `Async` is flipped with `PageFlipFlags::ASYNC` when only
+the primary plane changed, compatibly with the previous frame; overlay
+planes are not assigned for it. A rejected async flip is retried in sync
+and not attempted again until the primary plane's properties change.
+The device's async-flip capability (`DRM_CAP_ATOMIC_ASYNC_PAGE_FLIP`, or
+`DRM_CAP_ASYNC_PAGE_FLIP` on legacy) gates the flag.
+
+Deviations from the PR:
+- `frame_submitted` keeps returning `Option<U>` (the PR's switch to an
+  `EmptyFrame` error is unrelated to async flips).
+- `DrmSurface::supports_async_page_flips` lets the compositor skip the
+  async attempt on devices without the capability, so the presentation
+  mode it reports for the pending frame is the one actually used.
+- The anvil changes are left out.
+---
+ src/backend/drm/compositor/mod.rs       | 166 +++++++++++++++++++++---
+ src/backend/drm/device/mod.rs           |  13 ++
+ src/backend/drm/output.rs               |  34 ++++-
+ src/backend/drm/surface/atomic.rs       |  34 ++++-
+ src/backend/drm/surface/gbm.rs          |  17 ++-
+ src/backend/drm/surface/legacy.rs       |  39 +++---
+ src/backend/drm/surface/mod.rs          |  22 +++-
+ src/backend/renderer/element/mod.rs     |  28 +++-
+ src/backend/renderer/element/surface.rs |   8 +-
+ src/backend/renderer/mod.rs             |   9 ++
+ 10 files changed, 312 insertions(+), 58 deletions(-)
+
+diff --git a/src/backend/drm/compositor/mod.rs b/src/backend/drm/compositor/mod.rs
+index 3f471cf..61934fc 100644
+--- a/src/backend/drm/compositor/mod.rs
++++ b/src/backend/drm/compositor/mod.rs
+@@ -63,6 +63,7 @@
+ //!         exporter::gbm::GbmFramebufferExporter,
+ //!         DrmSurface,
+ //!     },
++//!     backend::renderer::PresentationMode,
+ //!     output::{Output, PhysicalProperties, Subpixel},
+ //!     utils::Size,
+ //! };
+@@ -109,7 +110,7 @@
+ //!
+ //! # let elements: Vec<WaylandSurfaceRenderElement<GlesRenderer>> = Vec::new();
+ //! let render_frame_result = compositor
+-//!     .render_frame::<_, _>(&mut renderer, &elements, CLEAR_COLOR, FrameFlags::DEFAULT)
++//!     .render_frame::<_, _>(&mut renderer, &elements, CLEAR_COLOR, FrameFlags::DEFAULT, PresentationMode::VSync)
+ //!     .expect("failed to render frame");
+ //!
+ //! if !render_frame_result.is_empty {
+@@ -135,7 +136,7 @@ use std::{
+ 
+ use drm::{
+     Device, DriverCapability,
+-    control::{Device as _, Mode, PlaneType, connector, crtc, framebuffer, plane},
++    control::{Device as _, Mode, PageFlipFlags, PlaneType, connector, crtc, framebuffer, plane},
+ };
+ use drm_fourcc::{DrmFormat, DrmFourcc, DrmModifier};
+ use indexmap::{IndexMap, IndexSet};
+@@ -159,7 +160,8 @@ use crate::{
+         },
+         drm::{DrmError, PlaneDamageClips, plane_has_property},
+         renderer::{
+-            Bind, Color32F, DebugFlags, Renderer, RendererSuper, Texture, buffer_y_inverted,
++            Bind, Color32F, DebugFlags, PresentationMode, Renderer, RendererSuper, Texture,
++            buffer_y_inverted,
+             damage::{Error as OutputDamageTrackerError, OutputDamageTracker},
+             element::{
+                 Element, Id, Kind, RenderElement, RenderElementPresentationState, RenderElementState,
+@@ -568,6 +570,7 @@ impl<B: Buffer, F: Framebuffer> Clone for PlaneState<B, F> {
+ #[derive(Debug)]
+ struct FrameState<B: Buffer, F: Framebuffer> {
+     planes: SmallVec<[(plane::Handle, PlaneState<B, F>); 10]>,
++    async_flip_failed: bool,
+ }
+ 
+ impl<B: Buffer, F: Framebuffer> FrameState<B, F> {
+@@ -644,7 +647,10 @@ impl<B: Buffer, F: Framebuffer> FrameState<B, F> {
+                 .map(|info| (info.handle, PlaneState::default())),
+         );
+ 
+-        FrameState { planes: tmp }
++        FrameState {
++            planes: tmp,
++            async_flip_failed: false,
++        }
+     }
+ }
+ 
+@@ -734,12 +740,11 @@ impl<B: Buffer, F: Framebuffer> FrameState<B, F> {
+         surface: &DrmSurface,
+         supports_fencing: bool,
+         allow_partial_update: bool,
+-        event: bool,
+     ) -> Result<(), crate::backend::drm::error::Error> {
+         debug_assert!(!self.planes.iter().any(|(_, state)| state.needs_test));
+         surface.commit(
+             self.build_planes(surface, supports_fencing, allow_partial_update),
+-            event,
++            PageFlipFlags::EVENT,
+         )
+     }
+ 
+@@ -749,12 +754,12 @@ impl<B: Buffer, F: Framebuffer> FrameState<B, F> {
+         surface: &DrmSurface,
+         supports_fencing: bool,
+         allow_partial_update: bool,
+-        event: bool,
++        flip_flags: PageFlipFlags,
+     ) -> Result<(), crate::backend::drm::error::Error> {
+         debug_assert!(!self.planes.iter().any(|(_, state)| state.needs_test));
+         surface.page_flip(
+             self.build_planes(surface, supports_fencing, allow_partial_update),
+-            event,
++            flip_flags,
+         )
+     }
+ 
+@@ -944,6 +949,7 @@ impl From<&PlaneInfo> for PlaneAssignment {
+ struct PendingFrame<A: Allocator, F: ExportFramebuffer<<A as Allocator>::Buffer>, U> {
+     frame: CompositorFrameState<A, F>,
+     user_data: U,
++    presentation_mode: PresentationMode,
+ }
+ 
+ impl<A, F, U> std::fmt::Debug for PendingFrame<A, F, U>
+@@ -992,6 +998,7 @@ enum PreparedFrameKind {
+ struct PreparedFrame<A: Allocator, F: ExportFramebuffer<<A as Allocator>::Buffer>> {
+     frame: CompositorFrameState<A, F>,
+     kind: PreparedFrameKind,
++    presentation_mode: PresentationMode,
+ }
+ 
+ impl<A: Allocator, F: ExportFramebuffer<<A as Allocator>::Buffer>> PreparedFrame<A, F> {
+@@ -1041,6 +1048,16 @@ bitflags::bitflags! {
+     }
+ }
+ 
++/// A reference to a frame
++#[derive(Debug)]
++pub struct FrameRef<'a, U> {
++    /// User-data of the frame
++    pub user_data: &'a U,
++
++    /// Presentation mode of this frame
++    pub presentation_mode: PresentationMode,
++}
++
+ /// Composite an output using a combination of planes and rendering
+ ///
+ /// see the [`module docs`](crate::backend::drm::compositor) for more information
+@@ -1689,6 +1706,7 @@ where
+         elements: &'a [E],
+         clear_color: impl Into<Color32F>,
+         frame_flags: FrameFlags,
++        presentation_mode: PresentationMode,
+     ) -> Result<RenderFrameResult<'a, A::Buffer, F::Framebuffer, E>, RenderFrameErrorType<A, F, R>>
+     where
+         E: RenderElement<R>,
+@@ -2026,6 +2044,7 @@ where
+                 output_geometry,
+                 try_assign_primary_plane,
+                 frame_flags,
++                presentation_mode,
+             ) {
+                 Ok(direct_scan_out_plane) => {
+                     match direct_scan_out_plane.type_ {
+@@ -2400,6 +2419,7 @@ where
+                 PreparedFrameKind::Full
+             },
+             frame: next_frame_state,
++            presentation_mode,
+         };
+         let frame_reference: RenderFrameResult<'a, A::Buffer, F::Framebuffer, E> = RenderFrameResult {
+             is_empty: next_frame.is_empty(),
+@@ -2509,7 +2529,8 @@ where
+ 
+         let flip = prepared_frame
+             .frame
+-            .commit(&self.surface, self.supports_fencing, false, false);
++            .commit(&self.surface, self.supports_fencing, false)
++            .map(|_| PresentationMode::VSync);
+ 
+         let res = self.handle_flip(&prepared_frame, flip);
+ 
+@@ -2519,7 +2540,7 @@ where
+             self.current_frame = prepared_frame.frame;
+         }
+ 
+-        res
++        res.map(|_| ())
+     }
+ 
+     /// Re-evaluates the current state of the crtc and forces calls to [`render_frame`](DrmCompositor::render_frame)
+@@ -2538,7 +2559,7 @@ where
+     }
+ 
+     #[profiling::function]
+-    fn submit(&mut self) -> FrameResult<(), A, F> {
++    fn submit(&mut self) -> FrameResult<PresentationMode, A, F> {
+         let QueuedFrame {
+             mut prepared_frame,
+             user_data,
+@@ -2548,19 +2569,102 @@ where
+         let flip = if self.surface.commit_pending() {
+             prepared_frame
+                 .frame
+-                .commit(&self.surface, self.supports_fencing, allow_partial_update, true)
++                .commit(&self.surface, self.supports_fencing, allow_partial_update)
++                .map(|_| PresentationMode::VSync)
+         } else {
+-            prepared_frame
++            let previous_state = self
++                .pending_frame
++                .as_ref()
++                .map(|f| &f.frame)
++                .unwrap_or(&self.current_frame);
++
++            let primary_is_compatible = prepared_frame
++                .frame
++                .plane_state(self.plane())
++                .and_then(|state| {
++                    previous_state
++                        .plane_state(self.plane())
++                        .map(|previous_state| previous_state.is_compatible(state))
++                })
++                .unwrap_or(false);
++
++            // If the properties of the plane did not change we can expect the async flip state to
++            // also stay unchanged. So in case it failed previously we can skip trying again.
++            if primary_is_compatible {
++                prepared_frame.frame.async_flip_failed = previous_state.async_flip_failed;
++            }
++
++            // Currently async page flips are limited to the primary plane, if any other plane
++            // changes (including the cursor plane) it will fail.
++            //
++            // Note: If this changes we should extend `PlaneInfo` to include a flag indicating
++            // async flip support per plane. This would allows us to check for compatible changes
++            // per plane that supports async flips here. But that also requires us to track the failed
++            // combinations.
++            let only_primary_changed = prepared_frame
++                .frame
++                .planes
++                .iter()
++                .filter(|&(handle, _)| *handle != self.plane())
++                .all(|(_, state)| state.skip);
++
++            let mut flip_flags = PageFlipFlags::EVENT;
++
++            // As already noted async page flips are only allowed when only the primary plane
++            // changed in a compatible way. We also want to skip it in case we already tried
++            // and failed. An async page flip can for example also fail for certain modifiers,
++            // for example on intel compressed formats might not be allowed.
++            if prepared_frame.presentation_mode == PresentationMode::Async
++                && self.surface.supports_async_page_flips()
++                && only_primary_changed
++                && primary_is_compatible
++                && allow_partial_update
++                && !prepared_frame.frame.async_flip_failed
++            {
++                flip_flags |= PageFlipFlags::ASYNC;
++            }
++
++            let flip = prepared_frame
+                 .frame
+-                .page_flip(&self.surface, self.supports_fencing, allow_partial_update, true)
++                .page_flip(
++                    &self.surface,
++                    self.supports_fencing,
++                    allow_partial_update,
++                    flip_flags,
++                )
++                .map(|_| {
++                    if flip_flags.contains(PageFlipFlags::ASYNC) {
++                        PresentationMode::Async
++                    } else {
++                        PresentationMode::VSync
++                    }
++                });
++
++            // If an async page flip fails we retry without async and note
++            // that it failed to not try again until the plane properties change.
++            if flip.is_err() && flip_flags.contains(PageFlipFlags::ASYNC) {
++                prepared_frame.frame.async_flip_failed = true;
++                prepared_frame
++                    .frame
++                    .page_flip(
++                        &self.surface,
++                        self.supports_fencing,
++                        allow_partial_update,
++                        PageFlipFlags::EVENT,
++                    )
++                    .map(|_| PresentationMode::VSync)
++            } else {
++                flip
++            }
+         };
+ 
+         let res = self.handle_flip(&prepared_frame, flip);
+ 
+-        if res.is_ok() {
++        if let Ok(presentation_mode) = res {
+             self.pending_frame = Some(PendingFrame {
+                 frame: prepared_frame.frame,
+                 user_data,
++                presentation_mode,
+             });
+         }
+ 
+@@ -2570,8 +2674,8 @@ where
+     fn handle_flip(
+         &mut self,
+         prepared_frame: &PreparedFrame<A, F>,
+-        flip: Result<(), crate::backend::drm::error::Error>,
+-    ) -> FrameResult<(), A, F> {
++        flip: Result<PresentationMode, crate::backend::drm::error::Error>,
++    ) -> FrameResult<PresentationMode, A, F> {
+         match flip {
+             Ok(_) => {
+                 if prepared_frame.kind == PreparedFrameKind::Full {
+@@ -2609,6 +2713,22 @@ where
+         flip.map_err(FrameError::DrmError)
+     }
+ 
++    /// Access the currently pending frame without submitting it
++    pub fn pending_frame(&self) -> Option<FrameRef<'_, U>> {
++        self.pending_frame.as_ref().map(|frame| FrameRef {
++            user_data: &frame.user_data,
++            presentation_mode: frame.presentation_mode,
++        })
++    }
++
++    /// Access the currently queued frame
++    pub fn queued_frame(&self) -> Option<FrameRef<'_, U>> {
++        self.queued_frame.as_ref().map(|frame| FrameRef {
++            user_data: &frame.user_data,
++            presentation_mode: frame.prepared_frame.presentation_mode,
++        })
++    }
++
+     /// Marks the current frame as submitted.
+     ///
+     /// *Note*: Needs to be called, after the vblank event of the matching [`DrmDevice`](super::DrmDevice)
+@@ -2616,7 +2736,7 @@ where
+     /// Otherwise the underlying swapchain will run out of buffers eventually.
+     #[profiling::function]
+     pub fn frame_submitted(&mut self) -> FrameResult<Option<U>, A, F> {
+-        if let Some(PendingFrame { mut frame, user_data }) = self.pending_frame.take() {
++        if let Some(PendingFrame { mut frame, user_data, .. }) = self.pending_frame.take() {
+             std::mem::swap(&mut frame, &mut self.current_frame);
+             if self.queued_frame.is_some() {
+                 self.submit()?;
+@@ -2829,6 +2949,7 @@ where
+         output_geometry: Rectangle<i32, Physical>,
+         try_assign_primary_plane: bool,
+         frame_flags: FrameFlags,
++        presentation_mode: PresentationMode,
+     ) -> Result<PlaneAssignment, Option<RenderingReason>>
+     where
+         R: Renderer + Bind<Dmabuf>,
+@@ -2873,6 +2994,15 @@ where
+             };
+         }
+ 
++        // FIXME: For now we just skip all overlay planes if the requested
++        // mode is not sync. With support for IN_FORMATS_ASYNC we might be
++        // able to lift this restriction again. With IN_FORMATS_ASYNC we should
++        // be able to check if the element requested async using Element::presentation_mode
++        // and check the plane IN_FORMATS_ASYNC against the element buffer format.
++        if presentation_mode != PresentationMode::VSync {
++            return Err(None);
++        }
++
+         if let Some(plane) = self.try_assign_cursor_plane(
+             renderer,
+             element,
+diff --git a/src/backend/drm/device/mod.rs b/src/backend/drm/device/mod.rs
+index 0075a9e..e93a135 100644
+--- a/src/backend/drm/device/mod.rs
++++ b/src/backend/drm/device/mod.rs
+@@ -109,6 +109,7 @@ pub struct DrmDevice {
+     pub(super) dev_id: dev_t,
+     pub(crate) internal: Arc<DrmDeviceInternal>,
+     has_universal_planes: bool,
++    has_async_page_flips: bool,
+     cursor_size: Size<u32, Buffer>,
+     resources: ResourceHandles,
+     plane_claim_storage: PlaneClaimStorage,
+@@ -142,6 +143,14 @@ impl DrmDeviceInternal {
+         }
+     }
+ 
++    fn has_async_page_flips(&self) -> bool {
++        let async_cap = match self {
++            DrmDeviceInternal::Atomic(_) => DriverCapability::AtomicASyncPageFlip,
++            DrmDeviceInternal::Legacy(_) => DriverCapability::ASyncPageFlip,
++        };
++        self.device_fd().get_driver_capability(async_cap).unwrap_or(0) == 1
++    }
++
+     fn span(&self) -> &tracing::Span {
+         match self {
+             DrmDeviceInternal::Atomic(internal) => &internal.span,
+@@ -214,12 +223,14 @@ impl DrmDevice {
+         })?;
+ 
+         let internal = Arc::new(DrmDevice::create_internal(fd, active, disable_connectors)?);
++        let has_async_page_flips = internal.has_async_page_flips();
+ 
+         Ok((
+             DrmDevice {
+                 dev_id,
+                 internal: internal.clone(),
+                 has_universal_planes,
++                has_async_page_flips,
+                 cursor_size,
+                 resources,
+                 plane_claim_storage: Default::default(),
+@@ -373,6 +384,7 @@ impl DrmDevice {
+                 mapping,
+                 mode,
+                 connectors,
++                self.has_async_page_flips,
+             )?)
+         } else {
+             DrmSurfaceInternal::Legacy(LegacyDrmSurface::new(
+@@ -381,6 +393,7 @@ impl DrmDevice {
+                 crtc,
+                 mode,
+                 connectors,
++                self.has_async_page_flips,
+             )?)
+         };
+         let internal = Arc::new(internal);
+diff --git a/src/backend/drm/output.rs b/src/backend/drm/output.rs
+index c19163b..e6ab31a 100644
+--- a/src/backend/drm/output.rs
++++ b/src/backend/drm/output.rs
+@@ -18,7 +18,10 @@ use crate::{
+             dmabuf::{AsDmabuf, Dmabuf},
+             gbm::GbmDevice,
+         },
+-        renderer::{Bind, Color32F, DebugFlags, Renderer, RendererSuper, Texture, element::RenderElement},
++        renderer::{
++            Bind, Color32F, DebugFlags, PresentationMode, Renderer, RendererSuper, Texture,
++            element::RenderElement,
++        },
+     },
+     output::OutputModeSource,
+ };
+@@ -26,7 +29,7 @@ use crate::{
+ use super::{
+     DrmDevice, DrmError, Planes,
+     compositor::{
+-        DrmCompositor, FrameError, FrameFlags, FrameResult, PrimaryPlaneElement, RenderFrameError,
++        DrmCompositor, FrameError, FrameFlags, FrameRef, FrameResult, PrimaryPlaneElement, RenderFrameError,
+         RenderFrameErrorType, RenderFrameResult,
+     },
+     exporter::ExportFramebuffer,
+@@ -671,6 +674,22 @@ where
+         self.with_compositor(|compositor| compositor.reset_buffers());
+     }
+ 
++    /// Access the currently pending frame without submitting it
++    pub fn with_pending_frame<T, R>(&self, f: T) -> R
++    where
++        T: Fn(Option<FrameRef<'_, U>>) -> R,
++    {
++        self.with_compositor(|compositor| f(compositor.pending_frame()))
++    }
++
++    /// Access the currently queued frame
++    pub fn with_queued_frame<T, R>(&self, f: T) -> R
++    where
++        T: Fn(Option<FrameRef<'_, U>>) -> R,
++    {
++        self.with_compositor(|compositor| f(compositor.queued_frame()))
++    }
++
+     /// Marks the current frame as submitted.
+     ///
+     /// *Note*: Needs to be called, after the vblank event of the matching [`DrmDevice`]
+@@ -695,6 +714,7 @@ where
+         elements: &'a [E],
+         clear_color: impl Into<Color32F>,
+         frame_mode: FrameFlags,
++        presentation_mode: PresentationMode,
+     ) -> Result<RenderFrameResult<'a, A::Buffer, F::Framebuffer, E>, RenderFrameErrorType<A, F, R>>
+     where
+         E: RenderElement<R>,
+@@ -703,7 +723,7 @@ where
+         R::Error: Send + Sync + 'static,
+     {
+         self.with_compositor(|compositor| {
+-            compositor.render_frame(renderer, elements, clear_color, frame_mode)
++            compositor.render_frame(renderer, elements, clear_color, frame_mode, presentation_mode)
+         })
+     }
+ 
+@@ -1017,7 +1037,13 @@ where
+             .map(|(elements, color)| (&**elements, color))
+             .unwrap_or((&[], &Color32F::BLACK));
+         let frame_result = compositor
+-            .render_frame(renderer, elements, *clear_color, FrameFlags::empty())
++            .render_frame(
++                renderer,
++                elements,
++                *clear_color,
++                FrameFlags::empty(),
++                PresentationMode::VSync,
++            )
+             .map_err(DrmOutputManagerError::RenderFrame)?;
+         if frame_result.needs_sync() {
+             if let PrimaryPlaneElement::Swapchain(primary_swapchain_element) = frame_result.primary_element {
+diff --git a/src/backend/drm/surface/atomic.rs b/src/backend/drm/surface/atomic.rs
+index e7e1739..ce40b51 100644
+--- a/src/backend/drm/surface/atomic.rs
++++ b/src/backend/drm/surface/atomic.rs
+@@ -3,7 +3,8 @@ use drm::control::atomic::AtomicModeReq;
+ use drm::control::connector::Interface;
+ use drm::control::property::ValueType;
+ use drm::control::{
+-    AtomicCommitFlags, Mode, PlaneType, connector, crtc, dumbbuffer::DumbBuffer, framebuffer, plane, property,
++    AtomicCommitFlags, Mode, PageFlipFlags, PlaneType, connector, crtc, dumbbuffer::DumbBuffer, framebuffer,
++    plane, property,
+ };
+ 
+ #[cfg(debug_assertions)]
+@@ -173,6 +174,7 @@ pub struct AtomicDrmSurface {
+     state: RwLock<State>,
+     pending: RwLock<State>,
+     pub(super) span: tracing::Span,
++    pub(super) supports_async_page_flips: bool,
+ }
+ 
+ impl AtomicDrmSurface {
+@@ -185,6 +187,7 @@ impl AtomicDrmSurface {
+         prop_mapping: Arc<RwLock<PropMapping>>,
+         mode: Mode,
+         connectors: &[connector::Handle],
++        supports_async_page_flips: bool,
+     ) -> Result<Self, Error> {
+         let span = info_span!("drm_atomic", crtc = ?crtc);
+         let _guard = span.enter();
+@@ -210,6 +213,7 @@ impl AtomicDrmSurface {
+         };
+ 
+         drop(_guard);
++
+         let surface = AtomicDrmSurface {
+             fd,
+             active,
+@@ -220,6 +224,7 @@ impl AtomicDrmSurface {
+             state: RwLock::new(state),
+             pending: RwLock::new(pending),
+             span,
++            supports_async_page_flips,
+         };
+ 
+         Ok(surface)
+@@ -744,13 +749,26 @@ impl AtomicDrmSurface {
+         })
+     }
+ 
++    fn flip_flags(&self, value: PageFlipFlags) -> AtomicCommitFlags {
++        let mut v = AtomicCommitFlags::empty();
++        if value.contains(PageFlipFlags::EVENT) {
++            v |= AtomicCommitFlags::PAGE_FLIP_EVENT;
++        }
++        if self.supports_async_page_flips && value.contains(PageFlipFlags::ASYNC) {
++            v |= AtomicCommitFlags::PAGE_FLIP_ASYNC;
++        }
++        v
++    }
++
+     #[instrument(level = "trace", parent = &self.span, skip(self, planes))]
+     #[profiling::function]
+     pub fn commit<'a>(
+         &self,
+         planes: impl IntoIterator<Item = PlaneState<'a>>,
+-        event: bool,
++        flip_flags: super::PageFlipFlags,
+     ) -> Result<(), Error> {
++        let flip_flags = self.flip_flags(flip_flags);
++
+         if !self.active.load(Ordering::SeqCst) {
+             return Err(Error::DeviceInactive);
+         }
+@@ -825,9 +843,9 @@ impl AtomicDrmSurface {
+         let result = self
+             .fd
+             .atomic_commit(
+-                if event {
++                if flip_flags.contains(AtomicCommitFlags::PAGE_FLIP_EVENT) {
+                     // on the atomic api we can modeset and trigger a page_flip event on the same call!
+-                    AtomicCommitFlags::PAGE_FLIP_EVENT | AtomicCommitFlags::ALLOW_MODESET
++                    flip_flags | AtomicCommitFlags::ALLOW_MODESET
+                     // we also *should* not need to wait for completion, like with `set_crtc`,
+                     // because we have tested this exact commit already, so we do not expect any errors later down the line.
+                     //
+@@ -868,8 +886,10 @@ impl AtomicDrmSurface {
+     pub fn page_flip<'a>(
+         &self,
+         planes: impl IntoIterator<Item = PlaneState<'a>>,
+-        event: bool,
++        flip_flags: PageFlipFlags,
+     ) -> Result<(), Error> {
++        let flip_flags = self.flip_flags(flip_flags);
++
+         if !self.active.load(Ordering::SeqCst) {
+             return Err(Error::DeviceInactive);
+         }
+@@ -896,8 +916,8 @@ impl AtomicDrmSurface {
+         let res = self
+             .fd
+             .atomic_commit(
+-                if event {
+-                    AtomicCommitFlags::PAGE_FLIP_EVENT | AtomicCommitFlags::NONBLOCK
++                if flip_flags.contains(AtomicCommitFlags::PAGE_FLIP_EVENT) {
++                    flip_flags | AtomicCommitFlags::NONBLOCK
+                 } else {
+                     AtomicCommitFlags::NONBLOCK
+                 },
+diff --git a/src/backend/drm/surface/gbm.rs b/src/backend/drm/surface/gbm.rs
+index 83b5ec5..5951a52 100644
+--- a/src/backend/drm/surface/gbm.rs
++++ b/src/backend/drm/surface/gbm.rs
+@@ -1,7 +1,7 @@
+ use std::os::unix::io::AsFd;
+ use std::sync::Arc;
+ 
+-use drm::control::{Mode, connector, crtc, plane};
++use drm::control::{Mode, PageFlipFlags, connector, crtc, plane};
+ use drm::{Device, DriverCapability};
+ use indexmap::IndexSet;
+ 
+@@ -13,7 +13,7 @@ use crate::backend::allocator::{Allocator, Format, Fourcc, Modifier, Slot, Swapc
+ use crate::backend::drm::error::AccessError;
+ use crate::backend::drm::gbm::{GbmFramebuffer, framebuffer_from_bo};
+ use crate::backend::drm::{DrmError, DrmSurface, plane_has_property};
+-use crate::backend::renderer::sync::SyncPoint;
++use crate::backend::renderer::{PresentationMode, sync::SyncPoint};
+ use crate::utils::{DevPath, Physical, Rectangle, Transform};
+ 
+ use tracing::{debug, info_span, instrument, trace, warn};
+@@ -26,6 +26,7 @@ struct QueuedFb<U> {
+     sync: Option<SyncPoint>,
+     damage: Option<Vec<Rectangle<i32, Physical>>>,
+     user_data: U,
++    presentation_mode: PresentationMode,
+ }
+ 
+ /// Simplified abstraction of a swapchain for gbm-buffers displayed on a [`DrmSurface`].
+@@ -292,6 +293,7 @@ where
+         sync: Option<SyncPoint>,
+         damage: Option<Vec<Rectangle<i32, Physical>>>,
+         user_data: U,
++        presentation_mode: PresentationMode,
+     ) -> Result<(), Error<A::Error>> {
+         if !self.drm.is_active() {
+             return Err(Error::<A::Error>::DrmError(DrmError::DeviceInactive));
+@@ -306,6 +308,7 @@ where
+             sync,
+             damage,
+             user_data,
++            presentation_mode,
+         });
+         if self.pending_fb.is_none() {
+             self.submit()?;
+@@ -342,6 +345,7 @@ where
+             sync,
+             damage,
+             user_data,
++            presentation_mode,
+         } = self.queued_fb.take().unwrap();
+         let handle = slot.userdata().get::<GbmFramebuffer>().unwrap();
+         let mode = self.drm.pending_mode();
+@@ -395,10 +399,15 @@ where
+             }),
+         };
+ 
++        let mut flip_flags = PageFlipFlags::EVENT;
++        if presentation_mode == PresentationMode::Async {
++            flip_flags |= PageFlipFlags::ASYNC;
++        }
++
+         let flip = if self.drm.commit_pending() {
+-            self.drm.commit([plane_state], true)
++            self.drm.commit([plane_state], flip_flags)
+         } else {
+-            self.drm.page_flip([plane_state], true)
++            self.drm.page_flip([plane_state], flip_flags)
+         };
+         if flip.is_ok() {
+             self.pending_fb = Some((slot, user_data));
+diff --git a/src/backend/drm/surface/legacy.rs b/src/backend/drm/surface/legacy.rs
+index 8184acb..f75bb62 100644
+--- a/src/backend/drm/surface/legacy.rs
++++ b/src/backend/drm/surface/legacy.rs
+@@ -88,6 +88,7 @@ pub struct LegacyDrmSurface {
+     pending: RwLock<State>,
+     dpms: Mutex<bool>,
+     pub(super) span: tracing::Span,
++    pub(super) supports_async_page_flips: bool,
+ }
+ 
+ impl LegacyDrmSurface {
+@@ -97,6 +98,7 @@ impl LegacyDrmSurface {
+         crtc: crtc::Handle,
+         mode: Mode,
+         connectors: &[connector::Handle],
++        supports_async_page_flips: bool,
+     ) -> Result<Self, Error> {
+         let span = info_span!("drm_legacy", crtc = ?crtc);
+         let _guard = span.enter();
+@@ -117,6 +119,7 @@ impl LegacyDrmSurface {
+             pending: RwLock::new(pending),
+             dpms: Mutex::new(true),
+             span,
++            supports_async_page_flips,
+         };
+ 
+         Ok(surface)
+@@ -226,9 +229,18 @@ impl LegacyDrmSurface {
+         *self.pending.read().unwrap() != *self.state.read().unwrap()
+     }
+ 
++    fn flip_flags(&self, mut flip_flags: PageFlipFlags) -> PageFlipFlags {
++        if !self.supports_async_page_flips {
++            flip_flags.remove(PageFlipFlags::ASYNC);
++        }
++        flip_flags
++    }
++
+     #[instrument(level = "trace", parent = &self.span, skip(self))]
+     #[profiling::function]
+-    pub fn commit(&self, framebuffer: framebuffer::Handle, event: bool) -> Result<(), Error> {
++    pub fn commit(&self, framebuffer: framebuffer::Handle, flip_flags: PageFlipFlags) -> Result<(), Error> {
++        let flip_flags = self.flip_flags(flip_flags);
++
+         if !self.active.load(Ordering::SeqCst) {
+             return Err(Error::DeviceInactive);
+         }
+@@ -311,13 +323,13 @@ impl LegacyDrmSurface {
+ 
+         *current = pending.clone();
+ 
+-        if event {
++        if flip_flags.contains(PageFlipFlags::EVENT) {
+             // set crtc does not trigger page_flip events, so we immediately queue a flip
+             // with the same framebuffer.
+             // this will result in wasting a frame, because this flip will need to wait
+             // for `set_crtc`, but is necessary to drive the event loop and thus provide
+             // a more consistent api.
+-            ControlDevice::page_flip(&*self.fd, self.crtc, framebuffer, PageFlipFlags::EVENT, None).map_err(
++            ControlDevice::page_flip(&*self.fd, self.crtc, framebuffer, flip_flags, None).map_err(
+                 |source| {
+                     Error::Access(AccessError {
+                         errmsg: "Failed to queue page flip",
+@@ -333,7 +345,13 @@ impl LegacyDrmSurface {
+ 
+     #[instrument(level = "trace", parent = &self.span, skip(self))]
+     #[profiling::function]
+-    pub fn page_flip(&self, framebuffer: framebuffer::Handle, event: bool) -> Result<(), Error> {
++    pub fn page_flip(
++        &self,
++        framebuffer: framebuffer::Handle,
++        flip_flags: PageFlipFlags,
++    ) -> Result<(), Error> {
++        let flip_flags = self.flip_flags(flip_flags);
++
+         trace!("Queueing Page flip");
+ 
+         if !self.active.load(Ordering::SeqCst) {
+@@ -347,18 +365,7 @@ impl LegacyDrmSurface {
+             *dpms = true;
+         }
+ 
+-        ControlDevice::page_flip(
+-            &*self.fd,
+-            self.crtc,
+-            framebuffer,
+-            if event {
+-                PageFlipFlags::EVENT
+-            } else {
+-                PageFlipFlags::empty()
+-            },
+-            None,
+-        )
+-        .map_err(|source| {
++        ControlDevice::page_flip(&*self.fd, self.crtc, framebuffer, flip_flags, None).map_err(|source| {
+             Error::Access(AccessError {
+                 errmsg: "Failed to page flip",
+                 dev: self.fd.dev_path(),
+diff --git a/src/backend/drm/surface/mod.rs b/src/backend/drm/surface/mod.rs
+index 677fa13..65dec02 100644
+--- a/src/backend/drm/surface/mod.rs
++++ b/src/backend/drm/surface/mod.rs
+@@ -4,7 +4,7 @@ use std::sync::Arc;
+ use std::sync::atomic::Ordering;
+ 
+ use drm::Device as BasicDevice;
+-use drm::control::{Device as ControlDevice, Mode, connector, crtc, framebuffer, plane};
++use drm::control::{Device as ControlDevice, Mode, PageFlipFlags, connector, crtc, framebuffer, plane};
+ 
+ use libc::dev_t;
+ 
+@@ -202,6 +202,14 @@ impl DrmSurface {
+         matches!(&*self.internal, DrmSurfaceInternal::Legacy(_))
+     }
+ 
++    /// Returns whether the device supports async page flips through the api used by this surface
++    pub fn supports_async_page_flips(&self) -> bool {
++        match &*self.internal {
++            DrmSurfaceInternal::Atomic(surf) => surf.supports_async_page_flips,
++            DrmSurfaceInternal::Legacy(surf) => surf.supports_async_page_flips,
++        }
++    }
++
+     /// Returns the underlying [`crtc`](drm::control::crtc) of this surface
+     pub fn crtc(&self) -> crtc::Handle {
+         self.crtc
+@@ -416,13 +424,13 @@ impl DrmSurface {
+     pub fn commit<'a>(
+         &self,
+         planes: impl IntoIterator<Item = PlaneState<'a>>,
+-        event: bool,
++        flip_flags: PageFlipFlags,
+     ) -> Result<(), Error> {
+         match &*self.internal {
+-            DrmSurfaceInternal::Atomic(surf) => surf.commit(planes, event),
++            DrmSurfaceInternal::Atomic(surf) => surf.commit(planes, flip_flags),
+             DrmSurfaceInternal::Legacy(surf) => {
+                 let fb = ensure_legacy_planes(self, planes)?;
+-                surf.commit(fb, event)
++                surf.commit(fb, flip_flags)
+             }
+         }
+     }
+@@ -438,13 +446,13 @@ impl DrmSurface {
+     pub fn page_flip<'a>(
+         &self,
+         planes: impl IntoIterator<Item = PlaneState<'a>>,
+-        event: bool,
++        flip_flags: PageFlipFlags,
+     ) -> Result<(), Error> {
+         match &*self.internal {
+-            DrmSurfaceInternal::Atomic(surf) => surf.page_flip(planes, event),
++            DrmSurfaceInternal::Atomic(surf) => surf.page_flip(planes, flip_flags),
+             DrmSurfaceInternal::Legacy(surf) => {
+                 let fb = ensure_legacy_planes(self, planes)?;
+-                surf.page_flip(fb, event)
++                surf.page_flip(fb, flip_flags)
+             }
+         }
+     }
+diff --git a/src/backend/renderer/element/mod.rs b/src/backend/renderer/element/mod.rs
+index b687793..330c2fc 100644
+--- a/src/backend/renderer/element/mod.rs
++++ b/src/backend/renderer/element/mod.rs
+@@ -35,7 +35,7 @@ use crate::{
+ #[cfg(feature = "wayland_frontend")]
+ use super::utils::Buffer;
+ use super::{
+-    Renderer,
++    PresentationMode, Renderer,
+     utils::{CommitCounter, DamageSet, OpaqueRegions},
+ };
+ 
+@@ -566,6 +566,11 @@ pub trait Element {
+     fn is_framebuffer_effect(&self) -> bool {
+         false
+     }
++
++    /// Hint for DRM backend on how the element should be presented
++    fn presentation_mode(&self) -> PresentationMode {
++        PresentationMode::VSync
++    }
+ }
+ 
+ /// A single render element
+@@ -670,6 +675,10 @@ where
+     fn is_framebuffer_effect(&self) -> bool {
+         (*self).is_framebuffer_effect()
+     }
++
++    fn presentation_mode(&self) -> PresentationMode {
++        (*self).presentation_mode()
++    }
+ }
+ 
+ impl<R, E> RenderElement<R> for &E
+@@ -1111,6 +1120,19 @@ macro_rules! render_elements_internal {
+                 Self::_GenericCatcher(_) => unreachable!(),
+             }
+         }
++
++        fn presentation_mode(&self) -> $crate::backend::renderer::PresentationMode {
++            match self {
++                $(
++                    #[allow(unused_doc_comments)]
++                    $(
++                        #[$meta]
++                    )*
++                    Self::$body(x) => $crate::render_elements_internal!(@call presentation_mode; x)
++                ),*,
++                Self::_GenericCatcher(_) => unreachable!(),
++            }
++        }
+     };
+     (@draw <$renderer:ty>; $($(#[$meta:meta])* $body:ident=$field:ty $(as <$other_renderer:ty>)?),* $(,)?) => {
+         fn draw(
+@@ -1800,6 +1822,10 @@ where
+     fn is_framebuffer_effect(&self) -> bool {
+         self.0.is_framebuffer_effect()
+     }
++
++    fn presentation_mode(&self) -> PresentationMode {
++        self.0.presentation_mode()
++    }
+ }
+ 
+ impl<R, C> RenderElement<R> for Wrap<C>
+diff --git a/src/backend/renderer/element/surface.rs b/src/backend/renderer/element/surface.rs
+index 1d7bffd..45e3ceb 100644
+--- a/src/backend/renderer/element/surface.rs
++++ b/src/backend/renderer/element/surface.rs
+@@ -69,7 +69,7 @@ use wayland_server::protocol::wl_surface;
+ 
+ use crate::{
+     backend::renderer::{
+-        Color32F, Frame, ImportAll, Renderer, Texture,
++        Color32F, Frame, ImportAll, PresentationMode, Renderer, Texture,
+         utils::{
+             Buffer, DamageSet, DamageSnapshot, OpaqueRegions, RendererSurfaceState,
+             RendererSurfaceStateUserData, SurfaceView,
+@@ -435,6 +435,12 @@ impl<R: Renderer + ImportAll> Element for WaylandSurfaceRenderElement<R> {
+     fn kind(&self) -> Kind {
+         self.kind
+     }
++
++    fn presentation_mode(&self) -> PresentationMode {
++        // On Wayland assume VSync as default preference
++        PresentationMode::VSync
++        // TODO: Return Async in case wp_tearing is attached to the surface
++    }
+ }
+ 
+ impl<R> RenderElement<R> for WaylandSurfaceRenderElement<R>
+diff --git a/src/backend/renderer/mod.rs b/src/backend/renderer/mod.rs
+index 2efa08c..eebfff1 100644
+--- a/src/backend/renderer/mod.rs
++++ b/src/backend/renderer/mod.rs
+@@ -66,6 +66,15 @@ use sync::SyncPoint;
+ #[cfg(any(feature = "renderer_test", test, doctest))]
+ pub mod test;
+ 
++/// Hint for DRM backend on how the surface should be presented
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum PresentationMode {
++    /// Vertical synchronization
++    VSync,
++    /// Tearing presentationres
++    Async,
++}
++
+ /// Identifies a renderer context for a specific texture type.
+ ///
+ /// Renderers with the same `ContextId` are assumed to be texture-compatible,
+-- 
+2.56.0
+

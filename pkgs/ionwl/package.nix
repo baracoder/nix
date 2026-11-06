@@ -51,10 +51,18 @@ rustPlatform.buildRustPackage {
     ./wheel-bindings.patch
     # Workspace lists and switching for bars (dux-shell, waybar).
     ./ext-workspace.patch
+    # Games can opt out of vsync; needs the smithay patch below.
+    ./tearing-control.patch
   ];
 
+  # Async page flips in smithay's DrmCompositor, a backport of the unmerged
+  # Smithay/smithay#1948. Git deps are vendored without checksums, so the
+  # vendored copy can be patched in place.
   postPatch = ''
     ln -s ${./Cargo.lock} Cargo.lock
+    smithay=$(echo "$cargoDepsCopy"/smithay-[0-9]*)
+    chmod -R u+w "$smithay"
+    patch -d "$smithay" -p1 < ${./smithay-drm-async-page-flip.patch}
   '';
 
   nativeBuildInputs = [
