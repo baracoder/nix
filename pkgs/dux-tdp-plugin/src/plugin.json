@@ -1,0 +1,13 @@
+{
+    "id": "tdpBaracoder",
+    "name": "TDP",
+    "description": "Show and set the APU power limit (TDP) through PowerStation, from the bar or the Control Center.",
+    "version": "1.0.0",
+    "author": "baracoder",
+    "type": "widget",
+    "capabilities": ["dankbar-widget", "control-center"],
+    "component": "./TdpWidget.qml",
+    "icon": "bolt",
+    "settings": "./TdpSettings.qml",
+    "permissions": ["settings_read", "settings_write"]
+}

@@ -62,6 +62,12 @@ in
     programs.dux-shell = {
       enable = true;
       systemd.enable = false;
+      # TDP bar/Control Center widget, on machines whose TDP PowerStation
+      # controls. Installed to /etc/xdg/quickshell/dms-plugins; still needs
+      # enabling under Settings > Plugins.
+      plugins.TdpBaracoder = lib.mkIf config.services.powerstation.enable {
+        src = pkgs.dux-tdp-plugin;
+      };
     };
 
     environment.systemPackages = with pkgs; [
