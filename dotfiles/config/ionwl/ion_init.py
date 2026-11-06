@@ -33,6 +33,7 @@ reload = "main" in locals()
 TERMINAL = ('ghostty',)
 LAUNCHER = ('fuzzel',)
 SCRATCHPAD = '*scratch*'  # Workspace used as a scratchpad.
+SHELL = 'dux'  # Bar/notification shell: 'dux' (dux-shell) or 'way-shell'.
 LOOK = 'Other/i3'  # Window decoration look, as named in the frame menu's "Looks".
 
 
@@ -173,9 +174,7 @@ def main() -> None:
 
         ion.utils.exec(('kanshi',))
         # One shell at a time: all are the notification daemon.
-        # ion.utils.exec(('noctalia',))
-        # ion.utils.exec(('dms', 'run'))  # dux-shell
-        ion.utils.exec(('way-shell',))
+        ion.utils.exec(('dms', 'run') if SHELL == 'dux' else ('way-shell',))
         # Locks on `loginctl lock-session` and before suspend; suspend waits
         # until the lock screen is up. (swayidle needs an idle protocol ionwl
         # lacks.)
@@ -405,33 +404,57 @@ def main() -> None:
     # -------------------------------------------------------------------------
     # Media keys
 
-    # Through way-shell, which shows an OSD for them.
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_RAISE_VOLUME), ops.system_exec(command=('way-sh', 'volume', 'up')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_LOWER_VOLUME), ops.system_exec(command=('way-sh', 'volume', 'down')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_MUTE), ops.system_exec(command=('way-sh', 'volume', 'mute')))
-    km_global.items.new(MatchKey(kbd.XF86_MON_BRIGHTNESS_UP), ops.system_exec(command=('way-sh', 'brightness', 'up')))
-    km_global.items.new(MatchKey(kbd.XF86_MON_BRIGHTNESS_DOWN), ops.system_exec(command=('way-sh', 'brightness', 'down')))
+    # Through the shell, which shows an OSD for them.
+    if SHELL == 'dux':
+        dms_bindings = (
+            (MatchKey(kbd.XF86_AUDIO_RAISE_VOLUME), ('audio', 'increment', '3')),
+            (MatchKey(kbd.XF86_AUDIO_LOWER_VOLUME), ('audio', 'decrement', '3')),
+            (MatchKey(kbd.XF86_AUDIO_MUTE), ('audio', 'mute')),
+            (MatchKey(kbd.XF86_AUDIO_MIC_MUTE), ('audio', 'micmute')),
+            # Empty device: the shell's current backlight.
+            (MatchKey(kbd.XF86_MON_BRIGHTNESS_UP), ('brightness', 'increment', '5', '')),
+            (MatchKey(kbd.XF86_MON_BRIGHTNESS_DOWN), ('brightness', 'decrement', '5', '')),
+            # Whichever MPRIS player is active.
+            (MatchKey(kbd.XF86_AUDIO_PLAY), ('mpris', 'playPause')),
+            (MatchKey(kbd.XF86_AUDIO_PAUSE), ('mpris', 'playPause')),
+            (MatchKey(kbd.XF86_AUDIO_STOP), ('mpris', 'stop')),
+            (MatchKey(kbd.XF86_AUDIO_PREV), ('mpris', 'previous')),
+            (MatchKey(kbd.XF86_AUDIO_NEXT), ('mpris', 'next')),
+            # dux's panels (Super+A/X, its defaults, are taken here).
+            (MatchKey(kbd.E, logo=True), ('spotlight', 'toggle')),  # app search
+            (MatchKey(kbd.V, logo=True), ('clipboard', 'toggle')),
+            (MatchKey(kbd.C, logo=True), ('control-center', 'toggle')),
+            (MatchKey(kbd.N, logo=True, ctrl=True), ('notifications', 'toggle')),
+            (MatchKey(kbd.ESCAPE, logo=True, shift=True), ('powermenu', 'toggle')),
+        )
+        for match, args in dms_bindings:
+            km_global.items.new(match, ops.system_exec(command=('dms', 'ipc', 'call', *args)))
+    else:
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_RAISE_VOLUME), ops.system_exec(command=('way-sh', 'volume', 'up')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_LOWER_VOLUME), ops.system_exec(command=('way-sh', 'volume', 'down')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_MUTE), ops.system_exec(command=('way-sh', 'volume', 'mute')))
+        km_global.items.new(MatchKey(kbd.XF86_MON_BRIGHTNESS_UP), ops.system_exec(command=('way-sh', 'brightness', 'up')))
+        km_global.items.new(MatchKey(kbd.XF86_MON_BRIGHTNESS_DOWN), ops.system_exec(command=('way-sh', 'brightness', 'down')))
 
-    # -------------------------------------------------------------------------
-    # way-shell switchers (its defaults Super+Tab/W/A clash with the above)
+        # way-shell switchers (its defaults Super+Tab/W/A clash with the above)
+        way_sh_bindings = (
+            (kbd.D, 'workspace-switcher'),  # go to a desktop by name, or create it
+            (kbd.G, 'workspace-app-switcher'),  # send the window to a desktop by name
+            (kbd.R, 'rename-switcher'),  # rename the current desktop
+            (kbd.O, 'output-switcher'),  # focus an output
+            (kbd.E, 'activities'),  # app search
+        )
+        for key, widget in way_sh_bindings:
+            km_global.items.new(MatchKey(key, logo=True), ops.system_exec(command=('way-sh', widget, 'toggle')))
 
-    way_sh_bindings = (
-        (kbd.D, 'workspace-switcher'),  # go to a desktop by name, or create it
-        (kbd.G, 'workspace-app-switcher'),  # send the window to a desktop by name
-        (kbd.R, 'rename-switcher'),  # rename the current desktop
-        (kbd.O, 'output-switcher'),  # focus an output
-        (kbd.E, 'activities'),  # app search
-    )
-    for key, widget in way_sh_bindings:
-        km_global.items.new(MatchKey(key, logo=True), ops.system_exec(command=('way-sh', widget, 'toggle')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_PLAY), ops.system_exec(command=('cmus-remote', '--pause')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_PREV), ops.system_exec(command=('cmus-remote', '--prev')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_NEXT), ops.system_exec(command=('cmus-remote', '--next')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_REWIND), ops.system_exec(command=('cmus-remote', '--seek', '-10')))
+        km_global.items.new(MatchKey(kbd.XF86_AUDIO_FORWARD), ops.system_exec(command=('cmus-remote', '--seek', '+10')))
 
     # Lock screen (Super+L is focus-right here).
     km_global.items.new(MatchKey(kbd.ESCAPE, logo=True), ops.system_exec(command=('loginctl', 'lock-session')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_PLAY), ops.system_exec(command=('cmus-remote', '--pause')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_PREV), ops.system_exec(command=('cmus-remote', '--prev')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_NEXT), ops.system_exec(command=('cmus-remote', '--next')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_REWIND), ops.system_exec(command=('cmus-remote', '--seek', '-10')))
-    km_global.items.new(MatchKey(kbd.XF86_AUDIO_FORWARD), ops.system_exec(command=('cmus-remote', '--seek', '+10')))
 
     # -------------------------------------------------------------------------
     # Looks
