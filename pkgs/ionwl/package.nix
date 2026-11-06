@@ -65,16 +65,21 @@ rustPlatform.buildRustPackage {
     ./desktop-swipe.patch
     # Fullscreen windows cover Top-layer bars, as layer-shell intends.
     ./fullscreen-covers-top-layer.patch
+    # Focused X11 windows get the X11 input focus; Unity games ignored all
+    # input without it. Needs the second smithay patch below.
+    ./x11-input-focus.patch
   ];
 
   # Async page flips in smithay's DrmCompositor, a backport of the unmerged
-  # Smithay/smithay#1948. Git deps are vendored without checksums, so the
-  # vendored copy can be patched in place.
+  # Smithay/smithay#1948, and X11Surface::input_focus_take/release. Git deps
+  # are vendored without checksums, so the vendored copy can be patched in
+  # place.
   postPatch = ''
     ln -s ${./Cargo.lock} Cargo.lock
     smithay=$(echo "$cargoDepsCopy"/smithay-[0-9]*)
     chmod -R u+w "$smithay"
     patch -d "$smithay" -p1 < ${./smithay-drm-async-page-flip.patch}
+    patch -d "$smithay" -p1 < ${./smithay-x11-input-focus.patch}
   '';
 
   nativeBuildInputs = [

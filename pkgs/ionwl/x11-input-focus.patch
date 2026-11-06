@@ -1,0 +1,78 @@
+From 0a2519330e7713ca33f504657eece5d118126d3e Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 23:39:48 +0100
+Subject: [PATCH] Fix: give focused X11 windows the X11 input focus
+
+Keyboard focus is a WlSurface, so smithay's X11Surface keyboard enter,
+which sets the X11 input focus, never ran. X11 key events went to
+whichever window last took the X11 focus itself (Steam does), and
+clients that track focus through X11, such as Unity games, considered
+themselves in the background and ignored all input, gamepads included.
+
+Needs smithay's X11Surface::input_focus_take / input_focus_release.
+---
+ src/handler/seat_focus.rs |  2 +-
+ src/state/focus.rs        | 27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/src/handler/seat_focus.rs b/src/handler/seat_focus.rs
+index 08a6dbeb..c3d34b97 100644
+--- a/src/handler/seat_focus.rs
++++ b/src/handler/seat_focus.rs
+@@ -272,7 +272,7 @@ impl DndFocus<IonMain> for FocusSurface {
+ /// Walks to the root (toplevel) surface first, since `surface_under`
+ /// may return a subsurface.
+ #[cfg(feature = "xwayland")]
+-fn x11_surface_find(
++pub(crate) fn x11_surface_find(
+     data: &IonMain,
+     wl_surface: &WlSurface,
+ ) -> Option<smithay::xwayland::xwm::X11Surface> {
+diff --git a/src/state/focus.rs b/src/state/focus.rs
+index 04db97cf..89d688b4 100644
+--- a/src/state/focus.rs
++++ b/src/state/focus.rs
+@@ -354,6 +354,9 @@ impl IonMain {
+             self.keyboard_shortcuts_inhibit_focus_sync(target_prev.wl_surface(), surface.as_ref());
+         }
+ 
++        #[cfg(feature = "xwayland")]
++        self.x11_input_focus_sync(target_prev.wl_surface(), surface.as_ref());
++
+         // Sync window `activated` state to match keyboard focus.
+         self.windows_activated_sync();
+ 
+@@ -377,6 +380,30 @@ impl IonMain {
+         false
+     }
+ 
++    /// Move the X11 input focus along with the keyboard focus.
++    ///
++    /// The keyboard focus is a `WlSurface`, so smithay's `X11Surface`
++    /// keyboard enter, which sets the X11 focus, never runs. Without this, X11
++    /// key events go to whichever window last took the X11 focus itself
++    /// (Steam does), and clients that track focus through X11, such as Unity
++    /// games, consider themselves in the background and ignore all input,
++    /// gamepads included.
++    #[cfg(feature = "xwayland")]
++    fn x11_input_focus_sync(&self, prev: Option<&WlSurface>, next: Option<&WlSurface>) {
++        if prev == next {
++            return;
++        }
++        if let Some(x11) = next.and_then(|s| crate::handler::seat_focus::x11_surface_find(self, s))
++        {
++            // Cancels the release a previous X11 window scheduled.
++            x11.input_focus_take();
++        } else if let Some(x11) =
++            prev.and_then(|s| crate::handler::seat_focus::x11_surface_find(self, s))
++        {
++            x11.input_focus_release();
++        }
++    }
++
+     /// Track a keyboard-shortcuts inhibitor's active state across a focus move.
+     ///
+     /// An inhibitor only suppresses compositor bindings while its surface holds
+-- 
+2.56.0
+

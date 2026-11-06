@@ -1,0 +1,143 @@
+From d3a34237cc3c3a9e953a107accd0d932d6c11195 Mon Sep 17 00:00:00 2001
+From: Herman Fries <baracoder@googlemail.com>
+Date: Fri, 6 Nov 2026 23:39:48 +0100
+Subject: [PATCH] xwayland: Let compositors move the X11 focus themselves
+
+A compositor whose keyboard focus is the window's WlSurface, rather than
+the X11Surface, never runs the X11Surface keyboard enter that sets the
+X11 input focus. Split that part out into X11Surface::input_focus_take,
+and the leave's deferred release into input_focus_release, so it can
+call them as its WlSurface focus moves.
+---
+ src/xwayland/xwm/surface.rs | 100 ++++++++++++++++++++++--------------
+ 1 file changed, 61 insertions(+), 39 deletions(-)
+
+diff --git a/src/xwayland/xwm/surface.rs b/src/xwayland/xwm/surface.rs
+index d8a850a..0895eb7 100644
+--- a/src/xwayland/xwm/surface.rs
++++ b/src/xwayland/xwm/surface.rs
+@@ -1531,6 +1531,63 @@ impl X11Surface {
+         }
+     }
+ 
++    /// Give this window the X11 input focus, as its input model asks:
++    /// `SetInputFocus`, `WM_TAKE_FOCUS`, or both.
++    ///
++    /// The keyboard enter of an `X11Surface` focus does this. A compositor
++    /// whose keyboard focus is the window's `WlSurface` calls it itself when
++    /// that surface gains focus; otherwise X11 key events keep going to the
++    /// window that last held the X11 focus, and clients that track focus
++    /// through X11 (such as Unity games) consider themselves in the background.
++    pub fn input_focus_take(&self) {
++        let (set_input_focus, send_take_focus) = match self.input_model() {
++            WmInputModel::None => return,
++            WmInputModel::Passive => (true, false),
++            WmInputModel::LocallyActive => (true, true),
++            WmInputModel::GloballyActive => (false, true),
++        };
++
++        if let Some(release) = &self.focus_release {
++            release.cancel();
++        }
++
++        if let Some(conn) = self.conn.upgrade() {
++            if set_input_focus {
++                if let Err(err) = conn.set_input_focus(InputFocus::NONE, self.window, x11rb::CURRENT_TIME) {
++                    warn!("Unable to set focus for X11Surface ({:?}): {}", self.window, err);
++                }
++            }
++
++            if send_take_focus {
++                let event = ClientMessageEvent::new(
++                    32,
++                    self.window,
++                    self.atoms.WM_PROTOCOLS,
++                    [self.atoms.WM_TAKE_FOCUS, x11rb::CURRENT_TIME, 0, 0, 0],
++                );
++                if let Err(err) = conn.send_event(false, self.window, EventMask::NO_EVENT, event) {
++                    warn!(
++                        "Unable to send take focus event for X11Surface ({:?}): {}",
++                        self.window, err
++                    );
++                }
++            }
++
++            let _ = conn.flush();
++        }
++    }
++
++    /// Release the X11 input focus this window holds, unless another window
++    /// takes it before the event loop next dispatches.
++    ///
++    /// The counterpart of [`X11Surface::input_focus_take`], for when the
++    /// window's `WlSurface` loses keyboard focus.
++    pub fn input_focus_release(&self) {
++        if let Some(release) = &self.focus_release {
++            release.schedule();
++        }
++    }
++
+     pub(super) fn update_properties(&self) -> Result<(), ConnectionError> {
+         self.update_title()?;
+         self.update_class()?;
+@@ -2148,42 +2205,10 @@ impl IsAlive for X11Surface {
+ 
+ impl<D: SeatHandler + 'static> KeyboardTarget<D> for X11Surface {
+     fn enter(&self, seat: &Seat<D>, data: &mut D, keys: Vec<KeysymHandle<'_>>, serial: Serial) {
+-        let (set_input_focus, send_take_focus) = match self.input_model() {
+-            WmInputModel::None => return,
+-            WmInputModel::Passive => (true, false),
+-            WmInputModel::LocallyActive => (true, true),
+-            WmInputModel::GloballyActive => (false, true),
+-        };
+-
+-        if let Some(release) = &self.focus_release {
+-            release.cancel();
+-        }
+-
+-        if let Some(conn) = self.conn.upgrade() {
+-            if set_input_focus {
+-                if let Err(err) = conn.set_input_focus(InputFocus::NONE, self.window, x11rb::CURRENT_TIME) {
+-                    warn!("Unable to set focus for X11Surface ({:?}): {}", self.window, err);
+-                }
+-            }
+-
+-            if send_take_focus {
+-                let event = ClientMessageEvent::new(
+-                    32,
+-                    self.window,
+-                    self.atoms.WM_PROTOCOLS,
+-                    [self.atoms.WM_TAKE_FOCUS, x11rb::CURRENT_TIME, 0, 0, 0],
+-                );
+-                if let Err(err) = conn.send_event(false, self.window, EventMask::NO_EVENT, event) {
+-                    warn!(
+-                        "Unable to send take focus event for X11Surface ({:?}): {}",
+-                        self.window, err
+-                    );
+-                }
+-                let _ = conn.flush();
+-            }
+-
+-            let _ = conn.flush();
++        if self.input_model() == WmInputModel::None {
++            return;
+         }
++        self.input_focus_take();
+ 
+         let mut state = self.state.lock().unwrap();
+         if let Some(surface) = state.wl_surface.as_ref() {
+@@ -2202,10 +2227,7 @@ impl<D: SeatHandler + 'static> KeyboardTarget<D> for X11Surface {
+         if self.input_model() == WmInputModel::None {
+             return;
+         }
+-
+-        if let Some(release) = &self.focus_release {
+-            release.schedule();
+-        }
++        self.input_focus_release();
+ 
+         let mut state = self.state.lock().unwrap();
+         let _ = state.pending_enter.take();
+-- 
+2.56.0
+

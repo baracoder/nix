@@ -95,6 +95,13 @@ can be sent as it is.
   ([ionwl](https://codeberg.org/ideasman42/ionwl))
 - [ ] `pkgs/ionwl/fullscreen-covers-top-layer.patch`: fullscreen windows cover
   Top-layer surfaces such as bars ([ionwl](https://codeberg.org/ideasman42/ionwl))
+- [ ] `pkgs/ionwl/x11-input-focus.patch`: focused X11 windows get the X11
+  input focus, which Unity games need for any input
+  ([ionwl](https://codeberg.org/ideasman42/ionwl)); needs the smithay patch
+  below first
+- [ ] `pkgs/ionwl/smithay-x11-input-focus.patch`: `X11Surface::input_focus_take`
+  and `input_focus_release`, for compositors whose keyboard focus is the
+  `WlSurface` ([smithay](https://github.com/Smithay/smithay))
 - [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series rebased
   onto mutter 50.5; not ours to send, drop it once mutter ships tearing
   ([mutter](https://gitlab.gnome.org/GNOME/mutter))
