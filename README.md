@@ -102,8 +102,8 @@ can be sent as it is.
 - [ ] `pkgs/ionwl/smithay-x11-input-focus.patch`: `X11Surface::input_focus_take`
   and `input_focus_release`, for compositors whose keyboard focus is the
   `WlSurface` ([smithay](https://github.com/Smithay/smithay))
-- [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series rebased
-  onto mutter 50.5; not ours to send, drop it once mutter ships tearing
+- [ ] `overlays/patches/mutter-tearing.patch`: CachyOS's tearing series,
+  squashed; not ours to send, drop it once mutter ships tearing
   ([mutter](https://gitlab.gnome.org/GNOME/mutter))
 - [ ] `pkgs/way-shell/ionwl-backend.patch`: ionwl window-manager backend
   ([way-shell](https://github.com/ldelossa/way-shell))
