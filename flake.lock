@@ -85,11 +85,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1794397294,
-        "narHash": "sha256-ldRd1UWymZ+B1ngo5vNM2WYUbUYE0p8yTY6XIZJoc7A=",
+        "lastModified": 1794491017,
+        "narHash": "sha256-0bDWy7mNP1VxO6l4E/gqcD2jvPHt3mFuMXIYe49ifVI=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "3c4f3e7ccf54c7279659536160f9c58de38073c1",
+        "rev": "f5451e41487d1ddfa35513f3ddab4b81decaa271",
         "type": "github"
       },
       "original": {
@@ -133,6 +133,18 @@
         "type": "github"
       }
     },
+    "nixpkgs-patch-install-ryzen-smu": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-0XaFr6LgpkkxQCENgnmwjsr4u6a//Bx1BPw1NLVtIDc=",
+        "type": "file",
+        "url": "https://github.com/NixOS/nixpkgs/pull/586760.diff"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/NixOS/nixpkgs/pull/586760.diff"
+      }
+    },
     "nixpkgs-patcher": {
       "locked": {
         "lastModified": 1793529490,
@@ -163,11 +175,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1794042290,
-        "narHash": "sha256-ziZn2PvCJE5JEEpqTdxXwJpPB+L3YqoCpTAMCzyaP3U=",
+        "lastModified": 1794386569,
+        "narHash": "sha256-x9sADJvoVG0L6RejZB+/BB4YiGZFBZrfTlhF4uBq1tQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f4a03c008967841f2a0b3cb7c436fc6fc31671f6",
+        "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
         "type": "github"
       },
       "original": {
@@ -183,6 +195,7 @@
         "llm-agents": "llm-agents",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-patch-install-ryzen-smu": "nixpkgs-patch-install-ryzen-smu",
         "nixpkgs-patcher": "nixpkgs-patcher"
       }
     },
