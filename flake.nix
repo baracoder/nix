@@ -44,6 +44,7 @@
             ./modules/gnome
             ./modules/gaming
             ./modules/linzone-hub
+            ./modules/vds
             ./modules/ionwl
             ./machines/hal
             nixpkgs.nixosModules.notDetected

@@ -139,6 +139,7 @@ in
   };
 
   programs.linzone-hub.enable = true;
+  services.vds.enable = true;
 
   services.resolved.enable = true;
 
