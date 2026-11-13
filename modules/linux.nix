@@ -55,16 +55,18 @@ let
       };
     };
 
-  # Speech-triggered ducking for calls, see services.pipewire below. The
-  # ducker is a 4-channel sink: media on FL/FR goes through a sidechain
-  # compressor keyed by the call audio on RL/RR, which is mixed back in
-  # unprocessed. Only standard positions work here: WirePlumber reshapes the
-  # feeding streams to this layout, and AUX channels were silently dropped.
-  voiceDucker = "input.voice-ducker";
+  # Signal-based ducking, see services.pipewire below. The ducker is a
+  # 6-channel sink with one stereo pair per source:
+  #   FL/FR media, SL/SR games, RL/RR calls
+  # Games go through a sidechain compressor keyed by media, the result plus
+  # media through one keyed by calls; call audio is mixed back in unprocessed.
+  # Only standard positions work here: WirePlumber reshapes the feeding
+  # streams to this layout, and AUX channels were silently dropped.
+  ducker = "input.ducker";
   # Feeding the ducker: the streams must not upmix, or stereo media would
-  # also land on RL/RR and duck itself.
-  toVoiceDucker = positions: {
-    "target.object" = voiceDucker;
+  # also land on the other pairs and duck itself.
+  toDucker = positions: {
+    "target.object" = ducker;
     "audio.position" = positions;
     "channelmix.upmix" = false;
   };
@@ -139,11 +141,13 @@ in
   # plays into a sink, every lower-priority sink is ducked:
   #   40 Assistant (TTS, screen reader) = Communication (calls)
   #   20 Notification
-  #   10 Multimedia (music, video, games; the default for role-less streams)
+  #   10 Multimedia (music, video; the default for role-less streams) = Game
   # Calls are the exception: they keep their stream open even while nobody
   # talks, so link-based ducking would hold everything down for the whole
-  # call. Communication therefore only mixes, and the voice ducker below
-  # lowers media while someone actually speaks. TTS shares the level so a
+  # call. Communication therefore only mixes, and the ducker below lowers
+  # media and games while someone actually speaks. Games ducking behind
+  # media is signal-based for the same reason: a paused browser tab may keep
+  # its stream open. TTS shares the level so a
   # call doesn't duck it; on a tie the most recent stream decides, so TTS
   # started during a call still ducks media and notifications.
   # pipewire-pulse maps the pulse roles (music, video, event, phone, ...)
@@ -165,15 +169,25 @@ in
         roles = [
           "Music"
           "Movie"
-          "Game"
           "Multimedia"
           "Production"
         ];
         priority = 10;
         lowerPriorityAction = "mix";
-        playbackProps = toVoiceDucker [
+        playbackProps = toDucker [
           "FL"
           "FR"
+        ];
+      })
+      (roleSink {
+        name = "game";
+        desc = "Game";
+        roles = [ "Game" ];
+        priority = 10;
+        lowerPriorityAction = "mix";
+        playbackProps = toDucker [
+          "SL"
+          "SR"
         ];
       })
       (roleSink {
@@ -199,124 +213,135 @@ in
         roles = [ "Communication" ];
         priority = 40;
         lowerPriorityAction = "mix";
-        playbackProps = toVoiceDucker [
+        playbackProps = toDucker [
           "RL"
           "RR"
         ];
       })
     ];
 
-    # If the ducker fails to load (nofail), both feeds fall back to the
-    # default sink: everything still plays, just without call ducking.
-    extraConfig.pipewire."91-voice-ducker"."context.modules" = [
-      {
-        name = "libpipewire-module-filter-chain";
-        flags = [ "nofail" ];
-        args = {
-          "node.description" = "Voice Ducker";
-          "media.name" = "Voice Ducker";
-          "filter.graph" = {
-            nodes = [
-              {
-                type = "lv2";
-                name = "comp";
-                plugin = "http://lsp-plug.in/plugins/lv2/sc_compressor_stereo";
-                # External sidechain (sct = 2, the default). Threshold and
-                # ratio by LV2 symbol: al ~ -40 dB, times in ms.
-                control = {
-                  al = 1.0e-2;
-                  cr = 10.0;
-                  at = 10.0;
+    # If the ducker fails to load (nofail), all feeds fall back to the
+    # default sink: everything still plays, just without signal ducking.
+    # Controls can be tuned live, e.g. for the game stage:
+    #   pw-cli set-param <input.ducker id> Props '{ params = [ "game_comp:cdr" 0.3 ] }'
+    extraConfig.pipewire."91-ducker"."context.modules" =
+      let
+        # Shared by both stages: threshold al ~ -40 dB, times in ms. External
+        # sidechain (sct = 2) is the default. cdr/cwt are a parallel mix of
+        # the untouched (dry) and compressed (wet) signal: summing to 1 keeps
+        # the level unchanged at rest, and the dry part is a floor, so fully
+        # ducked the signal still plays at cdr (0.15 ~ -16 dB, 0.3 ~ -10 dB).
+        compressor = name: control: {
+          type = "lv2";
+          inherit name;
+          plugin = "http://lsp-plug.in/plugins/lv2/sc_compressor_stereo";
+          control = {
+            al = 1.0e-2;
+            cr = 10.0;
+            at = 10.0;
+          }
+          // control;
+        };
+        builtin = label: name: {
+          type = "builtin";
+          inherit name label;
+        };
+        link = output: input: { inherit output input; };
+      in
+      [
+        {
+          name = "libpipewire-module-filter-chain";
+          flags = [ "nofail" ];
+          args = {
+            "node.description" = "Ducker";
+            "media.name" = "Ducker";
+            "filter.graph" = {
+              nodes = [
+                # Games behind media. Longer hold and release than for
+                # speech so quiet passages and track changes don't pump.
+                (compressor "game_comp" {
+                  hold = 1000.0;
+                  rt = 1500.0;
+                  cdr = 0.2;
+                  cwt = 0.8;
+                })
+                # Media and games behind calls.
+                (compressor "voice_comp" {
                   hold = 500.0;
                   rt = 800.0;
-                };
-              }
-              {
-                type = "builtin";
-                name = "voice_l";
-                label = "copy";
-              }
-              {
-                type = "builtin";
-                name = "voice_r";
-                label = "copy";
-              }
-              {
-                type = "builtin";
-                name = "mix_l";
-                label = "mixer";
-              }
-              {
-                type = "builtin";
-                name = "mix_r";
-                label = "mixer";
-              }
-            ];
-            links = [
-              {
-                output = "voice_l:Out";
-                input = "comp:sc_l";
-              }
-              {
-                output = "voice_r:Out";
-                input = "comp:sc_r";
-              }
-              {
-                output = "comp:out_l";
-                input = "mix_l:In 1";
-              }
-              {
-                output = "comp:out_r";
-                input = "mix_r:In 1";
-              }
-              {
-                output = "voice_l:Out";
-                input = "mix_l:In 2";
-              }
-              {
-                output = "voice_r:Out";
-                input = "mix_r:In 2";
-              }
-            ];
-            inputs = [
-              "comp:in_l"
-              "comp:in_r"
-              "voice_l:In"
-              "voice_r:In"
-            ];
-            outputs = [
-              "mix_l:Out"
-              "mix_r:Out"
-            ];
+                  cdr = 0.15;
+                  cwt = 0.85;
+                })
+                # copy nodes fan a graph input out to several ports.
+                (builtin "copy" "media_l")
+                (builtin "copy" "media_r")
+                (builtin "copy" "voice_l")
+                (builtin "copy" "voice_r")
+                (builtin "mixer" "sum_l")
+                (builtin "mixer" "sum_r")
+                (builtin "mixer" "mix_l")
+                (builtin "mixer" "mix_r")
+              ];
+              links = [
+                (link "media_l:Out" "game_comp:sc_l")
+                (link "media_r:Out" "game_comp:sc_r")
+                (link "game_comp:out_l" "sum_l:In 1")
+                (link "game_comp:out_r" "sum_r:In 1")
+                (link "media_l:Out" "sum_l:In 2")
+                (link "media_r:Out" "sum_r:In 2")
+                (link "sum_l:Out" "voice_comp:in_l")
+                (link "sum_r:Out" "voice_comp:in_r")
+                (link "voice_l:Out" "voice_comp:sc_l")
+                (link "voice_r:Out" "voice_comp:sc_r")
+                (link "voice_comp:out_l" "mix_l:In 1")
+                (link "voice_comp:out_r" "mix_r:In 1")
+                (link "voice_l:Out" "mix_l:In 2")
+                (link "voice_r:Out" "mix_r:In 2")
+              ];
+              # In the order of audio.position below.
+              inputs = [
+                "media_l:In"
+                "media_r:In"
+                "game_comp:in_l"
+                "game_comp:in_r"
+                "voice_l:In"
+                "voice_r:In"
+              ];
+              outputs = [
+                "mix_l:Out"
+                "mix_r:Out"
+              ];
+            };
+            "capture.props" = {
+              "node.name" = ducker;
+              "media.class" = "Audio/Sink";
+              "device.bus" = "bluetooth"; # hidden from GNOME, see roleSink
+              "audio.channels" = 6;
+              "audio.position" = [
+                "FL"
+                "FR"
+                "SL"
+                "SR"
+                "RL"
+                "RR"
+              ];
+            };
+            "playback.props" = {
+              "node.name" = "output.ducker";
+              "node.passive" = true;
+              # Any role that no role sink claims, so the output goes to the
+              # default sink. Without one it would get the Multimedia default
+              # and loop back into the Multimedia sink.
+              "media.role" = "DSP";
+              "audio.channels" = 2;
+              "audio.position" = [
+                "FL"
+                "FR"
+              ];
+            };
           };
-          "capture.props" = {
-            "node.name" = voiceDucker;
-            "media.class" = "Audio/Sink";
-            "device.bus" = "bluetooth"; # hidden from GNOME, see roleSink
-            "audio.channels" = 4;
-            "audio.position" = [
-              "FL"
-              "FR"
-              "RL"
-              "RR"
-            ];
-          };
-          "playback.props" = {
-            "node.name" = "output.voice-ducker";
-            "node.passive" = true;
-            # Any role that no role sink claims, so the output goes to the
-            # default sink. Without one it would get the Multimedia default
-            # and loop back into the Multimedia sink.
-            "media.role" = "DSP";
-            "audio.channels" = 2;
-            "audio.position" = [
-              "FL"
-              "FR"
-            ];
-          };
-        };
-      }
-    ];
+        }
+      ];
     # Discord sets no media.role at all. Its voice engine (WebRTC's pulse
     # backend) plays calls through a stream named "playStream"; its other
     # sounds go through Chromium and stay in the Multimedia default.
@@ -329,6 +354,14 @@ in
           }
         ];
         actions.update-props."media.role" = "Communication";
+      }
+    ];
+    # Wine sets no media.role either. Under Wine/Proton that's nearly always a
+    # game; native SDL games already set Game themselves.
+    extraConfig.pipewire-pulse."90-wine-game-role"."stream.rules" = [
+      {
+        matches = [ { "application.process.binary" = "~^wine(64)?(-preloader)?$"; } ];
+        actions.update-props."media.role" = "Game";
       }
     ];
     wireplumber.extraConfig."90-role-ducking"."wireplumber.settings" = {
