@@ -7,10 +7,20 @@
   inputs.aspire.inputs.nixpkgs.follows = "nixpkgs";
   inputs.llm-agents.url = "github:numtide/llm-agents.nix";
 
-  # inputs.nixpkgs-patch-install-ryzen-smu = {
-  #   url = "https://github.com/NixOS/nixpkgs/pull/576504.diff";
-  #   flake = false;
-  # };
+  # https://github.com/NixOS/nixpkgs/pull/586760
+  inputs.nixpkgs-patch-install-ryzen-smu = {
+    url = "https://github.com/NixOS/nixpkgs/pull/586760.diff";
+    flake = false;
+  };
+
+  # linux_zen 7.3.4-zen1 -> 7.3.4-zen2: fixes the boot panic in
+  # process_one_work (https://github.com/zen-kernel/zen-kernel/issues/425).
+  # Merged into master; drop once it reaches nixos-unstable.
+  # https://github.com/NixOS/nixpkgs/pull/586820
+  inputs.nixpkgs-patch-linux-zen-7-3-4-zen2 = {
+    url = "https://github.com/NixOS/nixpkgs/pull/586820.diff";
+    flake = false;
+  };
 
   outputs =
     {

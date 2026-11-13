@@ -1,0 +1,84 @@
+From e2f53842cc91f60c2775b374df2c5318449d0026 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Fri, 9 Oct 2026 20:38:31 +0200
+Subject: [PATCH 1/2] boxpointer: Use mapped state to disable unredirection
+
+Some popovers should show on top of unredirected fullscreen windows,
+so we disable unredirection accordingly.
+
+However the `visible` property only indicates that the actor would
+show if all its ancestors are visible, not that it is actually
+being shown.
+
+This is relevant for at least quick settings, which adds a different
+"top-level" parent to the boxpointer.
+
+We should only disable unredirection while the boxpointer is actually
+being shown, so use the `mapped` property that represents exactly that.
+
+Closes: https://gitlab.gnome.org/GNOME/gnome-shell/-/work_items/9470
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/4470>
+---
+ js/ui/boxpointer.js | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/js/ui/boxpointer.js b/js/ui/boxpointer.js
+index 621b3684c4..7e5fff89d5 100644
+--- a/js/ui/boxpointer.js
++++ b/js/ui/boxpointer.js
+@@ -48,8 +48,8 @@ export const BoxPointer = GObject.registerClass({
+         this.set_child_above_sibling(this.bin, this._border);
+         this._sourceAlignment = 0.5;
+ 
+-        this.connect('notify::visible', () => {
+-            if (this.visible)
++        this.connect('notify::mapped', () => {
++            if (this.mapped)
+                 global.compositor.disable_unredirect();
+             else
+                 global.compositor.enable_unredirect();
+-- 
+GitLab
+
+
+From cf96728afb6d2c0b22a37a524b74be00a5e66b51 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Fri, 9 Oct 2026 21:33:20 +0200
+Subject: [PATCH 2/2] boxpointer: Re-enable unredirect on destroy
+
+Some popovers should show on top of unredirected fullscreen windows,
+so we disable unredirection accordingly.
+
+But it is flawed to purely rely on property notifications to undo the
+inhibition, as ClutterActor stops emitting those on destroy. That means
+that direct scanout is effectively disabled permantently if a boxpointer
+is destroyed while visible.
+
+Fix this by also re-enabling unredirect on destroy.
+
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/4470>
+---
+ js/ui/boxpointer.js | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/js/ui/boxpointer.js b/js/ui/boxpointer.js
+index 7e5fff89d5..41c3a80175 100644
+--- a/js/ui/boxpointer.js
++++ b/js/ui/boxpointer.js
+@@ -55,6 +55,13 @@ export const BoxPointer = GObject.registerClass({
+                 global.compositor.enable_unredirect();
+         });
+ 
++        this.connect('destroy', () => {
++            // ClutterActor stops doing property notifications
++            // in destroy, so explicitly restore unredirect
++            if (this.mapped)
++                global.compositor.enable_unredirect();
++        });
++
+         this._muteKeys = new Clutter.KeyController();
+         this._muteKeys.connect('key-press', () => Clutter.EVENT_STOP);
+         this.add_action_full(
+-- 
+GitLab
+
