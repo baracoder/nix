@@ -7,8 +7,11 @@ let
   # Internal Conexant SN6140 analog codec. The built-in speakers and the 3.5mm
   # jack are two routes on this single sink, so the DSP has to be bypassed at
   # runtime when headphones are plugged in.
-  internalSink = "alsa_output.pci-0000_c4_00.6.analog-stereo";
-  alsaCard = "Generic_1";
+  #
+  # Identified by codec, not by node name or ALSA card: both are derived from
+  # the PCI bus number / probe order, which shift when the external GPU is
+  # attached (c4:00.6 without it, c7:00.6 with it).
+  codec = "Conexant SN6140";
 
   # The node carrying the filter graph, and hence its controls.
   dspNode = "effect_input.speaker-dsp";
@@ -54,8 +57,14 @@ let
       speaker-dsp-bypass
     ];
     text = ''
+      card=$(grep -l '${codec}' /proc/asound/card*/codec#* | head -n1 | sed -E 's|.*/card([0-9]+)/.*|\1|')
+      if [ -z "$card" ]; then
+        echo "no ALSA card with codec ${codec}" >&2
+        exit 1
+      fi
+
       apply() {
-        if amixer -c ${alsaCard} cget iface=CARD,name='Headphone Jack' | grep -q 'values=on'; then
+        if amixer -c "$card" cget iface=CARD,name='Headphone Jack' | grep -q 'values=on'; then
           speaker-dsp-bypass on
         else
           speaker-dsp-bypass off
@@ -69,7 +78,7 @@ let
       done
 
       # alsactl wants a CTL device name here, not a card name like amixer -c.
-      alsactl monitor hw:${alsaCard} | while read -r _; do
+      alsactl monitor "hw:$card" | while read -r _; do
         apply || true
       done
     '';
@@ -237,8 +246,10 @@ in
             ];
             "filter.smart" = true;
             "filter.smart.name" = "speaker-dsp";
+            # Matched by exact string equality against the sink's props.
             "filter.smart.target" = {
-              "node.name" = internalSink;
+              "alsa.mixer_name" = codec;
+              "media.class" = "Audio/Sink";
             };
           };
           "playback.props" = {
