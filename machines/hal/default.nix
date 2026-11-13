@@ -254,7 +254,6 @@ in
     virtiofsd
     ptouch-print
     nebula
-    newelle
     pywincontrols
     fprintd
     vial

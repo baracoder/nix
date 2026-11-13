@@ -57,7 +57,6 @@
     mission-center
     mono
     mtr-gui
-    fnm
     ncdu
     netcoredbg
     nix-tree
@@ -71,7 +70,6 @@
     nvd
     octave
     omnisharp-roslyn
-    opencode
     pdfgrep
     pre-commit
     pwgen
@@ -79,7 +77,6 @@
     renameutils
     ripgrep
     samba
-    scooter
     secretspec
     skopeo
     sqlite
