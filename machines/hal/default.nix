@@ -301,7 +301,7 @@ in
   # Both displays hang off the iGPU (the eGPU only renders), but ionwl
   # would otherwise pick the eGPU as its primary GPU.
   programs.ionwl = {
-    enable = true;
+    enable = false;
     primaryGpu = "/dev/dri/igpu";
   };
 
