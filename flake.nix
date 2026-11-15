@@ -13,15 +13,6 @@
     flake = false;
   };
 
-  # linux_zen 7.3.4-zen1 -> 7.3.4-zen2: fixes the boot panic in
-  # process_one_work (https://github.com/zen-kernel/zen-kernel/issues/425).
-  # Merged into master; drop once it reaches nixos-unstable.
-  # https://github.com/NixOS/nixpkgs/pull/586820
-  inputs.nixpkgs-patch-linux-zen-7-3-4-zen2 = {
-    url = "https://github.com/NixOS/nixpkgs/pull/586820.diff";
-    flake = false;
-  };
-
   outputs =
     {
       self,
