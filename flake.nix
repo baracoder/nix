@@ -7,11 +7,16 @@
   inputs.aspire.inputs.nixpkgs.follows = "nixpkgs";
   inputs.llm-agents.url = "github:numtide/llm-agents.nix";
 
-  # https://github.com/NixOS/nixpkgs/pull/586760
-  inputs.nixpkgs-patch-install-ryzen-smu = {
-    url = "https://github.com/NixOS/nixpkgs/pull/586760.diff";
-    flake = false;
-  };
+  # Applying an unmerged nixpkgs PR: nixpkgs-patcher picks up every input
+  # whose name starts with "nixpkgs-patch-" and applies it to nixpkgs.
+  # Name it after what the PR actually does, and remove it once the PR is
+  # merged (otherwise the patch fails to apply / double-applies).
+  #
+  # # https://github.com/NixOS/nixpkgs/pull/<PR_NUMBER> — <PR title>
+  # inputs.nixpkgs-patch-<short-description-of-pr> = {
+  #   url = "https://github.com/NixOS/nixpkgs/pull/<PR_NUMBER>.diff";
+  #   flake = false;
+  # };
 
   outputs =
     {
